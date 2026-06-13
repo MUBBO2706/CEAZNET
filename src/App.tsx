@@ -49,7 +49,7 @@ import { SystemBanner } from "./components/SystemBanner";
 import { fetchNews } from "./services/newsService";
 import Sidebar from "./components/Sidebar";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
-import { useToast } from "./components/ToastSystem";
+import { useToast } from "./components/ToastManager";
 
 import { useLocation, useNavigate } from "react-router-dom";
 
