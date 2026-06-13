@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { NewsArticle } from '../types';
 import { useDynamicColors } from '../hooks/useDynamicColors';
+import { useCachedImage } from '../services/imageCachingService';
 import ArticleCardSkeleton from './ArticleCardSkeleton';
 import { Eye, Heart } from 'lucide-react';
 import LikeAnimation from './LikeAnimation';
@@ -61,6 +62,7 @@ const ArticleCard = React.forwardRef<HTMLDivElement, ArticleCardProps>(({
 }, ref) => {
     // Only enable dynamic colors for the stack view to save resources in grid view
     const enableDynamicColors = variant === 'stack';
+    const cachedImageSrc = useCachedImage(article.image || null);
     const { colors, isLoading } = useDynamicColors(article.image || null, enableDynamicColors);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -169,7 +171,7 @@ const ArticleCard = React.forwardRef<HTMLDivElement, ArticleCardProps>(({
                 <div className="p-3">
                     <div className="w-full aspect-[4/3] flex-shrink-0 relative rounded-2xl overflow-hidden group bg-neutral-100 dark:bg-gray-800">
                         <img
-                            src={article.image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=2070&auto-format&fit=crop'}
+                            src={cachedImageSrc || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=2070&auto-format&fit=crop'}
                             alt={article.title}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=2070&auto-format&fit=crop'; }}

@@ -57,12 +57,12 @@ export default defineConfig(async ({ mode }) => {
       plugins,
       build: {
         sourcemap: false,
-        minify: false,
-        cssMinify: false,
-        cssCodeSplit: false,
-        assetsInlineLimit: 0,
+        minify: true,
+        cssMinify: true,
+        cssCodeSplit: true,
+        assetsInlineLimit: 4096,
         rollupOptions: {
-          maxParallelFileOps: 1,
+          maxParallelFileOps: 4,
         }
       },
       define: {

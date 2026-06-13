@@ -47,6 +47,7 @@ import { supabase } from "./services/supabaseClient";
 import { BroadcastPopup } from "./components/BroadcastPopup";
 import { SystemBanner } from "./components/SystemBanner";
 import { fetchNews } from "./services/newsService";
+import { getImage, batchFetchAndCacheImages } from "./services/imageCachingService";
 import Sidebar from "./components/Sidebar";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { useToast } from "./components/ToastSystem";
@@ -374,6 +375,42 @@ const App: React.FC = () => {
       }
     }
   }, [currentPath, exploreArticles]);
+
+  // Initial load and dynamic state image bulk fetching and caching trigger (2 hours TTL)
+  useEffect(() => {
+    if (exploreArticles.length > 0) {
+      const imageUrls = exploreArticles
+        .map((a) => a.image)
+        .filter((img): img is string => !!img && typeof img === "string" && img.startsWith("http"));
+
+      if (imageUrls.length > 0) {
+        (async () => {
+          const uniqueUrls = Array.from(new Set(imageUrls));
+          const uncachedUrls: string[] = [];
+
+          // Query local cache first to minimize redundant network bandwidth
+          for (const url of uniqueUrls) {
+            const cached = await getImage(url);
+            if (!cached) {
+              uncachedUrls.push(url);
+            }
+          }
+
+          if (uncachedUrls.length > 0) {
+            console.log(`[Image Cache] Found ${uncachedUrls.length} uncached images out of ${uniqueUrls.length}. Resolving in batch...`);
+            // Load them in batches of 30 to stay safe and avoid large transaction payloads
+            const maxBatch = 30;
+            for (let i = 0; i < uncachedUrls.length; i += maxBatch) {
+              const chunk = uncachedUrls.slice(i, i + maxBatch);
+              await batchFetchAndCacheImages(chunk);
+            }
+          } else {
+            console.log('[Image Cache] All loaded images already reside in the local cache!');
+          }
+        })();
+      }
+    }
+  }, [exploreArticles]);
 
   const [galleryHeaderState, setGalleryHeaderState] = useState<{
     onUpload?: () => void;

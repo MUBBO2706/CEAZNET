@@ -605,100 +605,208 @@ async function startServer() {
   // URL Reader Endpoint
   app.all("/api/url-reader", async (req, res) => {
     await urlReaderHandler(req, res);
-  });
+  });  // Image/File Proxy Caching and Resolution
+  const serverImageCache = new Map<string, { dataUrl: string; timestamp: number }>();
+  const SERVER_CACHE_TTL = 120 * 60 * 1000; // 2 hours server cache
+  let hasHydratedTelegramImageCache = false;
 
-  // Image/File Proxy Endpoint
-  app.get("/api/image-proxy", async (req, res) => {
+  async function ensureServerImageCachePopulated() {
+    if (hasHydratedTelegramImageCache) return;
     try {
-      const { url } = req.query;
-      if (!url || typeof url !== 'string') return res.status(400).json({ error: "Missing url query parameter" });
-
-      let base64 = "";
-      let contentType = "application/octet-stream";
-
-      try {
-        // Fast path: Axios
-        const urlObj = new URL(url);
-        let response = await axios.get(url, {
-          responseType: 'arraybuffer',
-          headers: {
-             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-             'Accept-Language': 'en-US,en;q=0.5',
-             'Referer': urlObj.origin + '/',
-             'Sec-Fetch-Dest': 'image',
-             'Sec-Fetch-Mode': 'no-cors',
-             'Sec-Fetch-Site': 'cross-site'
-          },
-          timeout: 10000,
-          maxRedirects: 5,
-          validateStatus: () => true, // resolve on all status codes
-        });
-        
-        if (response.status === 404 || response.status === 400 || response.status === 410) {
-           return res.status(response.status).json({ error: `Image not found (Status ${response.status})` });
+      const { loadImageCacheUnified } = await import("./utils/deviceCacheShared.js");
+      const tgCache = await loadImageCacheUnified();
+      if (tgCache && Object.keys(tgCache).length > 0) {
+        console.log(`[Image Proxy Backend] Hydrating server memory cache with ${Object.keys(tgCache).length} images from Telegram...`);
+        for (const [url, dataUrl] of Object.entries(tgCache)) {
+          if (url && dataUrl) {
+            serverImageCache.set(url, { dataUrl, timestamp: Date.now() });
+          }
         }
+      }
+    } catch (e: any) {
+      console.error("[Image Proxy Backend] Auto hydration failed:", e.message);
+    } finally {
+      hasHydratedTelegramImageCache = true;
+    }
+  }
 
+  async function resolveImageUrl(url: string): Promise<string> {
+    await ensureServerImageCachePopulated();
+    const cached = serverImageCache.get(url);
+    if (cached && Date.now() - cached.timestamp < SERVER_CACHE_TTL) {
+      return cached.dataUrl;
+    }
+
+    let base64 = "";
+    let contentType = "application/octet-stream";
+
+    try {
+      // Fast path: Axios
+      const urlObj = new URL(url);
+      let response = await axios.get(url, {
+        responseType: 'arraybuffer',
+        headers: {
+           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+           'Accept-Language': 'en-US,en;q=0.5',
+           'Referer': urlObj.origin + '/',
+           'Sec-Fetch-Dest': 'image',
+           'Sec-Fetch-Mode': 'no-cors',
+           'Sec-Fetch-Site': 'cross-site'
+        },
+        timeout: 10000,
+        maxRedirects: 5,
+        validateStatus: () => true, // resolve on all status codes
+      });
+      
+      if (response.status === 404 || response.status === 400 || response.status === 410) {
+         throw new Error(`Image not found (Status ${response.status})`);
+      }
+
+      if (response.status >= 400) {
+         throw new Error(`Request failed with status code ${response.status}`);
+      }
+
+      contentType = (response.headers['content-type'] as string) || 'application/octet-stream';
+      base64 = Buffer.from(response.data, 'binary').toString('base64');
+      
+    } catch (err: any) {
+      console.warn(`[Image-Proxy] Axios failed (${err.message}), trying wsrv.nl proxy for ${url}`);
+      try {
+        const wsrvUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(wsrvUrl, {
+          responseType: 'arraybuffer',
+          timeout: 10000,
+          validateStatus: () => true,
+        });
+
+        if (response.status === 404 || response.status === 400 || response.status === 410) {
+           throw new Error(`Image not found via proxy (Status ${response.status})`);
+        }
         if (response.status >= 400) {
            throw new Error(`Request failed with status code ${response.status}`);
         }
 
         contentType = (response.headers['content-type'] as string) || 'application/octet-stream';
         base64 = Buffer.from(response.data, 'binary').toString('base64');
+      } catch (wsrvErr: any) {
+        console.warn(`[Image-Proxy] wsrv.nl failed (${wsrvErr.message}), falling back to Puppeteer Stealth for ${url}`);
+        // Fallback: Puppeteer Stealth
+        const browser = await getBrowser();
+        const page = await browser.newPage();
         
-      } catch (err: any) {
-        console.warn(`[Image-Proxy] Axios failed (${err.message}), trying wsrv.nl proxy for ${url}`);
+        const urlObj = new URL(url);
+        await page.setExtraHTTPHeaders({
+             'Accept-Language': 'en-US,en;q=0.5',
+             'Referer': urlObj.origin + '/'
+        });
+
         try {
-          const wsrvUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
-          const response = await axios.get(wsrvUrl, {
-            responseType: 'arraybuffer',
-            timeout: 10000,
-            validateStatus: () => true,
-          });
-
-          if (response.status === 404 || response.status === 400 || response.status === 410) {
-             return res.status(404).json({ error: `Image not found via proxy (Status ${response.status})` });
+          const response = await page.goto(url, { timeout: 30000, waitUntil: 'networkidle0' });
+          if (!response) {
+            throw new Error("Puppeteer received null response.");
           }
-          if (response.status >= 400) {
-             throw new Error(`Request failed with status code ${response.status}`);
+          if (response.status() === 404 || response.status() === 400 || response.status() === 410) {
+            throw new Error("Image not found via puppeteer");
           }
-
-          contentType = (response.headers['content-type'] as string) || 'application/octet-stream';
-          base64 = Buffer.from(response.data, 'binary').toString('base64');
-        } catch (wsrvErr: any) {
-          console.warn(`[Image-Proxy] wsrv.nl failed (${wsrvErr.message}), falling back to Puppeteer Stealth for ${url}`);
-          // Fallback: Puppeteer Stealth
-          const browser = await getBrowser();
-          const page = await browser.newPage();
+          if (response.status() >= 400) {
+            throw new Error(`Puppeteer received error status ${response.status()}`);
+          }
           
-          const urlObj = new URL(url);
-          await page.setExtraHTTPHeaders({
-               'Accept-Language': 'en-US,en;q=0.5',
-               'Referer': urlObj.origin + '/'
-          });
-  
-          try {
-            const response = await page.goto(url, { timeout: 30000, waitUntil: 'networkidle0' });
-            if (!response) {
-              throw new Error("Puppeteer received null response.");
-            }
-            if (response.status() === 404 || response.status() === 400 || response.status() === 410) {
-              return res.status(404).json({ error: "Image not found via puppeteer" });
-            }
-            if (response.status() >= 400) {
-              throw new Error(`Puppeteer received error status ${response.status()}`);
-            }
-            
-            const buffer = await response.buffer();
-            contentType = response.headers()['content-type'] || 'application/octet-stream';
-            base64 = buffer.toString('base64');
-          } finally {
-            await page.close();
-          }
+          const buffer = await response.buffer();
+          contentType = response.headers()['content-type'] || 'application/octet-stream';
+          base64 = buffer.toString('base64');
+        } finally {
+          await page.close();
+        }
+      }
+    }
+
+    const dataUrl = `data:${contentType};base64,${base64}`;
+    serverImageCache.set(url, { dataUrl, timestamp: Date.now() });
+
+    // Asynchronously update Telegram copy in background
+    (async () => {
+      try {
+        const { saveImageCacheUnified } = await import("./utils/deviceCacheShared.js");
+        const outMap: Record<string, string> = {};
+        for (const [k, v] of serverImageCache.entries()) {
+          outMap[k] = v.dataUrl;
+        }
+        await saveImageCacheUnified(outMap);
+      } catch (errorSave: any) {
+        console.warn("[Image Proxy Backend] BG Telegram Save Failed:", errorSave.message);
+      }
+    })();
+
+    return dataUrl;
+  }
+
+  // Support POST on /api/image-proxy for batching multiple image URLs in a single request
+  app.post("/api/image-proxy", async (req, res) => {
+    try {
+      const { urls } = req.body;
+      if (!urls || !Array.isArray(urls)) {
+        return res.status(400).json({ error: "Missing or invalid urls array parameter" });
+      }
+
+      await ensureServerImageCachePopulated();
+
+      const results: Record<string, string> = {};
+      const pendingUrls: string[] = [];
+
+      for (const url of urls) {
+        if (!url || typeof url !== 'string') continue;
+        const cached = serverImageCache.get(url);
+        if (cached && Date.now() - cached.timestamp < SERVER_CACHE_TTL) {
+          results[url] = cached.dataUrl;
+        } else {
+          pendingUrls.push(url);
         }
       }
 
-      const dataUrl = `data:${contentType};base64,${base64}`;
+      if (pendingUrls.length > 0) {
+        console.log(`[Image Proxy Backend] Batch fetching ${pendingUrls.length} uncached urls out of ${urls.length}...`);
+        const fetchPromises = pendingUrls.map(async (url) => {
+          try {
+            const dataUrl = await resolveImageUrl(url);
+            results[url] = dataUrl;
+          } catch (e: any) {
+            console.warn(`[Image-Proxy] Batch fetch failed for url: ${url}. Error: ${e.message}`);
+          }
+        });
+
+        await Promise.all(fetchPromises);
+
+        // Upload unified batch changes to Telegram
+        (async () => {
+          try {
+            const { saveImageCacheUnified } = await import("./utils/deviceCacheShared.js");
+            const outMap: Record<string, string> = {};
+            for (const [k, v] of serverImageCache.entries()) {
+              outMap[k] = v.dataUrl;
+            }
+            await saveImageCacheUnified(outMap);
+          } catch (errorSave: any) {
+            console.warn("[Image Proxy Backend] BG Telegram Batch Save Failed:", errorSave.message);
+          }
+        })();
+      }
+
+      res.json({ data: results });
+    } catch (error: any) {
+      console.error("Batch Image Proxy Error:", error.message);
+      res.status(500).json({ error: `Failed to batch proxy images: ${error.message}` });
+    }
+  });
+
+  // Image/File Proxy Endpoint (GET)
+  app.get("/api/image-proxy", async (req, res) => {
+    try {
+      const { url } = req.query;
+      if (!url || typeof url !== 'string') return res.status(400).json({ error: "Missing url query parameter" });
+
+      const dataUrl = await resolveImageUrl(url);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.json({ dataUrl });
 

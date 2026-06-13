@@ -2,10 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-// In-memory memory cache to avoid even hitting Telegram/Supabase repeatedly in the same worker process execution!
+// In-memory cache to avoid repeated network hits in the same process
 let memoryCache: Record<string, string | null> | null = null;
 let lastFetchTime = 0;
-const MEMORY_CACHE_TTL = 30000; // 30 seconds local in-memory TTL to avoid repeated hits on API calls
+const MEMORY_CACHE_TTL = 30000; // 30 seconds local in-memory TTL
+
+let memoryImageCache: Record<string, string> | null = null;
+let lastImageFetchTime = 0;
 
 function getEnvValue(key: string): string | undefined {
   if (process.env[key]) return process.env[key];
@@ -52,7 +55,19 @@ export function resolveCachePath(): string {
   return tmpPath;
 }
 
-// Dynamically fetch and resolve Telegram Bot secrets so that changes can be made from environment or Supabase platform settings!
+export function resolveImageCachePath(): string {
+  const tmpPath = path.join('/tmp', 'image_cache.json');
+  if (!fs.existsSync(tmpPath)) {
+    try {
+      fs.writeFileSync(tmpPath, '{}', 'utf8');
+    } catch (e) {
+      console.warn("Failed to initialize /tmp/image_cache.json");
+    }
+  }
+  return tmpPath;
+}
+
+// Dynamically resolve Telegram Credentials
 export async function getTelegramCredentials(): Promise<{ token: string; chatId: string; isConfigured: boolean }> {
   const isDev = process.env.NODE_ENV !== 'production';
   if (isDev) {
@@ -66,7 +81,6 @@ export async function getTelegramCredentials(): Promise<{ token: string; chatId:
   let token = getEnvValue('TELEGRAM_BOT_TOKEN') || getEnvValue('VITE_TELEGRAM_BOT_TOKEN');
   let chatId = getEnvValue('TELEGRAM_CHAT_ID') || getEnvValue('VITE_TELEGRAM_CHAT_ID');
 
-  // fallback database check to allow dynamic management through Admin Panel settings without redeploying!
   if (!token || !chatId) {
     try {
       const { data } = await supabaseAdmin
@@ -86,8 +100,6 @@ export async function getTelegramCredentials(): Promise<{ token: string; chatId:
   }
 
   const isConfigured = !!token && !!chatId && !token.includes('MY_BOT_TOKEN');
-  
-  // Codebase defaults
   return {
     token: token || "8651559829:AAE8dajbB7yB9Nc8WYxV-b4lBp8z0CBTLC8",
     chatId: chatId || "5965153830",
@@ -96,166 +108,56 @@ export async function getTelegramCredentials(): Promise<{ token: string; chatId:
 }
 
 /**
- * Loads device mappings from Telegram pinned message.
- * Supports direct JSON inline text or dynamic JSON files/documents uploaded and pinned!
+ * Downloads and parses any JSON file directly from Telegram using a tg:// URL.
  */
-export async function loadDeviceCacheFromTelegram(): Promise<Record<string, string | null> | null> {
+export async function loadJsonFromTelegramUrl(tgUrl: string): Promise<any> {
+  if (!tgUrl || !tgUrl.startsWith('tg://')) return null;
   try {
-    const { token, chatId } = await getTelegramCredentials();
-    if (!token || !chatId) return null;
-
-    // 1. Fetch channel/chat to resolve pinned message
-    const chatRes = await fetch(`https://api.telegram.org/bot${token}/getChat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId })
-    });
-
-    if (!chatRes.ok) {
-      console.warn("[Telegram Cache] Failed to fetch Chat details:", chatRes.status);
-      return null;
-    }
-
-    const chatData = await chatRes.json();
-    if (!chatData.ok || !chatData.result || !chatData.result.pinned_message) {
-      console.warn("[Telegram Cache] No pinned cache configuration found in Telegram chat.");
-      return null;
-    }
-
-    const pinnedMessage = chatData.result.pinned_message;
-
-    // A. Check if the pinned message text is the JSON itself (highly optimal for < 4KB)
-    if (pinnedMessage.text && pinnedMessage.text.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(pinnedMessage.text.trim());
-        console.log("[Telegram Cache] Successfully decoded JSON directly from Telegram message text!");
-        return parsed;
-      } catch (err) {
-        console.warn("[Telegram Cache] Failed to parse pinned text message as JSON:", err);
-      }
-    }
-
-    // B. Or check if there is an uploaded document/file
-    const fileId = pinnedMessage.document?.file_id;
-    if (!fileId) {
-      console.warn("[Telegram Cache] Pinned message does not contain direct JSON text or document.");
-      return null;
-    }
-
-    // Resolve file details
+    const { token } = await getTelegramCredentials();
+    const fileId = tgUrl.replace('tg://', '').split('?')[0];
+    
     const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
     if (!fileRes.ok) {
-      console.warn("[Telegram Cache] getFile failed on Telegram:", fileRes.status);
+      console.warn(`[Telegram JSON Load] Failed to getFile details for ${fileId}, status: ${fileRes.status}`);
       return null;
     }
-
+    
     const fileData = await fileRes.json();
-    if (!fileData.ok || !fileData.result || !fileData.result.file_path) {
-      console.warn("[Telegram Cache] Telegram failed to return path for cache document:", fileData);
+    if (!fileData.ok || !fileData.result?.file_path) {
+      console.warn(`[Telegram JSON Load] Telegram returned non-ok result for getFile:`, fileData);
       return null;
     }
-
-    const filePath = fileData.result.file_path;
-    const downloadUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
-
-    // Download document text
+    
+    const downloadUrl = `https://api.telegram.org/file/bot${token}/${fileData.result.file_path}`;
     const dataRes = await fetch(downloadUrl);
     if (!dataRes.ok) {
-      console.warn("[Telegram Cache] Failed to download cache file from Telegram link.");
+      console.warn(`[Telegram JSON Load] Failed to download actual file from path ${fileData.result.file_path}`);
       return null;
     }
-
+    
     const content = await dataRes.text();
-    const parsed = JSON.parse(content);
-    console.log("[Telegram Cache] Decoded cache JSON file downloaded from Telegram successfully! Size:", Object.keys(parsed).length);
-    return parsed;
+    return JSON.parse(content);
   } catch (err: any) {
-    console.warn("[Telegram Cache] Error loading from Telegram:", err.message);
+    console.warn(`[Telegram JSON Load] Failed to load JSON from ${tgUrl}:`, err.message);
     return null;
   }
 }
 
 /**
- * Saves device mappings to Telegram:
- * Attempts to modify the existing pinned message in place using editMessageMedia (always saving as a JSON file).
- * If no pinned message exists yet or update fails, falls back to uploading a new document and pinning it.
+ * Uploads a JSON object to Telegram as a document, deletes the old message to prevent clutter,
+ * and returns the new tg:// URL.
  */
-export async function saveDeviceCacheToTelegram(cacheData: Record<string, string | null>): Promise<boolean> {
+export async function uploadJsonToTelegram(
+  filename: string,
+  data: any,
+  oldTgUrl?: string | null
+): Promise<string | null> {
   try {
     const { token, chatId } = await getTelegramCredentials();
-    if (!token || !chatId) return false;
+    if (!token || !chatId) return null;
 
-    const cacheString = JSON.stringify(cacheData, null, 2);
-    
-    // 1. Get current pinned message first to see if we can update it in place
-    let pinnedMessageId: number | null = null;
-    try {
-      const chatRes = await fetch(`https://api.telegram.org/bot${token}/getChat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId })
-      });
-      if (chatRes.ok) {
-        const chatData = await chatRes.json();
-        if (chatData.ok && chatData.result?.pinned_message) {
-          pinnedMessageId = chatData.result.pinned_message.message_id;
-        }
-      }
-    } catch (err: any) {
-      console.warn("[Telegram Cache] Failed to check for existing pinned message:", err.message);
-    }
-
-    const filename = 'device_cache.json';
+    const cacheString = JSON.stringify(data, null, 2);
     const fileBuffer = Buffer.from(cacheString, 'utf8');
-
-    // 2. If we found a pinned message, try to edit its media inline!
-    if (pinnedMessageId) {
-      console.log(`[Telegram Cache] Found existing pinned message ID: ${pinnedMessageId}. Attempting in-place update...`);
-      try {
-        const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
-        
-        const parts = [
-          `--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`,
-          `--${boundary}\r\nContent-Disposition: form-data; name="message_id"\r\n\r\n${pinnedMessageId}\r\n`,
-          `--${boundary}\r\nContent-Disposition: form-data; name="media"\r\n\r\n${JSON.stringify({ type: 'document', media: 'attach://device_cache' })}\r\n`,
-          `--${boundary}\r\nContent-Disposition: form-data; name="device_cache"; filename="${filename}"\r\nContent-Type: application/json\r\n\r\n`
-        ];
-
-        const payload = Buffer.concat([
-          Buffer.from(parts[0], 'utf8'),
-          Buffer.from(parts[1], 'utf8'),
-          Buffer.from(parts[2], 'utf8'),
-          Buffer.from(parts[3], 'utf8'),
-          fileBuffer,
-          Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8')
-        ]);
-
-        const editRes = await fetch(`https://api.telegram.org/bot${token}/editMessageMedia`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': `multipart/form-data; boundary=${boundary}`
-          },
-          body: payload
-        });
-
-        if (editRes.ok) {
-          const editData = await editRes.json();
-          if (editData.ok) {
-            console.log("[Telegram Cache] Successfully edited the pinned message in-place!");
-            return true;
-          } else {
-            console.warn("[Telegram Cache] In-place edit rejected by Telegram:", editData.description);
-          }
-        } else {
-          console.warn("[Telegram Cache] In-place edit server error code:", editRes.status);
-        }
-      } catch (editError: any) {
-        console.warn("[Telegram Cache] Error during editMessageMedia, falling back to new upload:", editError.message);
-      }
-    }
-
-    // 3. Fallback: Upload a new document and pin it (and optionally delete the old pinned message to avoid channel noise!)
-    console.log("[Telegram Cache] Uploading a fresh device_cache.json document...");
     const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
     
     const parts = [
@@ -282,48 +184,68 @@ export async function saveDeviceCacheToTelegram(cacheData: Record<string, string
       const uploadData = await uploadRes.json();
       if (uploadData.ok) {
         const newMessageId = uploadData.result.message_id;
-        console.log("[Telegram Cache] Dynamic cache file uploaded successfully. Message ID:", newMessageId);
+        const fileId = uploadData.result.document.file_id;
+        console.log(`[Telegram JSON Upload] Successfully uploaded ${filename}. MsgID: ${newMessageId}`);
 
-        // Pin the newly created cache message
-        const pinRes = await fetch(`https://api.telegram.org/bot${token}/pinChatMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            message_id: newMessageId,
-            disable_notification: true
-          })
-        });
-
-        if (pinRes.ok) {
-          const pinData = await pinRes.json();
-          console.log("[Telegram Cache] Pin command status:", pinData.ok);
-          
-          // Clean up: delete the old pinned message so there's zero clutter in the Telegram chat!
-          if (pinnedMessageId) {
-            try {
+        // Clean up old file to prevent infinite channel clutter!
+        if (oldTgUrl && oldTgUrl.startsWith('tg://')) {
+          try {
+            const urlObj = new URL(oldTgUrl);
+            const oldMessageId = urlObj.searchParams.get('msg');
+            if (oldMessageId) {
               await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   chat_id: chatId,
-                  message_id: pinnedMessageId
+                  message_id: parseInt(oldMessageId, 10)
                 })
               });
-              console.log("[Telegram Cache] Deleted old pinned message to prevent chat clutter.");
-            } catch (delError) {
-              console.warn("[Telegram Cache] Could not delete old pinned message:", delError);
+              console.log(`[Telegram JSON Upload] Successfully deleted orphaned Telegram message details: ${oldMessageId}`);
             }
+          } catch (e: any) {
+            console.warn('[Telegram JSON Upload] Could not cleanup old message:', e.message);
           }
-          return pinData.ok;
+        }
+
+        return `tg://${fileId}?msg=${newMessageId}`;
+      }
+    } else {
+      console.warn(`[Telegram JSON Upload] Failed upload of ${filename}, server returned ${uploadRes.status}`);
+    }
+  } catch (err: any) {
+    console.error(`[Telegram JSON Upload] Error uploading ${filename}:`, err.message);
+  }
+  return null;
+}
+
+/**
+ * Legacy backup: load device_cache using pinned message search if database row remains empty/uninitialized
+ */
+export async function loadDeviceCacheFromTelegramGenericBackup(): Promise<Record<string, string | null> | null> {
+  try {
+    const { token, chatId } = await getTelegramCredentials();
+    if (!token || !chatId) return null;
+
+    const chatRes = await fetch(`https://api.telegram.org/bot${token}/getChat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId })
+    });
+
+    if (chatRes.ok) {
+      const chatData = await chatRes.json();
+      const pinnedMessage = chatData.result?.pinned_message;
+      if (pinnedMessage) {
+        const fileId = pinnedMessage.document?.file_id;
+        if (fileId) {
+          const loaded = await loadJsonFromTelegramUrl(`tg://${fileId}`);
+          if (loaded) return loaded;
         }
       }
     }
-    return false;
-  } catch (err: any) {
-    console.error("[Telegram Cache] Error saving to Telegram:", err.message);
-    return false;
-  }
+  } catch (e) {}
+  return null;
 }
 
 /**
@@ -338,13 +260,29 @@ export async function loadDeviceCacheFromDb(): Promise<Record<string, string | n
       .maybeSingle();
     
     if (!error && data && data.setting_value) {
-      return data.setting_value as Record<string, string | null>;
+      const val = data.setting_value as any;
+      if (val && typeof val === 'object') {
+        if (val.type === 'unified_telegram_registry') {
+          if (val.device_cache_url) {
+            const tgData = await loadJsonFromTelegramUrl(val.device_cache_url);
+            if (tgData) {
+              // Local filesystem mirror sync for speed/fallbacks
+              try {
+                fs.writeFileSync(resolveCachePath(), JSON.stringify(tgData, null, 2), 'utf8');
+              } catch (e) {}
+              return tgData;
+            }
+          }
+          return val.device_cache_fallback || {};
+        }
+        return val as Record<string, string | null>;
+      }
     }
   } catch (err) {
     console.warn("[DB Cache] Error fetching device_cache from Supabase:", err);
   }
   
-  // Fallback to local file
+  // Local file fallback
   try {
     const cachePath = resolveCachePath();
     if (fs.existsSync(cachePath)) {
@@ -357,20 +295,16 @@ export async function loadDeviceCacheFromDb(): Promise<Record<string, string | n
 }
 
 /**
- * Saves device mappings to Supabase platform_settings and local disk.
+ * Saves device mappings to Supabase platform_settings as well as local disk / Telegram mirror.
  */
 export async function saveDeviceCacheToDb(cacheData: Record<string, string | null>): Promise<boolean> {
-  // 1. Save locally
   try {
     const cachePath = resolveCachePath();
-    const tempPath = cachePath + '.tmp';
-    fs.writeFileSync(tempPath, JSON.stringify(cacheData, null, 2), 'utf8');
-    fs.renameSync(tempPath, cachePath);
+    fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), 'utf8');
   } catch (err) {
     console.error("[Local File Cache] Error updating local cache file:", err);
   }
 
-  // 2. Save/Upsert in Supabase
   try {
     const { error } = await supabaseAdmin
       .from('platform_settings')
@@ -380,11 +314,7 @@ export async function saveDeviceCacheToDb(cacheData: Record<string, string | nul
         description: 'Dynamic device mapping cache stored in Supabase'
       }, { onConflict: 'setting_key' });
     
-    if (error) {
-      console.error("[DB Cache] Error saving device_cache to Supabase:", error.message);
-      return false;
-    }
-    return true;
+    return !error;
   } catch (err: any) {
     console.error("[DB Cache] Error upserting device_cache to Supabase:", err.message);
     return false;
@@ -393,7 +323,7 @@ export async function saveDeviceCacheToDb(cacheData: Record<string, string | nul
 
 /**
  * Unifies the storage loading cycle:
- * Memory cache -> Telegram Cache (if configured and works) -> Supabase Cache -> Local disk cache.
+ * Memory cache -> Supabase/Telegram Registry -> Local fallback
  */
 export async function loadDeviceCacheUnified(): Promise<Record<string, string | null>> {
   const now = Date.now();
@@ -401,66 +331,205 @@ export async function loadDeviceCacheUnified(): Promise<Record<string, string | 
     return memoryCache;
   }
 
-  const isDev = process.env.NODE_ENV !== 'production';
-
-  // 1. Try from Telegram
-  const tgCache = await loadDeviceCacheFromTelegram();
-  if (tgCache) {
-    memoryCache = tgCache;
-    lastFetchTime = now;
-    
-    // Asynchronously back it up to local filesystem for fast access if server loses internet
-    try {
-      const cachePath = resolveCachePath();
-      fs.writeFileSync(cachePath, JSON.stringify(tgCache, null, 2), 'utf8');
-    } catch (e) {}
-    
-    return tgCache;
-  }
-
-  if (isDev) {
-    console.warn("[Telegram Cache] Telegram cache load failed or was empty in DEV mode. Returning empty record instead of Supabase fallback.");
-    memoryCache = {};
-    lastFetchTime = now;
-    return {};
-  }
-
-  // 2. Fallback to Supabase
   const dbCache = await loadDeviceCacheFromDb();
-  memoryCache = dbCache;
-  lastFetchTime = now;
-  return dbCache;
+  if (dbCache && Object.keys(dbCache).length > 0) {
+    memoryCache = dbCache;
+    lastFetchTime = now;
+    return dbCache;
+  }
+
+  // Backup fallback
+  const fallback = await loadDeviceCacheFromTelegramGenericBackup();
+  if (fallback) {
+    memoryCache = fallback;
+    lastFetchTime = now;
+    return fallback;
+  }
+
+  return {};
 }
 
 /**
  * Unifies the storage saving cycle:
- * Saves locally + Memory Cache -> Telegram (if configured and works) -> Supabase Cache.
+ * Saves locally + Memory Cache -> Upload to Telegram -> Update Supabase Registry.
  */
 export async function saveDeviceCacheUnified(cacheData: Record<string, string | null>): Promise<boolean> {
   memoryCache = cacheData;
   lastFetchTime = Date.now();
 
-  const isDev = process.env.NODE_ENV !== 'production';
-
-  // 1. Sync locally first
   try {
     const cachePath = resolveCachePath();
     fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), 'utf8');
   } catch (e) {}
 
-  // 2. Try saving to Telegram (non-blocking if successful)
-  const tgSuccess = await saveDeviceCacheToTelegram(cacheData);
-  if (tgSuccess) {
-    console.log("[Unified Cache] Successfully persisted and pinned update on Telegram.");
-    return true;
+  try {
+    // 1. Fetch current registry row first
+    const { data } = await supabaseAdmin
+      .from('platform_settings')
+      .select('setting_value')
+      .eq('setting_key', 'device_cache')
+      .maybeSingle();
+
+    let reg: any = data?.setting_value || { type: 'unified_telegram_registry' };
+    if (!reg || typeof reg !== 'object' || reg.type !== 'unified_telegram_registry') {
+      const legacyDevices = reg || {};
+      reg = {
+        type: 'unified_telegram_registry',
+        device_cache_url: null,
+        device_cache_fallback: legacyDevices,
+        image_cache_url: null,
+        image_cache_fallback: {}
+      };
+    }
+
+    // 2. Upload file to Telegram
+    const newTgUrl = await uploadJsonToTelegram('device_cache.json', cacheData, reg.device_cache_url);
+    if (newTgUrl) {
+      reg.device_cache_url = newTgUrl;
+    }
+    reg.device_cache_fallback = cacheData;
+
+    // 3. Upsert Registry row
+    const { error } = await supabaseAdmin
+      .from('platform_settings')
+      .upsert({
+        setting_key: 'device_cache',
+        setting_value: reg,
+        description: 'Unified Registry (Devices + Images proxy cache) stored in Telegram/DB'
+      }, { onConflict: 'setting_key' });
+
+    if (!error) {
+      console.log("[Unified Device Cache] Unified registry updated successfully in Supabase & Telegram.");
+      return true;
+    } else {
+      console.error("[Unified Device Cache] DB registration failed:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Unified Device Cache] Telegram failed, falling back to pure DB save.", err.message);
   }
 
-  if (isDev) {
-    console.error("[Unified Cache] Failed to save/update Telegram cache inside DEV mode. DB fallback skipped.");
-    return false;
-  }
-
-  // 3. If Telegram failed or is not configured, fall back to Supabase
-  console.log("[Unified Cache] Telegram storage skipped or failed. Falling back to Supabase DB...");
   return saveDeviceCacheToDb(cacheData);
+}
+
+/**
+ * Unified Image Cache Loader: Loads the persistent image proxy map from Telegram
+ */
+export async function loadImageCacheUnified(): Promise<Record<string, string>> {
+  const now = Date.now();
+  if (memoryImageCache && (now - lastImageFetchTime < MEMORY_CACHE_TTL)) {
+    return memoryImageCache;
+  }
+
+  // Check local container cache first
+  try {
+    const p = resolveImageCachePath();
+    if (fs.existsSync(p)) {
+      const content = fs.readFileSync(p, 'utf8');
+      if (content && content.trim().startsWith('{')) {
+        const parsed = JSON.parse(content);
+        if (Object.keys(parsed).length > 0) {
+          memoryImageCache = parsed;
+          lastImageFetchTime = now;
+          return parsed;
+        }
+      }
+    }
+  } catch (err) {}
+
+  try {
+    const { data } = await supabaseAdmin
+      .from('platform_settings')
+      .select('setting_value')
+      .eq('setting_key', 'device_cache')
+      .maybeSingle();
+
+    if (data && data.setting_value) {
+      const reg = data.setting_value as any;
+      if (reg && reg.type === 'unified_telegram_registry' && reg.image_cache_url) {
+        console.log("[Image Cache] Loading image cache from Registered Telegram URL:", reg.image_cache_url);
+        const tgData = await loadJsonFromTelegramUrl(reg.image_cache_url);
+        if (tgData) {
+          memoryImageCache = tgData;
+          lastImageFetchTime = now;
+          
+          // Write local copy for quick reuse across the same worker process
+          try {
+            fs.writeFileSync(resolveImageCachePath(), JSON.stringify(tgData, null, 2), 'utf8');
+          } catch (e) {}
+
+          return tgData;
+        }
+        if (reg.image_cache_fallback) {
+          return reg.image_cache_fallback;
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn("[Unified Image Cache] Failed to fetch layout from Supabase/Telegram:", err.message);
+  }
+
+  return {};
+}
+
+/**
+ * Unified Image Cache Saver: Saves image cache maps onto Telegram and updates the registry
+ */
+export async function saveImageCacheUnified(imageCacheData: Record<string, string>): Promise<boolean> {
+  memoryImageCache = imageCacheData;
+  lastImageFetchTime = Date.now();
+
+  // Update local filesystem
+  try {
+    fs.writeFileSync(resolveImageCachePath(), JSON.stringify(imageCacheData, null, 2), 'utf8');
+  } catch (e) {}
+
+  try {
+    // 1. Fetch current registry
+    const { data } = await supabaseAdmin
+      .from('platform_settings')
+      .select('setting_value')
+      .eq('setting_key', 'device_cache')
+      .maybeSingle();
+
+    let reg: any = data?.setting_value || { type: 'unified_telegram_registry' };
+    if (!reg || typeof reg !== 'object' || reg.type !== 'unified_telegram_registry') {
+      const legacyDevices = reg || {};
+      reg = {
+        type: 'unified_telegram_registry',
+        device_cache_url: null,
+        device_cache_fallback: legacyDevices,
+        image_cache_url: null,
+        image_cache_fallback: {}
+      };
+    }
+
+    // 2. Upload file to Telegram
+    const oldUrl = reg.image_cache_url;
+    console.log(`[Image Cache] Uploading fresh image_cache.json to Telegram...`);
+    const newTgUrl = await uploadJsonToTelegram('image_cache.json', imageCacheData, oldUrl);
+    
+    if (newTgUrl) {
+      reg.image_cache_url = newTgUrl;
+      reg.image_cache_fallback = imageCacheData;
+      
+      // 3. Update the registry in Supabase
+      const { error } = await supabaseAdmin
+        .from('platform_settings')
+        .upsert({
+          setting_key: 'device_cache',
+          setting_value: reg,
+          description: 'Unified Registry (Devices + Images proxy cache) stored in Telegram/DB'
+        }, { onConflict: 'setting_key' });
+        
+      if (!error) {
+        console.log("[Unified Image Cache] Image proxy cache successfully persisted and registered on Telegram.");
+        return true;
+      } else {
+        console.error("[Unified Image Cache] DB registration failed:", error.message);
+      }
+    }
+  } catch (err: any) {
+    console.error("[Unified Image Cache] Failed to save/update image cache on Telegram:", err.message);
+  }
+  return false;
 }

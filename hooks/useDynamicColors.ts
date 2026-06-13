@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase, supabaseUrl } from '../services/supabaseClient';
+import { getImage } from '../services/imageCachingService';
 
 export interface DynamicColors {
     background: string;
@@ -143,25 +144,31 @@ const fetchAndProcessColors = (imageUrl: string): Promise<DynamicColors> => {
             };
         };
 
-        const PROXY_URL = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
-        
-        fetch(PROXY_URL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Proxy fetch failed with status ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    throw new Error(`Proxy function error: ${data.error}`);
-                }
-                processImageFromSrc(data.dataUrl);
-            })
-            .catch(error => {
-                console.warn(`Image proxy failed for ${imageUrl}, falling back to direct load. Error: ${error.message}`);
-                processImageFromSrc(imageUrl);
-            });
+        // Check IndexedDB local cache first (cached under 2 hours)
+        getImage(imageUrl).then(cachedDataUrl => {
+            if (cachedDataUrl) {
+                processImageFromSrc(cachedDataUrl);
+            } else {
+                const PROXY_URL = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                fetch(PROXY_URL)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Proxy fetch failed with status ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(`Proxy function error: ${data.error}`);
+                        }
+                        processImageFromSrc(data.dataUrl);
+                    })
+                    .catch(error => {
+                        console.warn(`Image proxy failed for ${imageUrl}, falling back to direct load. Error: ${error.message}`);
+                        processImageFromSrc(imageUrl);
+                    });
+            }
+        });
     });
 
     pendingFetches.set(imageUrl, promise);
