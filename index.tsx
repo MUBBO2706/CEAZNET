@@ -3,7 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { ToastProvider } from './components/ToastManager';
+import { ToastProvider } from './components/ToastSystem';
 
 async function mountApp() {
   let DevConsole: React.ComponentType | (() => null) = () => null;

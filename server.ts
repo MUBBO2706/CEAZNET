@@ -16,7 +16,7 @@ import {
   loadDeviceCacheUnified, 
   saveDeviceCacheUnified, 
   loadDeviceCacheFromDb 
-} from './src/utils/deviceCacheShared.js';
+} from './utils/deviceCacheShared.js';
 
 // getPersistentCache and setPersistentCache are defined as asynchronous functions below supabaseAdmin initialization.
 
@@ -57,7 +57,7 @@ puppeteer.use(StealthPlugin());
 const dbCache = new NodeCache({ stdTTL: 3600, checkperiod: 120 });
 
 // Simple way to use the Supabase client already configured
-import { supabase } from './src/services/supabaseClient';
+import { supabase } from './services/supabaseClient';
 
 // Import session endpoints
 import trackSessionHandler from './api/sessions/track.js';
@@ -348,23 +348,6 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
-
-  app.use((req, res, next) => {
-    if (req.path === '/api/db' || req.path === '/api/db/') {
-      req.url = '/api/db/query';
-    } else if (req.path === '/api/device-mapper' || req.path === '/api/device-mapper/') {
-      if (req.query.action === 'cache' && req.method === 'GET') req.url = '/api/device-mapper/cache';
-      else if (req.query.action === 'cache_delete') req.url = '/api/device-mapper/cache/delete';
-      else if (req.query.action === 'cache') req.url = '/api/device-mapper/cache';
-    } else if (req.path === '/api/sessions' || req.path === '/api/sessions/') {
-      if (req.query.action === 'track') req.url = '/api/sessions/track';
-      else if (req.query.action === 'terminate') req.url = '/api/sessions/terminate';
-      else if (req.query.action === 'delete') req.url = '/api/sessions/delete';
-    } else if (req.path === '/api/url-reader' || req.path === '/api/url-reader/') {
-      if (req.query.action === 'follow_up') req.url = '/api/url-reader/follow-up';
-    }
-    next();
-  });
 
   // Database Query Caching API
   app.post("/api/db/query", async (req, res) => {

@@ -49,7 +49,7 @@ import { SystemBanner } from "./components/SystemBanner";
 import { fetchNews } from "./services/newsService";
 import Sidebar from "./components/Sidebar";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
-import { useToast } from "./components/ToastManager";
+import { useToast } from "./components/ToastSystem";
 
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -617,7 +617,7 @@ const App: React.FC = () => {
 
         const batteryPercentage = await getDeviceBattery();
 
-        const response = await fetch("/api/sessions?action=track", {
+        const response = await fetch("/api/sessions/track", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
