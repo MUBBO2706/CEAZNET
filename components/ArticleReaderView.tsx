@@ -484,7 +484,7 @@ ${userMessage.content}
 
             const clientApiKey = await getSetting<string>('kalina_api_key', user);
 
-            const response = await fetch('/api/url-reader/follow-up', {
+            const response = await fetch('/api/url-reader?action=follow-up', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

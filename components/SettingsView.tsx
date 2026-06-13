@@ -125,7 +125,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     if (!session) return;
     setIsTerminatingId(id);
     try {
-      const response = await fetch("/api/sessions/terminate", {
+      const response = await fetch("/api/sessions?action=terminate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,7 +153,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   const handleDeleteSession = async (id: string) => {
     if (!session) return;
     try {
-      const response = await fetch("/api/sessions/delete", {
+      const response = await fetch("/api/sessions?action=delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

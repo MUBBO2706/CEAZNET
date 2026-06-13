@@ -526,7 +526,7 @@ export const DevConsole = () => {
 
     const fetchCacheData = async () => {
         try {
-            const response = await fetch('/api/device-mapper/cache');
+            const response = await fetch('/api/device-mapper?action=cache_list');
             if (response.ok) {
                 const data = await response.json();
                 setCacheData(data);
@@ -1304,7 +1304,7 @@ export const DevConsole = () => {
                                 setIsSaving(true);
                                 setCacheStatusMessage('');
                                 try {
-                                    const response = await fetch('/api/device-mapper/cache', {
+                                    const response = await fetch('/api/device-mapper?action=cache_update', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ model: newModel, name: newName || null })
@@ -1433,7 +1433,7 @@ export const DevConsole = () => {
                                                                     onClick={async (e) => {
                                                                         e.stopPropagation();
                                                                         try {
-                                                                            const response = await fetch('/api/device-mapper/cache/delete', {
+                                                                            const response = await fetch('/api/device-mapper?action=cache_delete', {
                                                                                 method: 'POST',
                                                                                 headers: { 'Content-Type': 'application/json' },
                                                                                 body: JSON.stringify({ model })

@@ -133,6 +133,65 @@ async function executeWithGeminiRotation<T>(
 }
 
 export default async function handler(req: any, res: any) {
+  let action = req.query?.action;
+  if (!action && req.url) {
+     try {
+       const urlObj = new URL(req.url, 'http://localhost');
+       action = urlObj.searchParams.get('action');
+     } catch(e) {}
+  }
+
+  if (action === 'cache_list' && req.method === 'GET') {
+    try {
+      const data = await loadDeviceCacheUnified();
+      return res.status(200).json(data);
+    } catch (err: any) {
+      console.error("Error reading cache list:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  if (action === 'cache_update' && req.method === 'POST') {
+    try {
+      const { model, name } = req.body;
+      if (!model) return res.status(400).json({ error: "Model parameter is required" });
+      const cleanModel = model.toString().trim().toUpperCase();
+      const cleanName = name === "" || name === null ? null : name.toString().trim();
+      
+      const data = await loadDeviceCacheUnified();
+      data[cleanModel] = cleanName;
+      await saveDeviceCacheUnified(data);
+      
+      return res.status(200).json({ success: true, model: cleanModel, name: cleanName });
+    } catch (err: any) {
+      console.error("Error adding/updating cache entry:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  if (action === 'cache_delete' && req.method === 'POST') {
+    try {
+      const { model } = req.body;
+      if (!model) return res.status(400).json({ error: "Model parameter is required" });
+      const cleanModel = model.toString().trim().toUpperCase();
+      
+      const data = await loadDeviceCacheUnified();
+      let found = false;
+      for (const key of Object.keys(data)) {
+        if (key.trim().toUpperCase() === cleanModel) {
+          delete data[key];
+          found = true;
+        }
+      }
+      
+      if (found) await saveDeviceCacheUnified(data);
+      return res.status(200).json({ success: true, model: cleanModel });
+    } catch (err: any) {
+      console.error("Error deleting cache entry:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }

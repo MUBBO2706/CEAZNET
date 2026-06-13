@@ -617,7 +617,7 @@ const App: React.FC = () => {
 
         const batteryPercentage = await getDeviceBattery();
 
-        const response = await fetch("/api/sessions/track", {
+        const response = await fetch("/api/sessions?action=track", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
