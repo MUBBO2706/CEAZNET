@@ -307,33 +307,74 @@ export const saveMultipleSettings = async (settings: Record<string, any>, user: 
     }
 };
 
+// Article Conversations Cache and Request Coalescing
+const articleConvoCache = new Map<string, { data: ArticleConversation | undefined; timestamp: number }>();
+const articleConvoPending = new Map<string, Promise<ArticleConversation | undefined>>();
+
+const publicArticleCacheStore = new Map<string, { data: { title: string; content: string } | null; timestamp: number }>();
+const publicArticleCachePending = new Map<string, Promise<{ title: string; content: string } | null>>();
+
+const interactionsCache = new Map<string, { data: UserArticleInteraction; timestamp: number }>();
+const interactionsPending = new Map<string, Promise<any>>();
+
 // Article Conversations
 export const getArticleConversation = async (articleUrl: string, user: User | null): Promise<ArticleConversation | undefined> => {
-    if (user) {
-        const { data, error } = await supabase
-            .from('article_conversations')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('article_url', articleUrl)
-            .maybeSingle();
-        if (error && error.code !== 'PGRST116') {
-            logSupabaseError("Error fetching remote article conversation", error);
-            return undefined;
-        }
-        return data ? {
-            id: data.id,
-            user_id: data.user_id,
-            article_url: data.article_url,
-            article_title: data.article_title,
-            messages: data.messages || [],
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-        } : undefined;
+    if (!user) {
+        return getFromLocalDB<ArticleConversation>(STORES.ARTICLE_CONVERSATIONS, articleUrl);
     }
-    return getFromLocalDB<ArticleConversation>(STORES.ARTICLE_CONVERSATIONS, articleUrl);
+
+    const key = `${user.id}:${articleUrl}`;
+    const cached = articleConvoCache.get(key);
+    const CACHE_TTL = 30000; // 30 seconds
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+        return cached.data;
+    }
+
+    if (articleConvoPending.has(key)) {
+        return articleConvoPending.get(key);
+    }
+
+    const promise = (async () => {
+        try {
+            const { data, error } = await supabase
+                .from('article_conversations')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('article_url', articleUrl)
+                .maybeSingle();
+            if (error && error.code !== 'PGRST116') {
+                logSupabaseError("Error fetching remote article conversation", error);
+                return undefined;
+            }
+            const res = data ? {
+                id: data.id,
+                user_id: data.user_id,
+                article_url: data.article_url,
+                article_title: data.article_title,
+                messages: data.messages || [],
+                createdAt: data.created_at,
+                updatedAt: data.updated_at,
+            } : undefined;
+
+            articleConvoCache.set(key, { data: res, timestamp: Date.now() });
+            return res;
+        } catch (err) {
+            console.error("Failed to fetch article conversation", err);
+            return undefined;
+        } finally {
+            articleConvoPending.delete(key);
+        }
+    })();
+
+    articleConvoPending.set(key, promise);
+    return promise;
 };
+
 export const saveArticleConversation = async (convo: ArticleConversation, user: User | null) => {
     if (user) {
+        const key = `${user.id}:${convo.article_url}`;
+        articleConvoCache.set(key, { data: convo, timestamp: Date.now() });
+
         const { error } = await supabase.from('article_conversations').upsert({
             user_id: user.id,
             article_url: convo.article_url,
@@ -349,19 +390,43 @@ export const saveArticleConversation = async (convo: ArticleConversation, user: 
 
 // Public Article Cache
 export const getPublicArticleCache = async (articleUrl: string): Promise<{ title: string; content: string } | null> => {
-    const { data, error } = await supabase
-        .from('public_article_cache')
-        .select('title, content')
-        .eq('article_url', articleUrl)
-        .maybeSingle();
-    if (error && error.code !== 'PGRST116') {
-        logSupabaseError("Error fetching public article cache", error);
-        return null;
+    const cached = publicArticleCacheStore.get(articleUrl);
+    const CACHE_TTL = 60000; // 1 minute cache
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+        return cached.data;
     }
-    return data;
+
+    if (publicArticleCachePending.has(articleUrl)) {
+        return publicArticleCachePending.get(articleUrl)!;
+    }
+
+    const promise = (async () => {
+        try {
+            const { data, error } = await supabase
+                .from('public_article_cache')
+                .select('title, content')
+                .eq('article_url', articleUrl)
+                .maybeSingle();
+            if (error && error.code !== 'PGRST116') {
+                logSupabaseError("Error fetching public article cache", error);
+                return null;
+            }
+            publicArticleCacheStore.set(articleUrl, { data, timestamp: Date.now() });
+            return data;
+        } catch (err) {
+            console.error("Failed to fetch public article cache", err);
+            return null;
+        } finally {
+            publicArticleCachePending.delete(articleUrl);
+        }
+    })();
+
+    publicArticleCachePending.set(articleUrl, promise);
+    return promise;
 };
 
 export const savePublicArticleCache = async (articleUrl: string, title: string, content: string): Promise<void> => {
+    publicArticleCacheStore.set(articleUrl, { data: { title, content }, timestamp: Date.now() });
     const { error } = await supabase
         .from('public_article_cache')
         .upsert({
@@ -426,23 +491,103 @@ export const getBookmarkCount = async (user: User | null): Promise<number> => {
 };
 
 export const getInteractions = async (user: User | null, articleUrls: string[]): Promise<UserArticleInteraction[]> => {
-    if (user && articleUrls.length > 0) {
-        const { data, error } = await supabase
-            .from('user_article_interactions')
-            .select('article_url, liked, bookmarked')
-            .in('article_url', articleUrls)
-            .eq('user_id', user.id);
-        if (error) {
-            logSupabaseError("Error fetching article interactions", error);
-            return [];
-        }
-        return data as UserArticleInteraction[];
+    if (!user) {
+        return getLocalInteractions(articleUrls);
     }
-    return getLocalInteractions(articleUrls);
+    if (articleUrls.length === 0) {
+        return [];
+    }
+
+    const CACHE_TTL = 30000; // 30 seconds TTL for interactions
+    const results: UserArticleInteraction[] = [];
+    const missingUrls: string[] = [];
+
+    for (const url of articleUrls) {
+        const key = `${user.id}:${url}`;
+        const cached = interactionsCache.get(key);
+        if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+            results.push(cached.data);
+        } else {
+            missingUrls.push(url);
+        }
+    }
+
+    if (missingUrls.length === 0) {
+        return results;
+    }
+
+    const pendingKey = `${user.id}:${missingUrls.slice().sort().join(',')}`;
+    if (interactionsPending.has(pendingKey)) {
+        const pendingResults = await interactionsPending.get(pendingKey)!;
+        const combined = [...results];
+        for (const item of pendingResults) {
+            if (!combined.some(c => c.article_url === item.article_url)) {
+                combined.push(item);
+            }
+        }
+        return combined;
+    }
+
+    const promise = (async () => {
+        try {
+            const { data, error } = await supabase
+                .from('user_article_interactions')
+                .select('article_url, liked, bookmarked')
+                .in('article_url', missingUrls)
+                .eq('user_id', user.id);
+            if (error) {
+                logSupabaseError("Error fetching article interactions", error);
+                return [];
+            }
+            const fetched = data as UserArticleInteraction[];
+            
+            const fetchedMap = new Map<string, UserArticleInteraction>();
+            for (const item of fetched) {
+                fetchedMap.set(item.article_url, item);
+                const key = `${user.id}:${item.article_url}`;
+                interactionsCache.set(key, { data: item, timestamp: Date.now() });
+            }
+
+            for (const url of missingUrls) {
+                if (!fetchedMap.has(url)) {
+                    const defaultInter = { article_url: url, liked: false, bookmarked: false };
+                    const key = `${user.id}:${url}`;
+                    interactionsCache.set(key, { data: defaultInter, timestamp: Date.now() });
+                }
+            }
+
+            return fetched;
+        } catch (err) {
+            console.error("Failed to fetch interactions", err);
+            return [];
+        } finally {
+            interactionsPending.delete(pendingKey);
+        }
+    })();
+
+    interactionsPending.set(pendingKey, promise);
+    const fetchedResults = await promise;
+
+    const finalResults = [...results];
+    for (const item of fetchedResults) {
+        if (!finalResults.some(f => f.article_url === item.article_url)) {
+            finalResults.push(item);
+        }
+    }
+    for (const url of articleUrls) {
+        if (!finalResults.some(f => f.article_url === url)) {
+            finalResults.push({ article_url: url, liked: false, bookmarked: false });
+        }
+    }
+
+    return finalResults;
 };
 
 export const saveInteraction = async (user: User | null, interaction: UserArticleInteraction) => {
     if (user) {
+        const key = `${user.id}:${interaction.article_url}`;
+        interactionsCache.set(key, { data: interaction, timestamp: Date.now() });
+
         const { error } = await supabase
             .from('user_article_interactions')
             .upsert({ ...interaction, user_id: user.id }, { onConflict: 'user_id, article_url' });

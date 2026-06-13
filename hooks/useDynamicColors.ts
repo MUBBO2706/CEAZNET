@@ -20,6 +20,7 @@ export const defaultColors: DynamicColors = {
 
 // Module-level cache to store results and prevent re-computation for the same image URL.
 const colorCache = new Map<string, DynamicColors>();
+const pendingFetches = new Map<string, Promise<DynamicColors>>();
 
 // --- Color Conversion Utilities ---
 interface HSL { h: number; s: number; l: number; }
@@ -64,26 +65,11 @@ const generatePalette = (r: number, g: number, b: number): DynamicColors => {
     };
 };
 
-export const useDynamicColors = (imageUrl: string | null, enabled: boolean = true): { colors: DynamicColors, isLoading: boolean } => {
-    const [palette, setPalette] = useState<DynamicColors | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+const fetchAndProcessColors = (imageUrl: string): Promise<DynamicColors> => {
+    if (colorCache.has(imageUrl)) return Promise.resolve(colorCache.get(imageUrl)!);
+    if (pendingFetches.has(imageUrl)) return pendingFetches.get(imageUrl)!;
 
-    useEffect(() => {
-        if (!enabled || !imageUrl) {
-            setPalette(defaultColors);
-            setIsLoading(false);
-            return;
-        }
-
-        // Use cached result if available to prevent re-computation and lag.
-        if (colorCache.has(imageUrl)) {
-            setPalette(colorCache.get(imageUrl)!);
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-
+    const promise = new Promise<DynamicColors>((resolve) => {
         const processImageFromSrc = (imageSrc: string) => {
             const img = new Image();
             if (!imageSrc.startsWith('data:')) {
@@ -139,28 +125,24 @@ export const useDynamicColors = (imageUrl: string | null, enabled: boolean = tru
                     }
 
                     colorCache.set(imageUrl, newPalette);
-                    setPalette(newPalette);
-
+                    resolve(newPalette);
                 } catch (error) {
-                    // This catch block will handle CORS errors from getImageData on direct load
                     console.warn(`CORS error processing image directly for dynamic colors:`, error, imageUrl);
-                    setPalette(defaultColors);
                     colorCache.set(imageUrl, defaultColors);
+                    resolve(defaultColors);
                 } finally {
-                    setIsLoading(false);
+                    pendingFetches.delete(imageUrl);
                 }
             };
 
             img.onerror = () => {
-                // This handles network errors or if the image truly doesn't exist
                 console.warn("Failed to load image for color extraction (onerror):", imageUrl);
-                setPalette(defaultColors);
                 colorCache.set(imageUrl, defaultColors);
-                setIsLoading(false);
+                pendingFetches.delete(imageUrl);
+                resolve(defaultColors);
             };
         };
-        
-        // Use the Edge Function URL for the proxy
+
         const PROXY_URL = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
         
         fetch(PROXY_URL)
@@ -178,8 +160,42 @@ export const useDynamicColors = (imageUrl: string | null, enabled: boolean = tru
             })
             .catch(error => {
                 console.warn(`Image proxy failed for ${imageUrl}, falling back to direct load. Error: ${error.message}`);
-                // Fallback to direct load. This will likely fail for the reported URLs, but it's a safe fallback.
                 processImageFromSrc(imageUrl);
+            });
+    });
+
+    pendingFetches.set(imageUrl, promise);
+    return promise;
+};
+
+export const useDynamicColors = (imageUrl: string | null, enabled: boolean = true): { colors: DynamicColors, isLoading: boolean } => {
+    const [palette, setPalette] = useState<DynamicColors | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!enabled || !imageUrl) {
+            setPalette(defaultColors);
+            setIsLoading(false);
+            return;
+        }
+
+        if (colorCache.has(imageUrl)) {
+            setPalette(colorCache.get(imageUrl)!);
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+
+        fetchAndProcessColors(imageUrl)
+            .then(newPalette => {
+                setPalette(newPalette);
+            })
+            .catch(() => {
+                setPalette(defaultColors);
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
 
     }, [imageUrl, enabled]);

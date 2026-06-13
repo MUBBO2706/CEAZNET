@@ -86,9 +86,16 @@ function getEnvValue(key: string): string | undefined {
   return undefined;
 }
 
-const supabaseAdminUrl = getEnvValue('SUPABASE_URL') || getEnvValue('VITE_SUPABASE_URL') || 'https://itjurgqbvsqniphuehiz.supabase.co';
-const supabaseAdminKey = getEnvValue('SUPABASE_SERVICE_ROLE_KEY') || getEnvValue('SUPABASE_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0anVyZ3FidnNxbmlwaHVlaGl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODM5NTgsImV4cCI6MjA5MDg1OTk1OH0.WSyZbgJ7rcbaTGCwURHTxQCHU9__F_ql75L6upVsVag';
-const supabaseAdmin = createClient(supabaseAdminUrl, supabaseAdminKey);
+const isVercel = typeof process !== 'undefined' && (process.env.VERCEL === '1' || process.env.NOW_BUILD === '1');
+const supabaseAdminUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || (isVercel ? '' : 'https://itjurgqbvsqniphuehiz.supabase.co');
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || (isVercel ? '' : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0anVyZ3FidnNxbmlwaHVlaGl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODM5NTgsImV4cCI6MjA5MDg1OTk1OH0.WSyZbgJ7rcbaTGCwURHTxQCHU9__F_ql75L6upVsVag');
+const supabaseAdmin = (supabaseAdminUrl && supabaseAdminKey)
+  ? createClient(supabaseAdminUrl, supabaseAdminKey)
+  : new Proxy({}, {
+      get: () => {
+        throw new Error("SUPABASE_URL and SUPABASE_KEY environment variables are required in production.");
+      }
+    }) as any;
 
 // Caching is fully integrated via our central shared './utils/deviceCacheShared.js' module.
 
@@ -523,12 +530,12 @@ async function startServer() {
     }
   });
 
-  app.all('/api/device-mapper*', async (req, res) => {
+  app.all('/api/device-mapper', async (req, res) => {
     await deviceMapperHandler(req, res);
   });
 
   // User Session & Active Devices Tracking APIs
-  app.all("/api/sessions*", async (req, res) => {
+  app.all("/api/sessions", async (req, res) => {
     await sessionsHandler(req, res);
   });
 
@@ -596,7 +603,7 @@ async function startServer() {
   });
 
   // URL Reader Endpoint
-  app.all("/api/url-reader*", async (req, res) => {
+  app.all("/api/url-reader", async (req, res) => {
     await urlReaderHandler(req, res);
   });
 

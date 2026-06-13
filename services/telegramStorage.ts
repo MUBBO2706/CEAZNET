@@ -4,8 +4,13 @@
 // We use import.meta.env for the keys. 
 // In a real production app, you might want to move this to a Supabase Edge Function to hide the bot token.
 // But for this "jugaad", running it client-side works perfectly and is easy to set up.
-export const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8651559829:AAE8dajbB7yB9Nc8WYxV-b4lBp8z0CBTLC8";
-export const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "5965153830";
+const isDev = import.meta.env.DEV;
+export const TELEGRAM_BOT_TOKEN = isDev 
+  ? "8403959177:AAFJrkcRCeTHTyS5uVBwlLKTE79dwq_HYzU"
+  : (import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8651559829:AAE8dajbB7yB9Nc8WYxV-b4lBp8z0CBTLC8");
+export const TELEGRAM_CHAT_ID = isDev 
+  ? "-1003984567697"
+  : (import.meta.env.VITE_TELEGRAM_CHAT_ID || "5965153830");
 
 export const sendTelegramAlert = async (text: string): Promise<boolean> => {
     try {

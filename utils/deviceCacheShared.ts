@@ -54,6 +54,15 @@ export function resolveCachePath(): string {
 
 // Dynamically fetch and resolve Telegram Bot secrets so that changes can be made from environment or Supabase platform settings!
 export async function getTelegramCredentials(): Promise<{ token: string; chatId: string; isConfigured: boolean }> {
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    return {
+      token: "8403959177:AAFJrkcRCeTHTyS5uVBwlLKTE79dwq_HYzU",
+      chatId: "-1003984567697",
+      isConfigured: true
+    };
+  }
+
   let token = getEnvValue('TELEGRAM_BOT_TOKEN') || getEnvValue('VITE_TELEGRAM_BOT_TOKEN');
   let chatId = getEnvValue('TELEGRAM_CHAT_ID') || getEnvValue('VITE_TELEGRAM_CHAT_ID');
 
@@ -392,6 +401,8 @@ export async function loadDeviceCacheUnified(): Promise<Record<string, string | 
     return memoryCache;
   }
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
   // 1. Try from Telegram
   const tgCache = await loadDeviceCacheFromTelegram();
   if (tgCache) {
@@ -405,6 +416,13 @@ export async function loadDeviceCacheUnified(): Promise<Record<string, string | 
     } catch (e) {}
     
     return tgCache;
+  }
+
+  if (isDev) {
+    console.warn("[Telegram Cache] Telegram cache load failed or was empty in DEV mode. Returning empty record instead of Supabase fallback.");
+    memoryCache = {};
+    lastFetchTime = now;
+    return {};
   }
 
   // 2. Fallback to Supabase
@@ -422,6 +440,8 @@ export async function saveDeviceCacheUnified(cacheData: Record<string, string | 
   memoryCache = cacheData;
   lastFetchTime = Date.now();
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
   // 1. Sync locally first
   try {
     const cachePath = resolveCachePath();
@@ -431,8 +451,13 @@ export async function saveDeviceCacheUnified(cacheData: Record<string, string | 
   // 2. Try saving to Telegram (non-blocking if successful)
   const tgSuccess = await saveDeviceCacheToTelegram(cacheData);
   if (tgSuccess) {
-    console.log("[Unified Cache] Successfully persisted and pinned update on Telegram. Skipping heavy DB updates!");
+    console.log("[Unified Cache] Successfully persisted and pinned update on Telegram.");
     return true;
+  }
+
+  if (isDev) {
+    console.error("[Unified Cache] Failed to save/update Telegram cache inside DEV mode. DB fallback skipped.");
+    return false;
   }
 
   // 3. If Telegram failed or is not configured, fall back to Supabase

@@ -3,9 +3,16 @@ import { GoogleGenAI } from '@google/genai';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-const supabaseAdminUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://itjurgqbvsqniphuehiz.supabase.co';
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0anVyZ3FidnNxbmlwaHVlaGl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODM5NTgsImV4cCI6MjA5MDg1OTk1OH0.WSyZbgJ7rcbaTGCwURHTxQCHU9__F_ql75L6upVsVag';
-const supabaseAdmin = createClient(supabaseAdminUrl, supabaseAdminKey);
+const isVercel = typeof process !== 'undefined' && (process.env.VERCEL === '1' || process.env.NOW_BUILD === '1');
+const supabaseAdminUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || (isVercel ? '' : 'https://itjurgqbvsqniphuehiz.supabase.co');
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || (isVercel ? '' : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0anVyZ3FidnNxbmlwaHVlaGl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODM5NTgsImV4cCI6MjA5MDg1OTk1OH0.WSyZbgJ7rcbaTGCwURHTxQCHU9__F_ql75L6upVsVag');
+const supabaseAdmin = (supabaseAdminUrl && supabaseAdminKey)
+  ? createClient(supabaseAdminUrl, supabaseAdminKey)
+  : new Proxy({}, {
+      get: () => {
+        throw new Error("SUPABASE_URL and SUPABASE_KEY environment variables are required in production.");
+      }
+    }) as any;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
