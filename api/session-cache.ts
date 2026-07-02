@@ -147,5 +147,19 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  if (action === 'delete_all' && req.method === 'POST') {
+    try {
+      const emptyData = {};
+      await saveSessionCacheUnified(emptyData, { deviceModel: 'Unknown Device' });
+      if (typeof (global as any).broadcastSessionUpdate === 'function') {
+        (global as any).broadcastSessionUpdate(emptyData);
+      }
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      console.error("Error clearing all sessions from cache:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }

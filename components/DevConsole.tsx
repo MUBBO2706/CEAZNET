@@ -909,11 +909,8 @@ export const DevConsole = () => {
     const [sessionDurationUnits, setSessionDurationUnits] = useState<Record<string, 's' | 'm'>>({});
     const [netDurationUnits, setNetDurationUnits] = useState<Record<string, 'ms' | 's' | 'm'>>({});
     const [tick, setTick] = useState(0);
-    const [sessionToDelete, setSessionToDelete] = useState<{
-        deviceHash: string;
-        username: string;
-        sessionId: string;
-    } | null>(null);
+    const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+    const [showMassDeleteConfirm, setShowMassDeleteConfirm] = useState(false);
 
     useEffect(() => {
         if (activeTab !== 'session-cache') return;
@@ -2335,7 +2332,17 @@ export const DevConsole = () => {
                         
                         <div className="flex-1 p-4 pb-4">
                             <h3 className="text-sm font-bold text-[var(--dev-console-text)] tracking-wider mb-4 border-b border-[var(--dev-console-border)] pb-2 flex items-center justify-between">
-                                Device Sessions Details
+                                <span>Device Sessions Details</span>
+                                {Object.keys(sessionCacheData).length > 0 && (
+                                    <button 
+                                        onClick={() => setShowMassDeleteConfirm(true)}
+                                        className="text-[10px] text-red-500 hover:text-red-600 flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded transition-all font-sans cursor-pointer font-bold"
+                                        title="Delete all sessions across all devices"
+                                    >
+                                        <Trash2 size={11} />
+                                        Clear All Sessions
+                                    </button>
+                                )}
                             </h3>
                             {isSessionCacheLoading && !isSessionCacheLoaded ? (
                                 <div className="h-40 flex flex-col items-center justify-center text-[var(--dev-console-text-muted)] space-y-3">
@@ -2601,18 +2608,56 @@ export const DevConsole = () => {
                                                                                             </div>
                                                                                         </td>
                                                                                         <td className="px-2 py-1.5 text-center">
-                                                                                            <button 
-                                                                                                className="text-red-500 hover:text-red-700 transition-colors p-1"
-                                                                                                onClick={() => {
-                                                                                                    setSessionToDelete({
-                                                                                                        deviceHash: hashId,
-                                                                                                        username,
-                                                                                                        sessionId: s.sessionId
-                                                                                                    });
-                                                                                                }}
-                                                                                            >
-                                                                                                <Trash2 size={12} />
-                                                                                            </button>
+                                                                                            {deletingSessionId === s.sessionId ? (
+                                                                                                <div className="flex items-center justify-center gap-1 font-sans">
+                                                                                                    <button 
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            setDeletingSessionId(null);
+                                                                                                        }}
+                                                                                                        className="px-1.5 py-0.5 bg-[var(--dev-console-bg)] text-[var(--dev-console-text)] border border-[var(--dev-console-border)] rounded text-[9px] cursor-pointer transition-colors hover:bg-[var(--dev-console-bg-hover)] shrink-0 font-medium"
+                                                                                                    >
+                                                                                                        Cancel
+                                                                                                    </button>
+                                                                                                    <button 
+                                                                                                        onClick={async (e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            try {
+                                                                                                                const res = await fetch('/api/session-cache?action=delete', {
+                                                                                                                    method: 'POST',
+                                                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                                                    body: JSON.stringify({
+                                                                                                                        deviceHash: hashId,
+                                                                                                                        username,
+                                                                                                                        sessionId: s.sessionId
+                                                                                                                    })
+                                                                                                                });
+                                                                                                                if (res.ok) {
+                                                                                                                    fetchSessionCacheData(true);
+                                                                                                                } else {
+                                                                                                                    console.error("Failed to delete session");
+                                                                                                                }
+                                                                                                            } catch (err) {
+                                                                                                                 console.error("Error deleting session", err);
+                                                                                                            } finally {
+                                                                                                                setDeletingSessionId(null);
+                                                                                                            }
+                                                                                                        }}
+                                                                                                        className="px-1.5 py-0.5 bg-red-600 dark:bg-red-900 text-white border border-red-700 dark:border-red-700/80 rounded font-bold cursor-pointer text-[9px] transition-colors hover:bg-red-700 shrink-0"
+                                                                                                    >
+                                                                                                        Delete
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                <button 
+                                                                                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                                                                                    onClick={() => {
+                                                                                                        setDeletingSessionId(s.sessionId);
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Trash2 size={12} />
+                                                                                                </button>
+                                                                                            )}
                                                                                         </td>
                                                                                     </tr>
                                                                                     );
@@ -3487,36 +3532,30 @@ export const DevConsole = () => {
                 </div>
             )}
 
-            {sessionToDelete && (
+            {showMassDeleteConfirm && (
                 <ConfirmationModal
-                    isOpen={sessionToDelete !== null}
-                    onClose={() => setSessionToDelete(null)}
+                    isOpen={showMassDeleteConfirm}
+                    onClose={() => setShowMassDeleteConfirm(false)}
                     onConfirm={async () => {
-                        if (!sessionToDelete) return;
                         try {
-                            const res = await fetch('/api/session-cache?action=delete', {
+                            const res = await fetch('/api/session-cache?action=delete_all', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    deviceHash: sessionToDelete.deviceHash,
-                                    username: sessionToDelete.username,
-                                    sessionId: sessionToDelete.sessionId
-                                })
+                                headers: { 'Content-Type': 'application/json' }
                             });
                             if (res.ok) {
                                 fetchSessionCacheData(true);
                             } else {
-                                console.error("Failed to delete session");
+                                console.error("Failed to clear all sessions");
                             }
                         } catch (e) {
-                            console.error("Error deleting session", e);
+                            console.error("Error clearing all sessions", e);
                         } finally {
-                            setSessionToDelete(null);
+                            setShowMassDeleteConfirm(false);
                         }
                     }}
-                    title="Delete Session Log"
-                    message="Are you sure you want to delete this session log? This action cannot be undone."
-                    confirmButtonText="Delete"
+                    title="Clear All Session Logs"
+                    message="Are you sure you want to delete ALL active and historical session logs across ALL devices? This action is destructive and cannot be undone."
+                    confirmButtonText="Delete All"
                     confirmButtonVariant="danger"
                 />
             )}
