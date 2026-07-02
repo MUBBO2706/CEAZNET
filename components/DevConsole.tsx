@@ -904,6 +904,9 @@ export const DevConsole = () => {
     // Session Cache states
     const [sessionCacheData, setSessionCacheData] = useState<Record<string, any>>({});
     const [sessionCacheSearch, setSessionCacheSearch] = useState('');
+    const [sessionCacheLimit, setSessionCacheLimit] = useState(100);
+    const [sessionCacheStatus, setSessionCacheStatus] = useState('all');
+    const [sessionCacheTime, setSessionCacheTime] = useState('all');
     const [isSessionCacheLoading, setIsSessionCacheLoading] = useState(false);
     const [isSessionCacheLoaded, setIsSessionCacheLoaded] = useState(false);
     const [sessionDurationUnits, setSessionDurationUnits] = useState<Record<string, 's' | 'm'>>({});
@@ -924,7 +927,16 @@ export const DevConsole = () => {
     const fetchSessionCacheData = async (force = false) => {
         setIsSessionCacheLoading(true);
         try {
-            const url = force ? '/api/session-cache?action=get&force=true' : '/api/session-cache?action=get';
+            const base = `/api/session-cache?action=get${force ? '&force=true' : ''}`;
+            const params = new URLSearchParams();
+            if (sessionCacheSearch) params.append('search', sessionCacheSearch);
+            if (sessionCacheLimit) params.append('limit', sessionCacheLimit.toString());
+            if (sessionCacheStatus !== 'all') params.append('status', sessionCacheStatus);
+            if (sessionCacheTime !== 'all') params.append('timeRange', sessionCacheTime);
+            
+            const query = params.toString();
+            const url = query ? `${base}&${query}` : base;
+
             const response = await fetch(url);
             const contentType = response.headers.get('content-type');
             if (response.ok && contentType && contentType.includes('application/json')) {
@@ -943,21 +955,22 @@ export const DevConsole = () => {
 
     useEffect(() => {
         if (activeTab !== 'session-cache') return;
-        
-        // Initial load only if not loaded yet
-        if (!isSessionCacheLoaded) {
+        const handler = setTimeout(() => {
             fetchSessionCacheData(true);
-        }
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [sessionCacheSearch, sessionCacheLimit, sessionCacheStatus, sessionCacheTime, activeTab]);
+
+    useEffect(() => {
+        if (activeTab !== 'session-cache') return;
         
         let eventSource: EventSource | null = null;
         try {
             eventSource = new EventSource('/api/session-cache/stream');
             eventSource.onmessage = (event: MessageEvent) => {
                 try {
-                    const updatedData = JSON.parse(event.data);
-                    if (updatedData) {
-                        setSessionCacheData(updatedData);
-                        setIsSessionCacheLoaded(true);
+                    if (event.data) {
+                        fetchSessionCacheData(true);
                     }
                 } catch (err) {
                     console.error("[SSE DevConsole Session Cache] Failed to parse stream event:", err);
@@ -1706,21 +1719,54 @@ export const DevConsole = () => {
             )}
             
             {activeTab === 'session-cache' && (
-                <div className="flex-none h-8 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] flex items-center justify-between px-3 w-full">
-                    <div className="flex items-center bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2 py-0.5 w-64 focus-within:border-[#007fd4] transition-colors">
-                        <Filter size={12} className="text-[var(--dev-console-text-muted)] mr-2" />
-                        <input 
-                            className="bg-transparent text-[11px] text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
-                            placeholder="Filter sessions by Hash, Model, IP or Location..." 
-                            value={sessionCacheSearch} 
-                            onChange={e => setSessionCacheSearch(e.target.value)} 
-                        />
-                        {sessionCacheSearch && <button onClick={() => setSessionCacheSearch('')}><X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" /></button>}
+                <div className="flex-none border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] flex flex-wrap items-center justify-between px-3 py-1.5 gap-2 w-full">
+                    <div className="flex flex-wrap items-center gap-2 flex-1">
+                        <div className="flex items-center bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2 py-0.5 w-64 focus-within:border-[#007fd4] transition-colors">
+                            <Filter size={12} className="text-[var(--dev-console-text-muted)] mr-2" />
+                            <input 
+                                className="bg-transparent text-[11px] text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
+                                placeholder="Search by email, browser, IP..." 
+                                value={sessionCacheSearch} 
+                                onChange={e => setSessionCacheSearch(e.target.value)} 
+                            />
+                            {sessionCacheSearch && <button onClick={() => setSessionCacheSearch('')}><X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" /></button>}
+                        </div>
+                        <select
+                            className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-0.5 outline-none font-sans"
+                            value={sessionCacheStatus}
+                            onChange={(e) => setSessionCacheStatus(e.target.value)}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="abandoned">Abandoned</option>
+                            <option value="terminated">Terminated</option>
+                            <option value="logged_out">Logged Out</option>
+                        </select>
+                        <select
+                            className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-0.5 outline-none font-sans"
+                            value={sessionCacheTime}
+                            onChange={(e) => setSessionCacheTime(e.target.value)}
+                        >
+                            <option value="all">All Time</option>
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                        </select>
+                        <select
+                            className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-0.5 outline-none font-sans"
+                            value={sessionCacheLimit}
+                            onChange={(e) => setSessionCacheLimit(Number(e.target.value))}
+                        >
+                            <option value={100}>Last 100 Sessions</option>
+                            <option value={500}>Last 500 Sessions</option>
+                            <option value={1000}>Last 1000 Sessions</option>
+                            <option value={0}>All (Warning: Slow)</option>
+                        </select>
                     </div>
                     <button 
                         onClick={() => fetchSessionCacheData(true)}
                         disabled={isSessionCacheLoading}
-                        className="text-[10px] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] rounded px-2 py-0.5 transition-colors disabled:opacity-50 font-sans"
+                        className="text-[10px] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] rounded px-2 py-1 transition-colors disabled:opacity-50 font-sans shrink-0"
                     >
                         {isSessionCacheLoading ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
                         Sync Now
@@ -2243,43 +2289,18 @@ export const DevConsole = () => {
                 {activeTab === 'session-cache' && (
                     <div className="flex-1 flex flex-col w-full h-full overflow-y-auto bg-[var(--dev-console-bg)] scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
                         {(() => {
-                            let totalAccounts = 0;
-                            let totalSessions = 0;
-                            let activeSessions = 0;
-                            let avgSessionTime = 0;
-                            let totalSessionTime = 0;
-                            let completedSessionsCount = 0;
-                            const locations = new Set<string>();
-
-                            Object.values(sessionCacheData).forEach((device: any) => {
-                                if (device.accounts) {
-                                    totalAccounts += Object.keys(device.accounts).length;
-                                    Object.values(device.accounts).forEach((account: any) => {
-                                        if (account.sessions) {
-                                            totalSessions += account.sessions.length;
-                                            account.sessions.forEach((s: any) => {
-                                                if (s.status === 'active') {
-                                                    activeSessions++;
-                                                }
-                                                if (s.duration) {
-                                                    totalSessionTime += s.duration;
-                                                    completedSessionsCount++;
-                                                }
-                                                if (s.location) {
-                                                    locations.add(s.location);
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-
-                            if (completedSessionsCount > 0) {
-                                avgSessionTime = Math.round(totalSessionTime / completedSessionsCount);
-                            }
-                            const avgSessionStr = avgSessionTime > 60 
-                                ? `${Math.floor(avgSessionTime / 60)}m ${avgSessionTime % 60}s`
-                                : `${avgSessionTime}s`;
+                            const summary = sessionCacheData._summary || {
+                                totalDevices: 0,
+                                activeSessions: 0,
+                                totalSessions: 0,
+                                activeUsers: 0,
+                                avgSessionTime: 0,
+                                locations: 0
+                            };
+                            
+                            const avgSessionStr = summary.avgSessionTime > 60 
+                                ? `${Math.floor(summary.avgSessionTime / 60)}m ${summary.avgSessionTime % 60}s`
+                                : `${summary.avgSessionTime}s`;
 
                             return (
                                 <div className="w-full shrink-0 border-b border-[var(--dev-console-border)] p-4 flex flex-col gap-4">
@@ -2287,28 +2308,28 @@ export const DevConsole = () => {
                                         <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col justify-between min-h-[95px]">
                                             <div>
                                                 <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-mono font-bold">TOTAL DEVICES</span>
-                                                <div className="text-xl font-bold text-[#818cf8] mt-1 font-mono">{Object.keys(sessionCacheData).length}</div>
+                                                <div className="text-xl font-bold text-[#818cf8] mt-1 font-mono">{summary.totalDevices}</div>
                                             </div>
                                             <span className="text-[9px] text-[var(--dev-console-text-muted)] mt-2.5 font-mono">Unique hardware profiles</span>
                                         </div>
                                         <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col justify-between min-h-[95px]">
                                             <div>
                                                 <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-mono font-bold">ACTIVE SESSIONS</span>
-                                                <div className="text-xl font-bold text-[#10b981] mt-1 font-mono">{activeSessions}</div>
+                                                <div className="text-xl font-bold text-[#10b981] mt-1 font-mono">{summary.activeSessions}</div>
                                             </div>
                                             <span className="text-[9px] text-[var(--dev-console-text-muted)] mt-2.5 font-mono">Currently live connections</span>
                                         </div>
                                         <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col justify-between min-h-[95px]">
                                             <div>
                                                 <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-mono font-bold">TOTAL SESSIONS</span>
-                                                <div className="text-xl font-bold text-[var(--dev-console-text)] mt-1 font-mono">{totalSessions}</div>
+                                                <div className="text-xl font-bold text-[var(--dev-console-text)] mt-1 font-mono">{summary.totalSessions}</div>
                                             </div>
                                             <span className="text-[9px] text-[var(--dev-console-text-muted)] mt-2.5 font-mono">Lifetime total connections</span>
                                         </div>
                                         <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col justify-between min-h-[95px]">
                                             <div>
                                                 <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-mono font-bold">ACTIVE USERS</span>
-                                                <div className="text-xl font-bold text-[#eab308] mt-1 font-mono">{totalAccounts}</div>
+                                                <div className="text-xl font-bold text-[#eab308] mt-1 font-mono">{summary.activeUsers}</div>
                                             </div>
                                             <span className="text-[9px] text-[var(--dev-console-text-muted)] mt-2.5 font-mono">Distinct user accounts</span>
                                         </div>
@@ -2322,7 +2343,7 @@ export const DevConsole = () => {
                                         <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col justify-between min-h-[95px]">
                                             <div>
                                                 <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-mono font-bold">LOCATIONS</span>
-                                                <div className="text-xl font-bold text-[#f43f5e] mt-1 font-mono">{locations.size}</div>
+                                                <div className="text-xl font-bold text-[#f43f5e] mt-1 font-mono">{summary.locations}</div>
                                             </div>
                                             <span className="text-[9px] text-[var(--dev-console-text-muted)] mt-2.5 font-mono">Unique geolocation spots</span>
                                         </div>
@@ -2333,8 +2354,15 @@ export const DevConsole = () => {
                         
                         <div className="flex-1 p-4 pb-4">
                             <h3 className="text-sm font-bold text-[var(--dev-console-text)] tracking-wider mb-4 border-b border-[var(--dev-console-border)] pb-2 flex items-center justify-between">
-                                <span>Device Sessions Details</span>
-                                {Object.keys(sessionCacheData).length > 0 && (
+                                <div className="flex items-center gap-3">
+                                    <span>Device Sessions Details</span>
+                                    {sessionCacheData._resultSummary && (
+                                        <span className="text-[10px] bg-[var(--dev-console-bg-hover)] px-2 py-0.5 rounded text-[var(--dev-console-text-muted)] font-mono">
+                                            Showing {sessionCacheData._resultSummary.returned} of {sessionCacheData._resultSummary.totalMatches} results
+                                        </span>
+                                    )}
+                                </div>
+                                {Object.keys(sessionCacheData).filter(k => k !== '_summary' && k !== '_resultSummary').length > 0 && (
                                     <button 
                                         onClick={() => setShowMassDeleteConfirm(true)}
                                         className="text-[10px] text-red-500 hover:text-red-600 flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded transition-all font-sans cursor-pointer font-bold"
@@ -2350,35 +2378,14 @@ export const DevConsole = () => {
                                     <Loader2 size={24} className="animate-spin text-[#818cf8]" />
                                     <span className="text-[11px] tracking-widest uppercase font-semibold">Loading Sessions...</span>
                                 </div>
-                            ) : Object.keys(sessionCacheData).length === 0 ? (
+                            ) : Object.keys(sessionCacheData).filter(k => k !== '_summary' && k !== '_resultSummary').length === 0 ? (
                                 <div className="h-40 flex items-center justify-center text-[var(--dev-console-text-muted)] text-[12px] italic">
                                     No sessions are cached yet.
                                 </div>
                             ) : (
                                 <div className="space-y-6">
                                     {Object.entries(sessionCacheData)
-                                        .filter(([hashId, data]: [string, any]) => {
-                                            if (!sessionCacheSearch) return true;
-                                            const search = sessionCacheSearch.toLowerCase();
-                                            if (hashId.toLowerCase().includes(search)) return true;
-                                            if ((data.deviceModel || '').toLowerCase().includes(search)) return true;
-                                            
-                                            // Check accounts and sessions
-                                            if (data.accounts) {
-                                                return Object.entries(data.accounts).some(([username, acc]: [string, any]) => {
-                                                    if (username.toLowerCase().includes(search)) return true;
-                                                    if (acc.sessions) {
-                                                        return acc.sessions.some((s: any) => 
-                                                            (s.ip && s.ip.toLowerCase().includes(search)) || 
-                                                            (s.location && s.location.toLowerCase().includes(search)) ||
-                                                            (s.sessionId && s.sessionId.toLowerCase().includes(search))
-                                                        );
-                                                    }
-                                                    return false;
-                                                });
-                                            }
-                                            return false;
-                                        })
+                                        .filter(([hashId, data]: [string, any]) => hashId !== '_summary' && hashId !== '_resultSummary')
                                         .map(([hashId, data]: [string, any]) => (
                                         <div key={hashId} className="bg-[var(--dev-console-bg)] rounded-md border border-[var(--dev-console-border)] overflow-hidden shadow-sm">
                                             <div className="bg-[var(--dev-console-bg-hover)] border-b border-[var(--dev-console-border)] px-4 py-2.5 flex items-center justify-between gap-3">

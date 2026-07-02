@@ -21,6 +21,7 @@ export default async function handler(req: any, res: any) {
       
       // Auto-abandon sessions without heartbeat for 2 minutes
       Object.keys(data).forEach(deviceHash => {
+        if (deviceHash === '_summary' || deviceHash === '_resultSummary') return;
         const deviceData = data[deviceHash];
         Object.keys(deviceData.accounts || {}).forEach(username => {
           const sessions = deviceData.accounts[username].sessions || [];
@@ -40,10 +41,114 @@ export default async function handler(req: any, res: any) {
       });
       
       if (hasChanges) {
-        await saveSessionCacheUnified(data, { deviceModel: "Unknown Device" }); // the meta argument is just for partial updates, unified cache handles it
+        await saveSessionCacheUnified(data, { deviceModel: "Unknown Device" }); 
       }
       
-      return res.status(200).json(data);
+      // Advanced Search & Pagination Logic
+      let { search, limit, status, isIncognito, timeRange, browserName } = req.query;
+      if (!limit && req.url) {
+         try {
+           const urlObj = new URL(req.url, 'http://localhost');
+           search = urlObj.searchParams.get('search') || search;
+           limit = urlObj.searchParams.get('limit') || limit;
+           status = urlObj.searchParams.get('status') || status;
+           isIncognito = urlObj.searchParams.get('isIncognito') || isIncognito;
+           timeRange = urlObj.searchParams.get('timeRange') || timeRange;
+           browserName = urlObj.searchParams.get('browserName') || browserName;
+         } catch(e) {}
+      }
+      
+      const parsedLimit = limit ? parseInt(limit as string, 10) : 100;
+      const filteredData: Record<string, any> = {};
+      
+      let allSessions: any[] = [];
+      const deviceKeys = Object.keys(data).filter(k => k !== '_summary' && k !== '_resultSummary');
+      for (const hash of deviceKeys) {
+        const device = data[hash];
+        if (!device?.accounts) continue;
+        for (const username of Object.keys(device.accounts)) {
+           const sessions = device.accounts[username].sessions || [];
+           for (const s of sessions) {
+              allSessions.push({
+                 hash,
+                 deviceModel: device.deviceModel || 'Unknown Device',
+                 username,
+                 fullName: device.accounts[username].fullName,
+                 ...s
+              });
+           }
+        }
+      }
+      
+      // Sorting (Newest first)
+      allSessions.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+      
+      // Filtering
+      allSessions = allSessions.filter(s => {
+          if (search) {
+             const term = (search as string).toLowerCase();
+             const matches = (
+                (s.hash && s.hash.toLowerCase().includes(term)) ||
+                (s.deviceModel && s.deviceModel.toLowerCase().includes(term)) ||
+                (s.username && s.username.toLowerCase().includes(term)) ||
+                (s.fullName && s.fullName.toLowerCase().includes(term)) ||
+                (s.ip && s.ip.toLowerCase().includes(term)) ||
+                (s.location && s.location.toLowerCase().includes(term)) ||
+                (s.sessionId && s.sessionId.toLowerCase().includes(term)) ||
+                (s.browser_name && s.browser_name.toLowerCase().includes(term))
+             );
+             if (!matches) return false;
+          }
+          
+          if (status && status !== 'all') {
+             if (s.status !== status) return false;
+          }
+          
+          if (isIncognito && isIncognito !== 'all') {
+             const wantIncognito = isIncognito === 'true';
+             if (Boolean(s.is_incognito) !== wantIncognito) return false;
+          }
+          
+          if (browserName && browserName !== 'all') {
+             if (!s.browser_name || s.browser_name.toLowerCase() !== (browserName as string).toLowerCase()) return false;
+          }
+          
+          if (timeRange && timeRange !== 'all') {
+             const sTime = new Date(s.startTime).getTime();
+             if (timeRange === '24h' && (nowTime - sTime > 24 * 60 * 60 * 1000)) return false;
+             if (timeRange === '7d' && (nowTime - sTime > 7 * 24 * 60 * 60 * 1000)) return false;
+             if (timeRange === '30d' && (nowTime - sTime > 30 * 24 * 60 * 60 * 1000)) return false;
+          }
+          
+          return true;
+      });
+      
+      const resultSummary = {
+          totalMatches: allSessions.length,
+          returned: Math.min(allSessions.length, parsedLimit)
+      };
+      
+      if (parsedLimit > 0) {
+          allSessions = allSessions.slice(0, parsedLimit);
+      }
+      
+      for (const s of allSessions) {
+          if (!filteredData[s.hash]) {
+              filteredData[s.hash] = { deviceModel: s.deviceModel, accounts: {} };
+          }
+          if (!filteredData[s.hash].accounts[s.username]) {
+              filteredData[s.hash].accounts[s.username] = { fullName: s.fullName, sessions: [] };
+          }
+          const { hash, deviceModel, username, fullName, ...pureSession } = s;
+          filteredData[s.hash].accounts[s.username].sessions.push(pureSession);
+      }
+      
+      filteredData._summary = data._summary || {
+         totalDevices: deviceKeys.length, activeSessions: 0, totalSessions: 0, activeUsers: 0, avgSessionTime: 0, locations: 0
+      };
+      filteredData._resultSummary = resultSummary;
+
+      return res.status(200).json(filteredData);
     } catch (err: any) {
       console.error("Error reading session cache:", err.message);
       return res.status(500).json({ error: err.message });

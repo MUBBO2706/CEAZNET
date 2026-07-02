@@ -445,13 +445,14 @@ export async function saveSessionCacheUnified(
     deviceModel?: string;
   }
 ): Promise<boolean> {
-  sessionMemoryCache = cacheData;
-  lastSessionFetchTime = Date.now();
-  
-  const deviceKeys = Object.keys(cacheData || {});
+  const deviceKeys = Object.keys(cacheData || {}).filter(k => k !== '_summary');
   let totalSessions = 0;
   let totalAccounts = 0;
   let activeSessions = 0;
+  
+  let totalSessionTime = 0;
+  let completedSessionsCount = 0;
+  const locations = new Set<string>();
 
   for (const hash of deviceKeys) {
     const device = cacheData[hash];
@@ -461,10 +462,34 @@ export async function saveSessionCacheUnified(
       for (const acc of accounts) {
         const sessions = device.accounts[acc].sessions || [];
         totalSessions += sessions.length;
-        activeSessions += sessions.filter((s: any) => s.status === 'active').length;
+        for (const s of sessions) {
+           if (s.status === 'active') activeSessions++;
+           if (s.duration) {
+               totalSessionTime += s.duration;
+               completedSessionsCount++;
+           }
+           if (s.location) locations.add(s.location);
+        }
       }
     }
   }
+
+  let avgSessionTime = 0;
+  if (completedSessionsCount > 0) {
+      avgSessionTime = Math.round(totalSessionTime / completedSessionsCount);
+  }
+
+  cacheData._summary = {
+      totalDevices: deviceKeys.length,
+      activeSessions,
+      totalSessions,
+      activeUsers: totalAccounts,
+      avgSessionTime,
+      locations: locations.size
+  };
+
+  sessionMemoryCache = cacheData;
+  lastSessionFetchTime = Date.now();
 
   const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
 
