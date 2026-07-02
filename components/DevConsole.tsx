@@ -911,6 +911,7 @@ export const DevConsole = () => {
     const [tick, setTick] = useState(0);
     const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
     const [showMassDeleteConfirm, setShowMassDeleteConfirm] = useState(false);
+    const [deviceToDelete, setDeviceToDelete] = useState<{ hashId: string; deviceModel: string } | null>(null);
 
     useEffect(() => {
         if (activeTab !== 'session-cache') return;
@@ -2449,8 +2450,18 @@ export const DevConsole = () => {
                                                                 </div>
 
                                                                 <div className="border border-[var(--dev-console-border)] rounded-md overflow-hidden bg-[var(--dev-console-bg)] shadow-sm">
-                                                                    <div className="bg-[var(--dev-console-bg-active)] px-3 py-1.5 border-b border-[var(--dev-console-border)]">
+                                                                    <div className="bg-[var(--dev-console-bg-active)] px-3 py-1.5 border-b border-[var(--dev-console-border)] flex items-center justify-between gap-3">
                                                                         <span className="font-bold text-[11px] text-[var(--dev-console-text)]">Recent Sessions</span>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setDeviceToDelete({ hashId, deviceModel: data.deviceModel || 'Unknown Device' });
+                                                                            }}
+                                                                            className="text-[9px] text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 px-2 py-0.5 rounded transition-all font-sans cursor-pointer font-bold flex items-center gap-1 border border-red-500/15"
+                                                                            title="Delete all sessions for this device"
+                                                                        >
+                                                                            <Trash2 size={9.5} />
+                                                                            Delete Device Sessions
+                                                                        </button>
                                                                     </div>
                                                                     <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
                                                                         <table className="w-full text-center border-collapse min-w-[1250px]">
@@ -3556,6 +3567,36 @@ export const DevConsole = () => {
                     title="Clear All Session Logs"
                     message="Are you sure you want to delete ALL active and historical session logs across ALL devices? This action is destructive and cannot be undone."
                     confirmButtonText="Delete All"
+                    confirmButtonVariant="danger"
+                />
+            )}
+
+            {deviceToDelete && (
+                <ConfirmationModal
+                    isOpen={deviceToDelete !== null}
+                    onClose={() => setDeviceToDelete(null)}
+                    onConfirm={async () => {
+                        if (!deviceToDelete) return;
+                        try {
+                            const res = await fetch('/api/session-cache?action=delete_device', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ deviceHash: deviceToDelete.hashId })
+                            });
+                            if (res.ok) {
+                                fetchSessionCacheData(true);
+                            } else {
+                                console.error("Failed to delete device sessions");
+                            }
+                        } catch (e) {
+                            console.error("Error deleting device sessions", e);
+                        } finally {
+                            setDeviceToDelete(null);
+                        }
+                    }}
+                    title={`Delete Sessions for ${deviceToDelete.deviceModel}`}
+                    message={`Are you sure you want to delete ALL cached sessions for the device "${deviceToDelete.deviceModel}"? This action is destructive and cannot be undone.`}
+                    confirmButtonText="Delete Sessions"
                     confirmButtonVariant="danger"
                 />
             )}

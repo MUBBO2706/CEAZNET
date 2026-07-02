@@ -147,6 +147,30 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  if (action === 'delete_device' && req.method === 'POST') {
+    try {
+      const { deviceHash } = req.body;
+      if (!deviceHash) {
+        return res.status(400).json({ error: "deviceHash is required" });
+      }
+
+      const data = await loadSessionCacheUnified(true);
+      if (data[deviceHash]) {
+        delete data[deviceHash];
+        await saveSessionCacheUnified(data, { deviceModel: 'Unknown Device' });
+        
+        if (typeof (global as any).broadcastSessionUpdate === 'function') {
+          (global as any).broadcastSessionUpdate(data);
+        }
+      }
+
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      console.error("Error deleting device sessions from cache:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (action === 'delete_all' && req.method === 'POST') {
     try {
       const emptyData = {};
