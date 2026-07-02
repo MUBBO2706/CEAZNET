@@ -946,8 +946,10 @@ export const DevConsole = () => {
     useEffect(() => {
         if (activeTab !== 'session-cache') return;
         
-        // Initial load (force refresh to guarantee latest state)
-        fetchSessionCacheData(true);
+        // Initial load only if not loaded yet
+        if (!isSessionCacheLoaded) {
+            fetchSessionCacheData(true);
+        }
         
         let eventSource: EventSource | null = null;
         try {
@@ -3502,7 +3504,7 @@ export const DevConsole = () => {
                                 })
                             });
                             if (res.ok) {
-                                fetchSessionCacheData();
+                                fetchSessionCacheData(true);
                             } else {
                                 console.error("Failed to delete session");
                             }
