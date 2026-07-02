@@ -203,6 +203,46 @@ const OSIcon = ({ name }: { name: string }) => {
     return <DefaultOSIcon />;
 };
 
+const DevSelect = ({ value, options, onChange, icon }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+    const selectedLabel = options.find((o: any) => o.value == value)?.label || 'Select...';
+    return (
+        <div ref={ref} className="relative">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-1.5 bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-1 outline-none font-sans w-full justify-between hover:bg-[var(--dev-console-bg-hover)] transition-colors focus:border-[#007fd4]"
+            >
+                <div className="flex items-center gap-1.5 truncate">
+                    {icon && <span className="text-[var(--dev-console-text-muted)] shrink-0">{icon}</span>}
+                    <span className="truncate">{selectedLabel}</span>
+                </div>
+                <ChevronDown size={12} className={`text-[var(--dev-console-text-muted)] transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full min-w-[140px] bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded shadow-lg z-50 py-1 overflow-hidden">
+                    {options.map((opt: any) => (
+                        <button
+                            key={opt.value}
+                            onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                            className={`w-full text-left px-3 py-1.5 text-[11px] font-sans hover:bg-[var(--dev-console-bg-hover)] transition-colors ${value == opt.value ? 'text-[#007fd4] bg-[#007fd4]/10' : 'text-[var(--dev-console-text)]'}`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const BrowserCell = ({ session }: { session: any }) => {
     const [toggled, setToggled] = useState(false);
     const browser = session.browser_name || "Unknown";
@@ -903,10 +943,30 @@ export const DevConsole = () => {
     
     // Session Cache states
     const [sessionCacheData, setSessionCacheData] = useState<Record<string, any>>({});
+    const [sessionCacheSearchInput, setSessionCacheSearchInput] = useState('');
     const [sessionCacheSearch, setSessionCacheSearch] = useState('');
-    const [sessionCacheLimit, setSessionCacheLimit] = useState(100);
-    const [sessionCacheStatus, setSessionCacheStatus] = useState('all');
-    const [sessionCacheTime, setSessionCacheTime] = useState('all');
+    const [sessionCacheLimit, setSessionCacheLimit] = useState(() => {
+        const saved = localStorage.getItem('dev_session_limit');
+        return saved ? Number(saved) : 100;
+    });
+    const [sessionCacheStatus, setSessionCacheStatus] = useState(() => {
+        return localStorage.getItem('dev_session_status') || 'all';
+    });
+    const [sessionCacheTime, setSessionCacheTime] = useState(() => {
+        return localStorage.getItem('dev_session_time') || 'all';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('dev_session_limit', sessionCacheLimit.toString());
+    }, [sessionCacheLimit]);
+
+    useEffect(() => {
+        localStorage.setItem('dev_session_status', sessionCacheStatus);
+    }, [sessionCacheStatus]);
+
+    useEffect(() => {
+        localStorage.setItem('dev_session_time', sessionCacheTime);
+    }, [sessionCacheTime]);
     const [isSessionCacheLoading, setIsSessionCacheLoading] = useState(false);
     const [isSessionCacheLoaded, setIsSessionCacheLoaded] = useState(false);
     const [sessionDurationUnits, setSessionDurationUnits] = useState<Record<string, 's' | 'm'>>({});
@@ -1719,60 +1779,87 @@ export const DevConsole = () => {
             )}
             
             {activeTab === 'session-cache' && (
-                <div className="flex-none border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] flex flex-wrap items-center justify-between px-3 py-1.5 gap-2 w-full">
-                    <div className="flex flex-wrap items-center gap-2 flex-1">
-                        <div className="flex items-center bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2 py-0.5 w-64 focus-within:border-[#007fd4] transition-colors">
-                            <Filter size={12} className="text-[var(--dev-console-text-muted)] mr-2" />
+                <div className="flex-none border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] flex flex-col w-full relative z-20">
+                    {/* Row 1: Search & Sync */}
+                    <div className="flex items-center justify-between px-3 py-2 gap-2 border-b border-[var(--dev-console-border)] sm:border-b-0">
+                        <div className="flex-1 flex items-center bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2 focus-within:border-[#007fd4] transition-colors h-8">
                             <input 
-                                className="bg-transparent text-[11px] text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
-                                placeholder="Search by email, browser, IP..." 
-                                value={sessionCacheSearch} 
-                                onChange={e => setSessionCacheSearch(e.target.value)} 
+                                className="bg-transparent text-[11px] text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans h-full" 
+                                placeholder="Search email, browser, IP..." 
+                                value={sessionCacheSearchInput} 
+                                onChange={e => setSessionCacheSearchInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') setSessionCacheSearch(sessionCacheSearchInput); }}
                             />
-                            {sessionCacheSearch && <button onClick={() => setSessionCacheSearch('')}><X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" /></button>}
+                            <div className="flex items-center gap-1.5 ml-2 border-l border-[var(--dev-console-border)] pl-2">
+                                {sessionCacheSearchInput && (
+                                    <button onClick={() => { setSessionCacheSearchInput(''); setSessionCacheSearch(''); }}>
+                                        <X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" />
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => setSessionCacheSearch(sessionCacheSearchInput)}
+                                    className="p-1 hover:bg-[var(--dev-console-bg-active)] rounded text-[var(--dev-console-text-muted)] hover:text-[#007fd4] transition-colors"
+                                >
+                                    <Search size={14} />
+                                </button>
+                            </div>
                         </div>
-                        <select
-                            className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-0.5 outline-none font-sans"
-                            value={sessionCacheStatus}
-                            onChange={(e) => setSessionCacheStatus(e.target.value)}
+                        <button 
+                            onClick={() => fetchSessionCacheData(true)}
+                            disabled={isSessionCacheLoading}
+                            className="text-[10px] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1.5 bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] rounded px-2.5 py-1.5 transition-colors disabled:opacity-50 font-sans shrink-0 h-8 uppercase font-bold"
                         >
-                            <option value="all">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="abandoned">Abandoned</option>
-                            <option value="terminated">Terminated</option>
-                            <option value="logged_out">Logged Out</option>
-                        </select>
-                        <select
-                            className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-0.5 outline-none font-sans"
-                            value={sessionCacheTime}
-                            onChange={(e) => setSessionCacheTime(e.target.value)}
-                        >
-                            <option value="all">All Time</option>
-                            <option value="24h">Last 24 Hours</option>
-                            <option value="7d">Last 7 Days</option>
-                            <option value="30d">Last 30 Days</option>
-                        </select>
-                        <select
-                            className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[11px] text-[var(--dev-console-text)] rounded px-2 py-0.5 outline-none font-sans"
-                            value={sessionCacheLimit}
-                            onChange={(e) => setSessionCacheLimit(Number(e.target.value))}
-                        >
-                            <option value={100}>Last 100 Sessions</option>
-                            <option value={500}>Last 500 Sessions</option>
-                            <option value={1000}>Last 1000 Sessions</option>
-                            <option value={0}>All (Warning: Slow)</option>
-                        </select>
+                            {isSessionCacheLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                            <span className="hidden sm:inline">Sync Now</span>
+                        </button>
                     </div>
-                    <button 
-                        onClick={() => fetchSessionCacheData(true)}
-                        disabled={isSessionCacheLoading}
-                        className="text-[10px] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] rounded px-2 py-1 transition-colors disabled:opacity-50 font-sans shrink-0"
-                    >
-                        {isSessionCacheLoading ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
-                        Sync Now
-                    </button>
+
+                    {/* Row 2: Filters */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[var(--dev-console-bg)]/50">
+                        <div className="flex-1 min-w-0">
+                            <DevSelect
+                                value={sessionCacheStatus}
+                                onChange={(val: any) => setSessionCacheStatus(val)}
+                                icon={<Activity size={12} />}
+                                options={[
+                                    { label: 'All Status', value: 'all' },
+                                    { label: 'Active', value: 'active' },
+                                    { label: 'Abandoned', value: 'abandoned' },
+                                    { label: 'Terminated', value: 'terminated' },
+                                    { label: 'Logged Out', value: 'logged_out' },
+                                ]}
+                            />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <DevSelect
+                                value={sessionCacheTime}
+                                onChange={(val: any) => setSessionCacheTime(val)}
+                                icon={<Clock size={12} />}
+                                options={[
+                                    { label: 'All Time', value: 'all' },
+                                    { label: 'Last 24h', value: '24h' },
+                                    { label: 'Last 7d', value: '7d' },
+                                    { label: 'Last 30d', value: '30d' },
+                                ]}
+                            />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <DevSelect
+                                value={sessionCacheLimit}
+                                onChange={(val: any) => setSessionCacheLimit(Number(val))}
+                                icon={<Database size={12} />}
+                                options={[
+                                    { label: '100 Limit', value: 100 },
+                                    { label: '500 Limit', value: 500 },
+                                    { label: '1000 Limit', value: 1000 },
+                                    { label: 'No Limit', value: 0 },
+                                ]}
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
+
             
             {/* Main Content Area */}
             <div className="flex-1 min-h-0 overflow-hidden bg-[var(--dev-console-bg)] flex w-full">
@@ -2365,11 +2452,11 @@ export const DevConsole = () => {
                                 {Object.keys(sessionCacheData).filter(k => k !== '_summary' && k !== '_resultSummary').length > 0 && (
                                     <button 
                                         onClick={() => setShowMassDeleteConfirm(true)}
-                                        className="text-[10px] text-red-500 hover:text-red-600 flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded transition-all font-sans cursor-pointer font-bold"
+                                        className="text-[10px] text-red-500 hover:text-red-600 flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 px-2 py-1.5 rounded transition-all font-sans cursor-pointer font-bold"
                                         title="Delete all sessions across all devices"
                                     >
-                                        <Trash2 size={11} />
-                                        Clear All Sessions
+                                        <Trash2 size={12} />
+                                        <span className="hidden sm:inline">Clear All Sessions</span>
                                     </button>
                                 )}
                             </h3>
@@ -2379,8 +2466,14 @@ export const DevConsole = () => {
                                     <span className="text-[11px] tracking-widest uppercase font-semibold">Loading Sessions...</span>
                                 </div>
                             ) : Object.keys(sessionCacheData).filter(k => k !== '_summary' && k !== '_resultSummary').length === 0 ? (
-                                <div className="h-40 flex items-center justify-center text-[var(--dev-console-text-muted)] text-[12px] italic">
-                                    No sessions are cached yet.
+                                <div className="h-60 flex flex-col items-center justify-center text-[var(--dev-console-text-muted)] text-[12px] italic gap-3 px-6 text-center">
+                                    <div className="p-4 bg-[var(--dev-console-bg-active)] rounded-full text-[var(--dev-console-text-muted)] opacity-50">
+                                        <Search size={32} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-bold text-[var(--dev-console-text)] not-italic">No sessions match your search criteria</span>
+                                        <span>Try adjusting your filters or search terms, or sync with the server to pull latest data.</span>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-6">
@@ -2463,11 +2556,11 @@ export const DevConsole = () => {
                                                                             onClick={() => {
                                                                                 setDeviceToDelete({ hashId, deviceModel: data.deviceModel || 'Unknown Device' });
                                                                             }}
-                                                                            className="text-[9px] text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 px-2 py-0.5 rounded transition-all font-sans cursor-pointer font-bold flex items-center gap-1 border border-red-500/15"
+                                                                            className="text-[9px] text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-all font-sans cursor-pointer font-bold flex items-center gap-1.5 border border-red-500/15"
                                                                             title="Delete all sessions for this device"
                                                                         >
-                                                                            <Trash2 size={9.5} />
-                                                                            Delete Device Sessions
+                                                                            <Trash2 size={12} />
+                                                                            <span className="hidden sm:inline">Delete Device Sessions</span>
                                                                         </button>
                                                                     </div>
                                                                     <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
