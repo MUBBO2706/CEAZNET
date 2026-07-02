@@ -236,7 +236,8 @@ async function updateGlobalSessionCache(
   browser_name?: string,
   browser_version?: string,
   os_name?: string,
-  os_version?: string
+  os_version?: string,
+  provider?: string
 ) {
   if (!deviceHash || !username || !sessionId) return;
   try {
@@ -272,6 +273,7 @@ async function updateGlobalSessionCache(
       if (browser_version !== undefined) session.browser_version = browser_version;
       if (os_name !== undefined) session.os_name = os_name;
       if (os_version !== undefined) session.os_version = os_version;
+      if (provider !== undefined) session.provider = provider;
     } else {
       sessions.push({
         sessionId,
@@ -287,7 +289,8 @@ async function updateGlobalSessionCache(
         os_version: os_version || "",
         duration: 0,
         status,
-        lastHeartbeat: now
+        lastHeartbeat: now,
+        provider: provider || 'email'
       });
     }
     await saveSessionCacheUnified(data, { deviceModel: data[deviceHash].deviceModel });
@@ -313,7 +316,8 @@ export default async function handler(req: any, res: any) {
       if (!payload.sub) throw new Error("Missing sub in token");
       user = { 
         id: payload.sub, 
-        email: payload.email || (payload.user_metadata && payload.user_metadata.email) || payload.phone || "Unknown User"
+        email: payload.email || (payload.user_metadata && payload.user_metadata.email) || payload.phone || "Unknown User",
+        provider: payload.app_metadata?.provider || (payload.identities && payload.identities[0]?.provider) || 'email'
       };
     } catch (e: any) {
       return res.status(401).json({ error: "UNAUTHORIZED: Invalid token" });
@@ -414,7 +418,7 @@ export default async function handler(req: any, res: any) {
           }
 
           if (device_id) {
-            await updateGlobalSessionCache(device_id, deviceName, user.email, session_key, 'active', location, ip, fullName || undefined, is_incognito, browser_name, browser_version, os_name, os_version);
+            await updateGlobalSessionCache(device_id, deviceName, user.email, session_key, 'active', location, ip, fullName || undefined, is_incognito, browser_name, browser_version, os_name, os_version, user.provider);
           }
 
           return res.json({ success: true, ip, deviceName, location });
@@ -437,7 +441,22 @@ export default async function handler(req: any, res: any) {
           
           if (device_id) {
             const finalStatus = status_override || 'active';
-            await updateGlobalSessionCache(device_id, client_device_name || "Unknown Device", user.email, session_key, finalStatus);
+            await updateGlobalSessionCache(
+              device_id,
+              client_device_name || "Unknown Device",
+              user.email,
+              session_key,
+              finalStatus,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              user.provider
+            );
           }
           return res.json({ success: true });
         } catch (dbErr: any) {
@@ -458,7 +477,22 @@ export default async function handler(req: any, res: any) {
              await userClient.from('user_sessions').update({ session_key: newSessionKey }).eq('id', id).eq('user_id', user.id);
              
              if (sessionData.device_id) {
-               await updateGlobalSessionCache(sessionData.device_id, sessionData.device_name, user.email, sessionData.session_key, 'terminated');
+               await updateGlobalSessionCache(
+                 sessionData.device_id,
+                 sessionData.device_name,
+                 user.email,
+                 sessionData.session_key,
+                 'terminated',
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 user.provider
+               );
              }
           }
           return res.json({ success: true });
@@ -475,7 +509,22 @@ export default async function handler(req: any, res: any) {
              await userClient.from('user_sessions').update({ session_key: newSessionKey }).eq('id', sessionData.id).eq('user_id', user.id);
              
              if (sessionData.device_id) {
-               await updateGlobalSessionCache(sessionData.device_id, sessionData.device_name, user.email, sessionData.session_key, 'logged_out');
+               await updateGlobalSessionCache(
+                 sessionData.device_id,
+                 sessionData.device_name,
+                 user.email,
+                 sessionData.session_key,
+                 'logged_out',
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 undefined,
+                 user.provider
+               );
              }
           }
           return res.json({ success: true });
