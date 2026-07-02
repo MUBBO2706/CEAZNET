@@ -241,7 +241,7 @@ async function updateGlobalSessionCache(
 ) {
   if (!deviceHash || !username || !sessionId) return;
   try {
-    const data = await loadSessionCacheUnified();
+    const data = await loadSessionCacheUnified(true);
     if (!data[deviceHash]) {
       data[deviceHash] = { deviceModel: deviceModel || 'Unknown Device', accounts: {} };
     }

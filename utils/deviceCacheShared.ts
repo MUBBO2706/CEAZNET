@@ -411,8 +411,8 @@ export async function saveImageCacheUnified(
   return saveCacheFileToTelegram('imageCache', cacheData, caption);
 }
 
-export async function loadSessionCacheUnified(): Promise<Record<string, any>> {
-  if (sessionMemoryCache && (Date.now() - lastSessionFetchTime < MEMORY_CACHE_TTL)) {
+export async function loadSessionCacheUnified(forceRefresh = false): Promise<Record<string, any>> {
+  if (!forceRefresh && sessionMemoryCache && (Date.now() - lastSessionFetchTime < MEMORY_CACHE_TTL)) {
     lastSessionCacheSource = 'local-memory';
     return sessionMemoryCache;
   }

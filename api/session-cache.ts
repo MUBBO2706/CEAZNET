@@ -2,16 +2,20 @@ import { loadSessionCacheUnified, saveSessionCacheUnified, lastSessionCacheSourc
 
 export default async function handler(req: any, res: any) {
   let action = req.query?.action;
+  let force = req.query?.force === 'true' || req.query?.bypassCache === 'true';
   if (!action && req.url) {
      try {
        const urlObj = new URL(req.url, 'http://localhost');
        action = urlObj.searchParams.get('action');
+       if (urlObj.searchParams.get('force') === 'true' || urlObj.searchParams.get('bypassCache') === 'true') {
+         force = true;
+       }
      } catch(e) {}
   }
 
   if (action === 'get' && req.method === 'GET') {
     try {
-      const data = await loadSessionCacheUnified();
+      const data = await loadSessionCacheUnified(force);
       const nowTime = new Date().getTime();
       let hasChanges = false;
       
@@ -53,7 +57,7 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: "deviceHash, username, sessionId, and status are required" });
       }
 
-      const data = await loadSessionCacheUnified();
+      const data = await loadSessionCacheUnified(true);
       
       if (!data[deviceHash]) {
         data[deviceHash] = { deviceModel: deviceModel || 'Unknown Device', accounts: {} };
@@ -115,7 +119,7 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: "deviceHash, username, and sessionId are required" });
       }
 
-      const data = await loadSessionCacheUnified();
+      const data = await loadSessionCacheUnified(true);
       if (data[deviceHash] && data[deviceHash].accounts[username]) {
         const sessions = data[deviceHash].accounts[username].sessions;
         const newSessions = sessions.filter((s: any) => s.sessionId !== sessionId);

@@ -923,10 +923,11 @@ export const DevConsole = () => {
         return () => clearInterval(interval);
     }, [activeTab]);
 
-    const fetchSessionCacheData = async () => {
+    const fetchSessionCacheData = async (force = false) => {
         setIsSessionCacheLoading(true);
         try {
-            const response = await fetch('/api/session-cache?action=get');
+            const url = force ? '/api/session-cache?action=get&force=true' : '/api/session-cache?action=get';
+            const response = await fetch(url);
             const contentType = response.headers.get('content-type');
             if (response.ok && contentType && contentType.includes('application/json')) {
                 const data = await response.json();
@@ -945,8 +946,8 @@ export const DevConsole = () => {
     useEffect(() => {
         if (activeTab !== 'session-cache') return;
         
-        // Initial load
-        fetchSessionCacheData();
+        // Initial load (force refresh to guarantee latest state)
+        fetchSessionCacheData(true);
         
         let eventSource: EventSource | null = null;
         try {
@@ -1717,7 +1718,7 @@ export const DevConsole = () => {
                         {sessionCacheSearch && <button onClick={() => setSessionCacheSearch('')}><X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" /></button>}
                     </div>
                     <button 
-                        onClick={fetchSessionCacheData}
+                        onClick={() => fetchSessionCacheData(true)}
                         disabled={isSessionCacheLoading}
                         className="text-[10px] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] rounded px-2 py-0.5 transition-colors disabled:opacity-50 font-sans"
                     >
