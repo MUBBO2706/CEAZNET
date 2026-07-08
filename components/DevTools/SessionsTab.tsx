@@ -434,6 +434,78 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
                 confirmButtonVariant="danger"
                 isLoading={isDeletingDevice}
             />
+
+            {/* Floating Search Toolbar overlay */}
+            {sessionCacheSearch && sessionCacheSearch.trim() && (
+                <div className="absolute bottom-4 right-4 z-50 bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded-md shadow-lg py-1.5 px-3 flex items-center gap-3 font-sans text-xs">
+                    <div className="flex items-center gap-1.5 text-[var(--dev-console-text)] font-semibold border-r border-[var(--dev-console-border)] pr-3">
+                        <Search size={12} className="text-[#007fd4]" />
+                        <span>
+                            {getSessionMatches().length > 0 ? (
+                                `${activeMatchIndex + 1} of ${getSessionMatches().length}`
+                            ) : (
+                                "No matches"
+                            )}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                        <button
+                            disabled={getSessionMatches().length === 0}
+                            onClick={() => {
+                                const matches = getSessionMatches();
+                                if (matches.length === 0) return;
+                                const prevIndex = (activeMatchIndex - 1 + matches.length) % matches.length;
+                                setActiveMatchIndex(prevIndex);
+                                scrollToMatch(matches[prevIndex]);
+                            }}
+                            className="p-1 hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text)] hover:text-[#007fd4] disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center"
+                            title="Previous Match"
+                        >
+                            <ChevronUp size={14} />
+                        </button>
+                        <button
+                            disabled={getSessionMatches().length === 0}
+                            onClick={() => {
+                                const matches = getSessionMatches();
+                                if (matches.length === 0) return;
+                                const nextIndex = (activeMatchIndex + 1) % matches.length;
+                                setActiveMatchIndex(nextIndex);
+                                scrollToMatch(matches[nextIndex]);
+                            }}
+                            className="p-1 hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text)] hover:text-[#007fd4] disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center"
+                            title="Next Match"
+                        >
+                            <ChevronDown size={14} />
+                        </button>
+                    </div>
+
+                    <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors select-none">
+                        <input
+                            type="checkbox"
+                            checked={sessionCacheHighlightSearch}
+                            onChange={(e) => setSessionCacheHighlightSearch(e.target.checked)}
+                            className="rounded border-[var(--dev-console-border)] bg-transparent text-[#007fd4] focus:ring-0 cursor-pointer"
+                        />
+                        <span className="text-[10px]">Highlight</span>
+                    </label>
+
+                    <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
+
+                    <button
+                        onClick={() => {
+                            setSessionCacheSearchInput('');
+                            setSessionCacheSearch('');
+                        }}
+                        className="p-1 hover:bg-red-500/10 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center"
+                        title="Clear Search"
+                    >
+                        <X size={12} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

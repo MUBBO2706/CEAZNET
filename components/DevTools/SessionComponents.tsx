@@ -433,11 +433,20 @@ export const DeviceAccordion: React.FC<DeviceAccordionProps> = ({
                                                                 <tbody className="text-[10px] font-mono divide-y divide-[var(--dev-console-border)]/50">
                                                                     {paginatedSessions.map((s: any, idx: number) => {
                                                                         const isCurrentDeleting = deletingSessionId === s.sessionId;
+                                                                        const rowBgColors: Record<string, string> = {
+                                                                            active: 'bg-emerald-500/5 dark:bg-emerald-500/10',
+                                                                            background: 'bg-purple-500/5 dark:bg-purple-500/10',
+                                                                            tab_closed: 'bg-indigo-500/5 dark:bg-indigo-500/10',
+                                                                            abandoned: 'bg-amber-500/5 dark:bg-amber-500/10',
+                                                                            logged_out: 'bg-neutral-500/5 dark:bg-neutral-500/10',
+                                                                            terminated: 'bg-red-500/5 dark:bg-red-500/10',
+                                                                        };
+                                                                        const rowBgClass = rowBgColors[s.status] || '';
                                                                         return (
                                                                             <tr 
                                                                                 key={idx} 
                                                                                 id={`session-row-${s.sessionId}`}
-                                                                                className={`hover:bg-[var(--dev-console-bg-hover)] transition-colors group duration-300 ${s.status === 'active' ? 'bg-[#10b981]/5' : ''}`}
+                                                                                className={`hover:bg-[var(--dev-console-bg-hover)] transition-colors group duration-300 ${rowBgClass}`}
                                                                             >
                                                                                 <td 
                                                                                     className="px-2 py-1.5 truncate max-w-[180px] cursor-pointer whitespace-nowrap text-center" 
@@ -519,12 +528,12 @@ export const DeviceAccordion: React.FC<DeviceAccordionProps> = ({
                                                                                 />
                                                                                 <td className="px-2 py-1.5 text-center">
                                                                                     <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold tracking-wide whitespace-nowrap ${
-                                                                                        s.status === 'active' ? 'bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20' : 
-                                                                                        s.status === 'background' ? 'bg-[#a855f7]/10 text-[#a855f7] border border-[#a855f7]/20' :
-                                                                                        s.status === 'tab_closed' ? 'bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/20' :
-                                                                                        s.status === 'abandoned' ? 'bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20' :
-                                                                                        s.status === 'logged_out' ? 'bg-[#007fd4]/10 text-[#007fd4] border border-[#007fd4]/20' : 
-                                                                                        s.status === 'terminated' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                                                                                        s.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 
+                                                                                        s.status === 'background' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20 dark:text-purple-400 dark:bg-purple-500/10 dark:border-purple-500/20' :
+                                                                                        s.status === 'tab_closed' ? 'bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 dark:text-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/20' :
+                                                                                        s.status === 'abandoned' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20' :
+                                                                                        s.status === 'logged_out' ? 'bg-neutral-500/10 text-neutral-600 border border-neutral-500/20 dark:text-neutral-400 dark:bg-neutral-500/10 dark:border-neutral-500/20' : 
+                                                                                        s.status === 'terminated' ? 'bg-red-500/10 text-red-600 border border-red-500/20 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/20' :
                                                                                         'bg-[var(--dev-console-bg-active)] text-[var(--dev-console-text-muted)] border border-[var(--dev-console-border)]'
                                                                                     }`}>
                                                                                         {s.status === 'active' ? 'Logged In' : s.status === 'background' ? 'Background' : s.status === 'tab_closed' ? 'Tab Closed' : s.status === 'abandoned' ? 'Abandoned' : s.status === 'logged_out' ? 'Logged Out' : s.status === 'terminated' ? 'Terminated' : s.status}

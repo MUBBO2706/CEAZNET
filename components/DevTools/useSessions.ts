@@ -89,6 +89,15 @@ export const useSessions = ({
         return () => window.removeEventListener('click', handleOutsideClick);
     }, []);
 
+    // Listen to manual sync triggers from parent/dev console header
+    useEffect(() => {
+        const handleRefresh = () => {
+            fetchSessionCacheData(true);
+        };
+        window.addEventListener('refresh-session-cache', handleRefresh);
+        return () => window.removeEventListener('refresh-session-cache', handleRefresh);
+    }, []);
+
     // Report active devices count back to parent
     useEffect(() => {
         const count = Object.keys(sessionCacheData).filter(k => k !== '_summary' && k !== '_resultSummary').length;
