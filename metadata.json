@@ -1,0 +1,12 @@
+{
+  "name": "Ceaznet v6.4",
+  "description": "Ceaznet",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

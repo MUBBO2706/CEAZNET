@@ -1,0 +1,32 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/version/check",
+      "destination": "/api/version-control"
+    },
+    {
+      "source": "/api/image-cache-status",
+      "destination": "/api/image-proxy?action=status"
+    },
+    {
+      "source": "/api/image-cache-clear",
+      "destination": "/api/image-proxy?action=clear"
+    },
+    {
+      "source": "/api/image-cache-delete",
+      "destination": "/api/image-proxy?action=delete"
+    },
+    {
+      "source": "/api/server-logs-clear",
+      "destination": "/api/server-logs?action=clear"
+    },
+    {
+      "source": "/api/server-logs/stream",
+      "destination": "/api/server-logs?stream=true"
+    },
+    {
+      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
