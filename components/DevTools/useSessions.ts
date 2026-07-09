@@ -237,14 +237,7 @@ export const useSessions = ({
 
     const restoreActiveSearchMarks = () => {
         document.querySelectorAll('.active-search-mark').forEach(m => {
-            const el = m as HTMLElement;
-            el.classList.remove('active-search-mark');
-            if (el.dataset.originalBg !== undefined) {
-                el.style.backgroundColor = el.dataset.originalBg;
-            }
-            if (el.dataset.originalColor !== undefined) {
-                el.style.color = el.dataset.originalColor;
-            }
+            m.classList.remove('active-search-mark');
         });
     };
 
@@ -284,15 +277,7 @@ export const useSessions = ({
                 const marks = element.querySelectorAll('.session-match-mark');
                 const targetMark = marks[match.occurrenceIndex] as HTMLElement;
                 if (targetMark) {
-                    if (targetMark.dataset.originalBg === undefined) {
-                        targetMark.dataset.originalBg = targetMark.style.backgroundColor || '';
-                    }
-                    if (targetMark.dataset.originalColor === undefined) {
-                        targetMark.dataset.originalColor = targetMark.style.color || '';
-                    }
                     targetMark.classList.add('active-search-mark');
-                    targetMark.style.backgroundColor = '#f59e0b';
-                    targetMark.style.color = '#ffffff';
                 }
             }
         }, 50);
@@ -304,6 +289,16 @@ export const useSessions = ({
         if (sessionCacheSearch && sessionCacheSearch.trim()) {
             const matches = getSessionMatches();
             if (matches.length > 0) {
+                // Automatically expand all devices containing matching results
+                const nextExpanded = { ...expandedDevices };
+                matches.forEach(m => {
+                    if (m.hashId) {
+                        nextExpanded[m.hashId] = true;
+                    }
+                });
+                setExpandedDevices(nextExpanded);
+                
+                // Search result navigation should always start from the top-most match
                 scrollToMatch(matches[0]);
             }
         }

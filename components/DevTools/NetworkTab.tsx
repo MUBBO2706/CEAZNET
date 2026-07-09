@@ -320,13 +320,13 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 </div>
                             )}
                             <div className="flex items-center px-2 sm:px-4 py-1.5 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text-muted)] select-none font-semibold sticky top-0 text-[10px] sm:text-[11px] uppercase w-full shrink-0">
-                                <div className={`flex-none ${selectedNet ? 'w-[45px] sm:w-[50px]' : 'w-[45px] sm:w-[80px]'}`}>Method</div>
-                                <div className="flex-1 min-w-0 pr-2 sm:pr-4">Name</div>
-                                <div className={`flex-none ${selectedNet ? 'w-[45px] sm:w-[55px]' : 'w-[50px] sm:w-[130px]'}`}>Status</div>
-                                <div className={`hidden md:block flex-none text-right ${selectedNet ? 'w-[65px]' : 'w-[80px]'}`}>Timestamp</div>
-                                <div className={`flex-none text-right ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[50px] sm:w-[80px]'}`}>Size</div>
+                                <div className={`flex-none ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[40px] sm:w-[80px]'}`}>Method</div>
+                                <div className="flex-1 min-w-0 pr-1.5 sm:pr-4">Name</div>
+                                <div className={`flex-none ${selectedNet ? 'w-[35px] sm:w-[55px]' : 'w-[35px] sm:w-[130px]'}`}>Status</div>
+                                <div className={`flex-none text-right ${selectedNet ? 'w-[65px] sm:w-[75px] pl-2' : 'w-[70px] sm:w-[90px] pl-2'}`}>Timestamp</div>
+                                <div className={`flex-none text-right ${selectedNet ? 'w-[55px] sm:w-[65px] pl-2' : 'w-[65px] sm:w-[85px] pl-2'}`}>Size</div>
                                 <div 
-                                    className={`flex-none text-right cursor-pointer hover:text-[#818cf8] transition-colors select-none ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[45px] sm:w-[60px]'}`}
+                                    className={`flex-none text-right cursor-pointer hover:text-[#818cf8] transition-colors select-none ${selectedNet ? 'w-[50px] sm:w-[60px] pl-2' : 'w-[55px] sm:w-[75px] pl-2'}`}
                                     onClick={() => {
                                         const listToUse = activeGroupNetId ? groupExecutions : filteredNets;
                                         const currentFirstUnit = listToUse.length > 0 ? (netDurationUnits[listToUse[0].id] || 'ms') : 'ms';
@@ -411,13 +411,13 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                 }}
                                                 className={`group px-2 sm:px-4 py-1.5 border-b border-[var(--dev-console-border-light)] flex items-center text-[10px] sm:text-[11px] w-full shrink-0 select-none ${bgClass} ${borderClass} ${isSelected ? 'text-[var(--dev-console-text)] font-semibold' : groupParent?.fromConsole ? 'text-[#b5cea8]' : isError ? 'text-[#ff8080]' : 'text-[var(--dev-console-text)]'}`}
                                             >
-                                                <div className={`flex-none flex items-center gap-0.5 sm:gap-1.5 ${selectedNet ? 'w-[45px] sm:w-[50px]' : 'w-[45px] sm:w-[80px]'}`}>
+                                                <div className={`flex-none flex items-center gap-0.5 sm:gap-1.5 ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[40px] sm:w-[80px]'}`}>
                                                     {isError && <AlertCircle size={10} className="text-[#f48771] hidden sm:inline" />}
                                                     <span className={`font-bold ${isSelected ? 'text-[var(--dev-console-text)]' : getMethodColor(groupParent?.method || 'GET')}`}>
                                                         {groupParent?.method}
                                                     </span>
                                                 </div>
-                                                <div className="flex-1 min-w-0 pr-2 sm:pr-4 flex items-center gap-1.5" title={groupParent?.url}>
+                                                <div className="flex-1 min-w-0 pr-1.5 sm:pr-4 flex items-center gap-1.5" title={groupParent?.url}>
                                                     <span className="truncate">{displayName}</span>
                                                     <span className={`shrink-0 border px-1 rounded-[3px] text-[8px] uppercase tracking-wider font-bold hidden sm:inline ${
                                                         isSupabase ? 'border-[#3ecf8e]/30 text-[#3ecf8e] bg-[#3ecf8e]/10' :
@@ -427,22 +427,31 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                         {isSupabase ? 'Supabase' : isInternal ? 'Local' : 'External'}
                                                     </span>
                                                 </div>
-                                                <div className={`flex-none flex items-center min-w-0 pr-1 ${selectedNet ? 'w-[45px] sm:w-[55px]' : 'w-[50px] sm:w-[130px]'}`} title={getStatusText(item.status) ? `${item.status} ${getStatusText(item.status)}` : String(item.status)}>
+                                                <div className={`flex-none flex items-center min-w-0 pr-1 ${selectedNet ? 'w-[35px] sm:w-[55px]' : 'w-[35px] sm:w-[130px]'}`} title={getStatusText(item.status) ? `${item.status} ${getStatusText(item.status)}` : String(item.status)}>
                                                     <span className={`${isSelected ? 'text-[var(--dev-console-text)] font-medium' : getStatusColor(item.status)} flex items-center gap-1 w-full min-w-0`}>
                                                         {item.status === 'pending' && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0"></span>}
                                                         <span className="truncate block w-full">
-                                                            {selectedNet ? item.status : `${item.status} ${getStatusText(item.status)}`}
+                                                            {selectedNet ? (
+                                                                item.status
+                                                            ) : (
+                                                                <>
+                                                                    <span>{item.status}</span>
+                                                                    {typeof item.status === 'number' && getStatusText(item.status) && (
+                                                                        <span className="hidden sm:inline"> {getStatusText(item.status)}</span>
+                                                                    )}
+                                                                </>
+                                                            )}
                                                         </span>
                                                     </span>
                                                 </div>
-                                                <div className={`hidden md:block flex-none text-right opacity-70 font-mono ${selectedNet ? 'w-[65px]' : 'w-[80px]'}`}>
+                                                <div className={`flex-none text-right opacity-70 font-mono ${selectedNet ? 'w-[65px] sm:w-[75px] pl-2' : 'w-[70px] sm:w-[90px] pl-2'}`}>
                                                     {formatTimestamp(item.timestamp)}
                                                 </div>
-                                                <div className={`flex-none text-right opacity-80 whitespace-nowrap ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[50px] sm:w-[80px]'}`} title={item.responseSize !== undefined ? formatSize(item.responseSize) : ''}>
+                                                <div className={`flex-none text-right opacity-80 whitespace-nowrap ${selectedNet ? 'w-[55px] sm:w-[65px] pl-2' : 'w-[65px] sm:w-[85px] pl-2'}`} title={item.responseSize !== undefined ? formatSize(item.responseSize) : ''}>
                                                     {item.responseSize !== undefined ? formatSize(item.responseSize) : '-'}
                                                 </div>
                                                 <div 
-                                                    className={`flex-none text-right opacity-80 whitespace-nowrap cursor-pointer hover:text-[#818cf8] transition-colors ${selectedNet ? 'w-[40px] sm:w-[50px] pl-0.5' : 'w-[45px] sm:w-[60px] pl-1 sm:pl-2'}`}
+                                                    className={`flex-none text-right opacity-80 whitespace-nowrap cursor-pointer hover:text-[#818cf8] transition-colors ${selectedNet ? 'w-[50px] sm:w-[60px] pl-2' : 'w-[55px] sm:w-[75px] pl-2'}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (item.duration !== undefined) {
@@ -530,7 +539,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                 onContextMenu={(e) => handleContextMenuTrigger(e, net.id)}
                                                 className={`group px-2 sm:px-4 py-1.5 border-b border-[var(--dev-console-border-light)] flex items-center text-[10px] sm:text-[11px] w-full shrink-0 select-none ${bgClass} ${borderClass} ${isSelected ? 'text-[var(--dev-console-text)] font-semibold' : net.fromConsole ? 'text-[#b5cea8]' : isError ? 'text-[#ff8080]' : 'text-[var(--dev-console-text)]'}`}
                                             >
-                                                <div className={`flex-none flex items-center gap-0.5 sm:gap-1.5 ${selectedNet ? 'w-[45px] sm:w-[50px]' : 'w-[45px] sm:w-[80px]'}`}>
+                                                <div className={`flex-none flex items-center gap-0.5 sm:gap-1.5 ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[40px] sm:w-[80px]'}`}>
                                                     {isError && <AlertCircle size={10} className="text-[#f48771] hidden sm:inline" />}
                                                     <span className={`font-bold ${isSelected ? 'text-[var(--dev-console-text)]' : getMethodColor(net.method)}`}>
                                                         {net.method}
@@ -541,7 +550,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex-1 min-w-0 pr-2 sm:pr-4 flex items-center gap-1.5" title={net.url}>
+                                                <div className="flex-1 min-w-0 pr-1.5 sm:pr-4 flex items-center gap-1.5" title={net.url}>
                                                     <span className="truncate">{new URL(net.url, window.location.origin).pathname.split('/').pop() || net.url}</span>
                                                     <span className={`shrink-0 border px-1 rounded-[3px] text-[8px] uppercase tracking-wider font-bold hidden sm:inline ${
                                                         isSupabase ? 'border-[#3ecf8e]/30 text-[#3ecf8e] bg-[#3ecf8e]/10' :
@@ -552,22 +561,31 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                     </span>
                                                     {!selectedNet && <span className="opacity-40 text-[9px] truncate max-w-[70px] hidden lg:inline">{host}</span>}
                                                 </div>
-                                                <div className={`flex-none flex items-center min-w-0 pr-1 ${selectedNet ? 'w-[45px] sm:w-[55px]' : 'w-[50px] sm:w-[130px]'}`} title={getStatusText(net.status) ? `${net.status} ${getStatusText(net.status)}` : String(net.status)}>
+                                                <div className={`flex-none flex items-center min-w-0 pr-1 ${selectedNet ? 'w-[35px] sm:w-[55px]' : 'w-[35px] sm:w-[130px]'}`} title={getStatusText(net.status) ? `${net.status} ${getStatusText(net.status)}` : String(net.status)}>
                                                     <span className={`${isSelected ? 'text-[var(--dev-console-text)] font-medium' : getStatusColor(net.status)} flex items-center gap-1 w-full min-w-0`}>
                                                         {net.status === 'pending' && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0"></span>}
                                                         <span className="truncate block w-full">
-                                                            {selectedNet ? net.status : `${net.status} ${getStatusText(net.status)}`}
+                                                            {selectedNet ? (
+                                                                net.status
+                                                            ) : (
+                                                                <>
+                                                                    <span>{net.status}</span>
+                                                                    {typeof net.status === 'number' && getStatusText(net.status) && (
+                                                                        <span className="hidden sm:inline"> {getStatusText(net.status)}</span>
+                                                                    )}
+                                                                </>
+                                                            )}
                                                         </span>
                                                     </span>
                                                 </div>
-                                                <div className={`hidden md:block flex-none text-right opacity-70 font-mono ${selectedNet ? 'w-[65px]' : 'w-[80px]'}`}>
+                                                <div className={`flex-none text-right opacity-70 font-mono ${selectedNet ? 'w-[65px] sm:w-[75px] pl-2' : 'w-[70px] sm:w-[90px] pl-2'}`}>
                                                     {formatTimestamp(net.timestamp)}
                                                 </div>
-                                                <div className={`flex-none text-right opacity-80 whitespace-nowrap ${selectedNet ? 'w-[40px] sm:w-[50px]' : 'w-[50px] sm:w-[80px]'}`} title={net.responseSize !== undefined ? formatSize(net.responseSize) : ''}>
+                                                <div className={`flex-none text-right opacity-80 whitespace-nowrap ${selectedNet ? 'w-[55px] sm:w-[65px] pl-2' : 'w-[65px] sm:w-[85px] pl-2'}`} title={net.responseSize !== undefined ? formatSize(net.responseSize) : ''}>
                                                     {net.responseSize !== undefined ? formatSize(net.responseSize) : '-'}
                                                 </div>
                                                 <div 
-                                                    className={`flex-none text-right opacity-80 whitespace-nowrap cursor-pointer hover:text-[#818cf8] transition-colors ${selectedNet ? 'w-[40px] sm:w-[50px] pl-0.5' : 'w-[45px] sm:w-[60px] pl-1 sm:pl-2'}`}
+                                                    className={`flex-none text-right opacity-80 whitespace-nowrap cursor-pointer hover:text-[#818cf8] transition-colors ${selectedNet ? 'w-[50px] sm:w-[60px] pl-2' : 'w-[55px] sm:w-[75px] pl-2'}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (net.duration !== undefined) {
@@ -631,6 +649,13 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                             <span className="text-[var(--dev-console-syntax-string)] font-bold">{selectedNet.method}</span>
                                             <span className="text-[var(--dev-console-text-muted)] font-semibold">Status Code:</span>
                                             <span className={getStatusColor(selectedNet.status)}>{selectedNet.status} {getStatusText(selectedNet.status)}</span>
+                                            <span className="text-[var(--dev-console-text-muted)] font-semibold">Timestamp:</span>
+                                            <span className="text-[var(--dev-console-text)] font-mono">
+                                                {formatTimestamp(selectedNet.timestamp)}
+                                                <span className="text-[10px] text-[var(--dev-console-text-muted)] ml-2 font-sans">
+                                                    ({new Date(selectedNet.timestamp).toLocaleDateString()})
+                                                </span>
+                                            </span>
                                         </div>
                                     </div>
                                     
@@ -747,6 +772,15 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                             <div><div className="text-[var(--dev-console-text-muted)] font-semibold mb-0.5">Request URL:</div><div className="text-[var(--dev-console-syntax-property)] break-all">{selectedNet.url}</div></div>
                                             <div><div className="text-[var(--dev-console-text-muted)] font-semibold mb-0.5">Request Method:</div><div className="text-[var(--dev-console-syntax-string)] font-bold">{selectedNet.method}</div></div>
                                             <div><div className="text-[var(--dev-console-text-muted)] font-semibold mb-0.5">Status Code:</div><div className={getStatusColor(selectedNet.status)}>{selectedNet.status}</div></div>
+                                            <div>
+                                                <div className="text-[var(--dev-console-text-muted)] font-semibold mb-0.5">Timestamp:</div>
+                                                <div className="text-[var(--dev-console-text)] font-mono text-[11px]">
+                                                    {formatTimestamp(selectedNet.timestamp)}
+                                                    <span className="text-[10px] text-[var(--dev-console-text-muted)] ml-1.5 font-sans">
+                                                        ({new Date(selectedNet.timestamp).toLocaleDateString()})
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     {selectedNet.responseHeaders && Object.keys(selectedNet.responseHeaders).length > 0 && (

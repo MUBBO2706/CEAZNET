@@ -213,7 +213,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { model, skipCache } = req.body;
+    const { model, skipCache, aiModel } = req.body;
     if (!model) return res.status(400).json({ error: "Model parameter is required" });
     
     const cleanModel = String(model).trim().toUpperCase();
@@ -274,8 +274,10 @@ export default async function handler(req: any, res: any) {
     // 4. Try Gemini API Resolver with Google Search Grounding capabilities!
     try {
       const response = await executeWithGeminiRotation('device_mapper', async (ai) => {
+        const validModels = ['gemini-3.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+        const chosenModel = (aiModel && validModels.includes(aiModel)) ? aiModel : 'gemini-3.5-flash';
         return await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+          model: chosenModel,
           contents: `Identify this mobile device model code: "${cleanModel}".`,
           config: {
             systemInstruction: `You are a professional device model to marketing name resolver.

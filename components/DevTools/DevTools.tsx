@@ -734,50 +734,68 @@ export const DevTools = () => {
                         <div className="flex h-9 w-full overflow-x-auto scrollbar-hide border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] select-none">
                             <button 
                                 onClick={() => setActiveTab('console')}
-                                className={`px-3.5 h-full flex shrink-0 items-center justify-center gap-1.5 border-b-[2px] transition-colors text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'console' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)]' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'console' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Terminal size={14} className="shrink-0" /> Console 
-                                {logs.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-mono font-medium">{logs.length}</span>}
+                                <Terminal size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'console' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Console
+                                </span>
+                                {logs.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{logs.length}</span>}
                             </button>
                             <button 
                                 onClick={() => setActiveTab('server-logs')}
-                                className={`px-3.5 h-full flex shrink-0 items-center justify-center gap-1.5 border-b-[2px] transition-colors text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'server-logs' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)]' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'server-logs' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Cpu size={14} className="shrink-0" /> Server
-                                {serverLogsList.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-red-800/80 text-white rounded-full text-[9px] font-mono font-medium">{serverLogsList.length}</span>}
+                                <Cpu size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'server-logs' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Server
+                                </span>
+                                {serverLogsList.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-red-800/80 text-white rounded-full text-[8px] font-mono font-bold shrink-0">{serverLogsList.length}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('network'); setExpandedNetId(null); }}
-                                className={`px-3.5 h-full flex shrink-0 items-center justify-center gap-1.5 border-b-[2px] transition-colors text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'network' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)]' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'network' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Network size={14} className="shrink-0" /> Network
-                                {nets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-mono font-medium">{nets.length}</span>}
+                                <Network size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'network' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Network
+                                </span>
+                                {nets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{nets.length}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('cache'); }}
-                                className={`px-3.5 h-full flex shrink-0 items-center justify-center gap-1.5 border-b-[2px] transition-colors text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)]' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Smartphone size={14} className="shrink-0" /> Devices
-                                {deviceMappingsCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-mono font-medium">{deviceMappingsCount}</span>}
+                                <Smartphone size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'cache' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Devices
+                                </span>
+                                {deviceMappingsCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{deviceMappingsCount}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('image-cache'); }}
-                                className={`px-3.5 h-full flex shrink-0 items-center justify-center gap-1.5 border-b-[2px] transition-colors text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'image-cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)]' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'image-cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Image size={14} className="shrink-0" /> Image
+                                <Image size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'image-cache' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Image
+                                </span>
                                 {serverImageCacheSummary.count > 0 && (
-                                    <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 rounded-full text-[9px] font-mono font-medium">
+                                    <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 rounded-full text-[8px] font-mono font-bold shrink-0">
                                         {serverImageCacheSummary.count}
                                     </span>
                                 )}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('session-cache'); }}
-                                className={`px-3.5 h-full flex shrink-0 items-center justify-center gap-1.5 border-b-[2px] transition-colors text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'session-cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)]' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'session-cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Clock size={14} className="shrink-0" /> Sessions
+                                <Clock size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'session-cache' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Sessions
+                                </span>
                                 {activeDevicesCount > 0 && (
-                                    <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[#818cf8]/20 text-[#818cf8] border border-[#818cf8]/30 rounded-full text-[9px] font-mono font-medium">
+                                    <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[#818cf8]/20 text-[#818cf8] border border-[#818cf8]/30 rounded-full text-[8px] font-mono font-bold shrink-0">
                                         {activeDevicesCount}
                                     </span>
                                 )}

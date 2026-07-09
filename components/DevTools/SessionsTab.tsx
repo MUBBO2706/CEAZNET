@@ -437,32 +437,32 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
 
             {/* Floating Search Toolbar overlay */}
             {sessionCacheSearch && sessionCacheSearch.trim() && (
-                <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-2 md:right-4 md:left-auto md:w-auto z-50 bg-[var(--dev-console-bg)] border-t md:border border-[var(--dev-console-border)] rounded-none md:rounded-md shadow-none py-2 px-4 flex items-center justify-between md:justify-start gap-3 font-sans text-xs">
-                    <div className="flex items-center gap-1.5 text-[var(--dev-console-text)] font-semibold border-r border-[var(--dev-console-border)] pr-3 shrink-0">
-                        <Search size={12} className="text-[#007fd4]" />
-                        <span>
+                <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-2 md:right-4 md:left-auto z-50 bg-[var(--dev-console-bg)] border-t md:border border-[var(--dev-console-border)] rounded-none md:rounded-md shadow-lg py-2 px-4 flex items-center justify-between gap-4 font-sans text-xs">
+                    {/* Left Side: Highlight Matched Results */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <label className="flex items-center gap-2 cursor-pointer text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors select-none">
+                            <input
+                                type="checkbox"
+                                checked={sessionCacheHighlightSearch}
+                                onChange={(e) => setSessionCacheHighlightSearch(e.target.checked)}
+                                className="rounded border-[var(--dev-console-border)] bg-transparent text-[#007fd4] focus:ring-0 cursor-pointer"
+                            />
+                            <span className="text-[11px] font-medium text-[var(--dev-console-text)]">Highlight Matched Results</span>
+                        </label>
+                    </div>
+
+                    {/* Right Side: Match Counter & adjacent Chevrons */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[var(--dev-console-text)] font-semibold whitespace-nowrap min-w-[36px] text-right">
                             {getSessionMatches().length > 0 ? (
                                 `${activeMatchIndex + 1} of ${getSessionMatches().length}`
                             ) : (
-                                "No matches"
+                                "0 of 0"
                             )}
                         </span>
-                    </div>
 
-                    <label className="flex items-center gap-1.5 cursor-pointer text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors select-none shrink-0">
-                        <input
-                            type="checkbox"
-                            checked={sessionCacheHighlightSearch}
-                            onChange={(e) => setSessionCacheHighlightSearch(e.target.checked)}
-                            className="rounded border-[var(--dev-console-border)] bg-transparent text-[#007fd4] focus:ring-0 cursor-pointer"
-                        />
-                        <span className="text-[10px]">Highlight</span>
-                    </label>
-
-                    {sessionCacheHighlightSearch && (
-                        <>
-                            <div className="w-px h-3 bg-[var(--dev-console-border)] shrink-0"></div>
-                            <div className="flex items-center gap-1 shrink-0">
+                        {sessionCacheHighlightSearch && getSessionMatches().length > 0 && (
+                            <div className="flex items-center gap-0.5 border-l border-[var(--dev-console-border)] pl-1.5 shrink-0">
                                 <button
                                     disabled={getSessionMatches().length === 0}
                                     onClick={() => {
@@ -492,21 +492,8 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
                                     <ChevronDown size={14} />
                                 </button>
                             </div>
-                        </>
-                    )}
-
-                    <div className="w-px h-3 bg-[var(--dev-console-border)] shrink-0"></div>
-
-                    <button
-                        onClick={() => {
-                            setSessionCacheSearchInput('');
-                            setSessionCacheSearch('');
-                        }}
-                        className="p-1 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center outline-none shrink-0"
-                        title="Clear Search"
-                    >
-                        <X size={12} />
-                    </button>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

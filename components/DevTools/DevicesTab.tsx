@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Smartphone, Cpu, Loader2, Search, X, Database, ChevronRight, Trash2, Copy, Check } from 'lucide-react';
 import { getPersistentDeviceId } from '../../utils/deviceUtils';
+import { DevSelect } from './UIComponents';
+
+const modelOptions = [
+    { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' }
+];
 
 interface DevicesTabProps {
     isOpen: boolean;
@@ -32,6 +40,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
     const [resolverResult, setResolverResult] = useState<any | null>(null);
     const [isResolving, setIsResolving] = useState(false);
     const [testError, setTestError] = useState('');
+    const [selectedAiModel, setSelectedAiModel] = useState('gemini-3.5-flash');
 
     const fetchCacheData = async () => {
         setIsDeviceCacheLoading(true);
@@ -125,12 +134,12 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                         } finally {
                             setIsSaving(false);
                         }
-                    }} className="flex flex-col gap-3">
-                        <div className="flex gap-3">
+                    }} className="flex flex-col gap-2">
+                        <div className="flex gap-2 items-end w-full">
                             <div className="flex-1 min-w-0">
-                                <label className="block text-[11px] text-[var(--dev-console-text-muted)] mb-1 font-bold uppercase tracking-wider font-mono truncate">Device Model Code</label>
+                                <label className="block text-[11px] text-[var(--dev-console-text-muted)] mb-1 font-bold uppercase tracking-wider font-mono truncate">Model Code</label>
                                 <input 
-                                    className="w-full bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2.5 py-1.5 text-xs text-[var(--dev-console-text)] focus:outline-none focus:border-[#007fd4] transition-colors font-mono"
+                                    className="w-full bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2 py-1.5 text-xs text-[var(--dev-console-text)] focus:outline-none focus:border-[#007fd4] transition-colors font-mono"
                                     placeholder="e.g. SM-S928U"
                                     value={newModel}
                                     onChange={e => setNewModel(e.target.value)}
@@ -141,21 +150,21 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                             <div className="flex-1 min-w-0">
                                 <label className="block text-[11px] text-[var(--dev-console-text-muted)] mb-1 font-bold uppercase tracking-wider font-mono truncate">Marketing Name</label>
                                 <input 
-                                    className="w-full bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2.5 py-1.5 text-xs text-[var(--dev-console-text)] focus:outline-none focus:border-[#007fd4] transition-colors"
-                                    placeholder="e.g. Google Pixel 8a"
+                                    className="w-full bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2 py-1.5 text-xs text-[var(--dev-console-text)] focus:outline-none focus:border-[#007fd4] transition-colors"
+                                    placeholder="e.g. Pixel 8a"
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                 />
                             </div>
+
+                            <button 
+                                type="submit"
+                                disabled={isSaving || !newModel.trim()}
+                                className="bg-[#007fd4] text-white rounded px-3 py-1.5 text-xs font-semibold hover:bg-[#007fd4]/90 disabled:opacity-50 transition-colors cursor-pointer font-sans shrink-0 h-[28px]"
+                            >
+                                {isSaving ? 'Saving...' : 'Save'}
+                            </button>
                         </div>
-                        
-                        <button 
-                            type="submit"
-                            disabled={isSaving || !newModel.trim()}
-                            className="w-full bg-[#007fd4] text-white rounded py-2 text-xs font-semibold hover:bg-[#007fd4]/90 disabled:opacity-50 transition-colors cursor-pointer mt-1 font-sans"
-                        >
-                            {isSaving ? 'Saving...' : 'Save Mapping'}
-                        </button>
                         
                         {cacheStatusMessage && (
                             <div className={`text-[11px] font-semibold text-center p-1 rounded font-sans ${cacheStatusMessage.includes('error') || cacheStatusMessage.includes('Error') ? 'bg-red-50 dark:bg-red-950/45 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50' : 'bg-green-50 dark:bg-green-950/45 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900/50'}`}>
@@ -174,56 +183,75 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                             Test the Gemini API resolver live. This forces the model to bypass cache and use real-time Google Search grounding to retrieve current specifications.
                         </p>
 
-                        <div className="flex gap-2 w-full">
-                            <input 
-                                className="w-[70%] bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2.5 py-1.5 text-xs text-[var(--dev-console-text)] focus:outline-none focus:border-[#007fd4] transition-colors font-mono shrink-0"
-                                placeholder="Enter model code, e.g. SM-S928U"
-                                value={testModel}
-                                onChange={e => setTestModel(e.target.value)}
-                                disabled={isResolving}
-                            />
+                        <div className="grid grid-cols-1 gap-2.5 w-full">
+                            <div className="flex flex-col gap-1">
+                                <label className="block text-[10px] text-[var(--dev-console-text-muted)] font-bold uppercase tracking-wider font-mono">
+                                    Model Code
+                                </label>
+                                <input 
+                                    className="w-full bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded px-2.5 py-1.5 text-xs text-[var(--dev-console-text)] focus:outline-none focus:border-[#007fd4] transition-colors font-mono"
+                                    placeholder="Enter model code, e.g. SM-S928U"
+                                    value={testModel}
+                                    onChange={e => setTestModel(e.target.value)}
+                                    disabled={isResolving}
+                                />
+                            </div>
                             
-                            <button 
-                                type="button"
-                                onClick={async () => {
-                                    if (!testModel.trim()) return;
-                                    setIsResolving(true);
-                                    setTestError('');
-                                    setResolverResult(null);
-                                    try {
-                                        const response = await fetch('/api/device-mapper', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ model: testModel, skipCache: true })
-                                        });
-                                        if (response.ok) {
-                                            const data = await response.json();
-                                            setResolverResult(data);
-                                            if (data.error) {
-                                                setTestError(data.error);
+                            <div className="flex gap-2 items-end">
+                                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                                    <label className="block text-[10px] text-[var(--dev-console-text-muted)] font-bold uppercase tracking-wider font-mono">
+                                        AI Model
+                                    </label>
+                                    <DevSelect 
+                                        value={selectedAiModel}
+                                        options={modelOptions}
+                                        onChange={setSelectedAiModel}
+                                        disabled={isResolving}
+                                    />
+                                </div>
+                                
+                                <button 
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!testModel.trim()) return;
+                                        setIsResolving(true);
+                                        setTestError('');
+                                        setResolverResult(null);
+                                        try {
+                                            const response = await fetch('/api/device-mapper', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ model: testModel, skipCache: true, aiModel: selectedAiModel })
+                                            });
+                                            if (response.ok) {
+                                                const data = await response.json();
+                                                setResolverResult(data);
+                                                if (data.error) {
+                                                    setTestError(data.error);
+                                                }
+                                            } else {
+                                                setTestError('Failed to resolve device model.');
                                             }
-                                        } else {
-                                            setTestError('Failed to resolve device model.');
+                                        } catch (err: any) {
+                                            setTestError(err.message || 'Network error occurred.');
+                                        } finally {
+                                            setIsResolving(false);
                                         }
-                                    } catch (err: any) {
-                                        setTestError(err.message || 'Network error occurred.');
-                                    } finally {
-                                        setIsResolving(false);
-                                    }
-                                }}
-                                disabled={isResolving || !testModel.trim()}
-                                className="w-[30%] bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text)] rounded py-2 text-xs font-semibold disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-sans shrink-0 overflow-hidden"
-                                title={isResolving ? "Resolving..." : "Resolve with Gemini (Live)"}
-                            >
-                                {isResolving ? (
-                                    <>
-                                        <Loader2 size={12} className="animate-spin text-[#007fd4] shrink-0" />
-                                        <span className="truncate">Resolving...</span>
-                                    </>
-                                ) : (
-                                    <span className="truncate">Resolve</span>
-                                )}
-                            </button>
+                                    }}
+                                    disabled={isResolving || !testModel.trim()}
+                                    className="h-[26px] md:h-7 px-3.5 bg-[#007fd4] text-white rounded text-xs font-semibold hover:bg-[#007fd4]/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-sans shrink-0"
+                                    title={isResolving ? "Resolving..." : "Resolve with Gemini (Live)"}
+                                >
+                                    {isResolving ? (
+                                        <>
+                                            <Loader2 size={12} className="animate-spin text-white shrink-0" />
+                                            <span>Resolving...</span>
+                                        </>
+                                    ) : (
+                                        <span>Resolve</span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {testError && (
