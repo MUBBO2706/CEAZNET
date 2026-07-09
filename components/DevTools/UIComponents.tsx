@@ -466,7 +466,7 @@ export const TrendIndicator = ({ trend, format = (v) => v, invertColors = false,
     return (
         <span 
             style={{ color: textColor }}
-            className="inline-flex items-center gap-0.5 text-[8.5px] lg:text-[9.5px] font-bold font-mono tracking-tight shrink-0 whitespace-nowrap select-none leading-none cursor-help border-b border-dotted border-current/20" 
+            className="inline-flex items-center gap-0.5 text-[8.5px] lg:text-[9.5px] font-bold font-mono tracking-tight shrink-0 whitespace-nowrap select-none leading-none cursor-help border-b border-dotted border-current/20 dark:border-b-0" 
             title={tooltip}
         >
             <span>{arrow}</span>

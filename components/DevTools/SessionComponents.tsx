@@ -21,7 +21,71 @@ export interface MetricsProps {
     sessionCacheData: Record<string, any>;
 }
 
+const InteractiveStatValue: React.FC<{
+    id: string;
+    filteredVal: string | number;
+    totalVal: string | number;
+    colorClass: string;
+    valStyle: string;
+    qValStyle: string;
+    expandedStat: string | null;
+    setExpandedStat: (id: string | null) => void;
+    filteredTitle?: string;
+    totalTitle?: string;
+}> = ({
+    id,
+    filteredVal,
+    totalVal,
+    colorClass,
+    valStyle,
+    qValStyle,
+    expandedStat,
+    setExpandedStat,
+    filteredTitle,
+    totalTitle
+}) => {
+    const isExpanded = expandedStat === id;
+    const [isHovered, setIsHovered] = React.useState(false);
+    const showExpanded = isExpanded || isHovered;
+
+    return (
+        <div 
+            className="relative h-6 w-full min-w-0 flex items-center select-none"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={(e) => {
+                e.stopPropagation();
+                setExpandedStat(isExpanded ? null : id);
+            }}
+        >
+            <div className={`flex items-baseline leading-none gap-1 font-mono transition-all duration-150 cursor-pointer ${
+                showExpanded 
+                    ? 'absolute left-0 bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] p-1.5 rounded shadow-lg z-30 w-max max-w-[200px] sm:max-w-[260px] whitespace-normal break-all' 
+                    : 'absolute left-0 w-full whitespace-nowrap truncate overflow-hidden'
+            }`}
+            >
+                <span className={`${valStyle} ${colorClass}`} title={filteredTitle}>
+                    {filteredVal}
+                </span>
+                <span className={`text-[10px] ${colorClass} opacity-40 font-bold font-sans shrink-0`}>/</span>
+                <span className={`${qValStyle} ${colorClass} opacity-70`} title={totalTitle}>
+                    {totalVal}
+                </span>
+            </div>
+        </div>
+    );
+};
+
 export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => {
+    const [expandedStat, setExpandedStat] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (!expandedStat) return;
+        const handleOutsideClick = () => setExpandedStat(null);
+        document.addEventListener('click', handleOutsideClick);
+        return () => document.removeEventListener('click', handleOutsideClick);
+    }, [expandedStat]);
+
     const trendMode = 'historical';
     const summary = sessionCacheData._summary || {
         totalDevices: 0,
@@ -91,7 +155,7 @@ export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => 
         return timeStr;
     };
 
-    const headerStyle = "text-[7.5px] min-[320px]:text-[8px] min-[375px]:text-[9px] lg:text-[10px] uppercase tracking-wider font-mono font-bold leading-none truncate block w-full whitespace-nowrap overflow-hidden";
+    const headerStyle = "text-[7.5px] min-[320px]:text-[8px] min-[375px]:text-[9px] lg:text-[10px] uppercase tracking-wider font-mono font-bold leading-none truncate block w-full whitespace-nowrap overflow-hidden text-[var(--dev-console-text-muted)] dark:text-neutral-400";
     const valStyle = "text-xs min-[340px]:text-sm min-[375px]:text-base lg:text-lg font-bold font-mono leading-none truncate whitespace-nowrap overflow-hidden";
     const qValStyle = "text-[8.5px] min-[340px]:text-[9.5px] min-[375px]:text-[10.5px] lg:text-[11.5px] font-bold font-mono leading-none whitespace-nowrap truncate overflow-hidden";
     const descStyle = "text-[6.5px] min-[320px]:text-[7px] min-[375px]:text-[8px] lg:text-[8.5px] text-[var(--dev-console-text-muted)] mt-1.5 font-mono leading-none truncate block w-full whitespace-nowrap overflow-hidden";
@@ -102,11 +166,18 @@ export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => 
                 <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col min-w-0">
                     <span className={headerStyle}>TOTAL DEVICES</span>
                     <div className="flex items-center justify-between mt-1.5 w-full">
-                        <div className="flex items-baseline leading-none gap-1.5">
-                            <div className={`${valStyle} text-[var(--dev-console-stat-indigo)]`} title="Filtered Devices">{filteredMetrics.totalDevices}</div>
-                            <div className="text-[10px] text-[var(--dev-console-stat-indigo)] opacity-40 font-bold">/</div>
-                            <div className={`${qValStyle} text-[var(--dev-console-stat-indigo)] opacity-70`} title="Total Devices">{summary.totalDevices}</div>
-                        </div>
+                        <InteractiveStatValue 
+                            id="totalDevices"
+                            filteredVal={filteredMetrics.totalDevices}
+                            totalVal={summary.totalDevices}
+                            colorClass="text-[var(--dev-console-stat-indigo)]"
+                            valStyle={valStyle}
+                            qValStyle={qValStyle}
+                            expandedStat={expandedStat}
+                            setExpandedStat={setExpandedStat}
+                            filteredTitle="Filtered Devices"
+                            totalTitle="Total Devices"
+                        />
                         <TrendIndicator trend={summary.trends?.totalDevices} mode={trendMode} />
                     </div>
                     <span className={descStyle}>Unique hardware profiles</span>
@@ -114,11 +185,18 @@ export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => 
                 <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col min-w-0">
                     <span className={headerStyle}>ACTIVE SESSIONS</span>
                     <div className="flex items-center justify-between mt-1.5 w-full">
-                        <div className="flex items-baseline leading-none gap-1.5">
-                            <div className={`${valStyle} text-[var(--dev-console-stat-green)]`} title="Filtered Active Sessions">{filteredMetrics.activeSessions}</div>
-                            <div className="text-[10px] text-[var(--dev-console-stat-green)] opacity-40 font-bold">/</div>
-                            <div className={`${qValStyle} text-[var(--dev-console-stat-green)] opacity-70`} title="Total Active Sessions">{summary.activeSessions}</div>
-                        </div>
+                        <InteractiveStatValue 
+                            id="activeSessions"
+                            filteredVal={filteredMetrics.activeSessions}
+                            totalVal={summary.activeSessions}
+                            colorClass="text-[var(--dev-console-stat-green)]"
+                            valStyle={valStyle}
+                            qValStyle={qValStyle}
+                            expandedStat={expandedStat}
+                            setExpandedStat={setExpandedStat}
+                            filteredTitle="Filtered Active Sessions"
+                            totalTitle="Total Active Sessions"
+                        />
                         <TrendIndicator trend={summary.trends?.activeSessions} mode={trendMode} />
                     </div>
                     <span className={descStyle}>Currently live connections</span>
@@ -126,11 +204,18 @@ export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => 
                 <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col min-w-0">
                     <span className={headerStyle}>TOTAL SESSIONS</span>
                     <div className="flex items-center justify-between mt-1.5 w-full">
-                        <div className="flex items-baseline leading-none gap-1.5">
-                            <div className={`${valStyle} text-[var(--dev-console-text)]`} title="Filtered Total Sessions">{filteredMetrics.totalSessions}</div>
-                            <div className="text-[10px] text-[var(--dev-console-text)] opacity-40 font-bold font-sans">/</div>
-                            <div className={`${qValStyle} text-[var(--dev-console-text)] opacity-70`} title="Total Sessions">{summary.totalSessions}</div>
-                        </div>
+                        <InteractiveStatValue 
+                            id="totalSessions"
+                            filteredVal={filteredMetrics.totalSessions}
+                            totalVal={summary.totalSessions}
+                            colorClass="text-[var(--dev-console-text)]"
+                            valStyle={valStyle}
+                            qValStyle={qValStyle}
+                            expandedStat={expandedStat}
+                            setExpandedStat={setExpandedStat}
+                            filteredTitle="Filtered Total Sessions"
+                            totalTitle="Total Sessions"
+                        />
                         <TrendIndicator trend={summary.trends?.totalSessions} mode={trendMode} />
                     </div>
                     <span className={descStyle}>Lifetime total connections</span>
@@ -138,11 +223,18 @@ export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => 
                 <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col min-w-0">
                     <span className={headerStyle}>ACTIVE USERS</span>
                     <div className="flex items-center justify-between mt-1.5 w-full">
-                        <div className="flex items-baseline leading-none gap-1.5">
-                            <div className={`${valStyle} text-[var(--dev-console-stat-amber)]`} title="Filtered Active Users">{filteredMetrics.activeUsers}</div>
-                            <div className="text-[10px] text-[var(--dev-console-stat-amber)] opacity-40 font-bold font-sans">/</div>
-                            <div className={`${qValStyle} text-[var(--dev-console-stat-amber)] opacity-70`} title="Total Active Users">{summary.activeUsers}</div>
-                        </div>
+                        <InteractiveStatValue 
+                            id="activeUsers"
+                            filteredVal={filteredMetrics.activeUsers}
+                            totalVal={summary.activeUsers}
+                            colorClass="text-[var(--dev-console-stat-amber)]"
+                            valStyle={valStyle}
+                            qValStyle={qValStyle}
+                            expandedStat={expandedStat}
+                            setExpandedStat={setExpandedStat}
+                            filteredTitle="Filtered Active Users"
+                            totalTitle="Total Active Users"
+                        />
                         <TrendIndicator trend={summary.trends?.activeUsers} mode={trendMode} />
                     </div>
                     <span className={descStyle}>Distinct user accounts</span>
@@ -153,22 +245,36 @@ export const MetricsSummary: React.FC<MetricsProps> = ({ sessionCacheData }) => 
                         <TrendIndicator trend={summary.trends?.avgSessionTime} format={formatDurationMetric} mode={trendMode} />
                     </div>
                     <div className="flex items-center justify-between mt-1.5 w-full">
-                        <div className="flex items-baseline leading-none gap-1.5 font-mono">
-                            <div className={`${valStyle} text-[var(--dev-console-stat-purple)]`} title="Filtered Avg Duration">{formatDurationMetric(filteredMetrics.avgSessionTime)}</div>
-                            <div className="text-[10px] text-[var(--dev-console-stat-purple)] opacity-40 font-bold font-sans">/</div>
-                            <div className={`${qValStyle} text-[var(--dev-console-stat-purple)] opacity-70`} title={formatDurationMetric(summary.avgSessionTime)}>{formatDurationMetric(summary.avgSessionTime)}</div>
-                        </div>
+                        <InteractiveStatValue 
+                            id="avgSessionTime"
+                            filteredVal={formatDurationMetric(filteredMetrics.avgSessionTime)}
+                            totalVal={formatDurationMetric(summary.avgSessionTime)}
+                            colorClass="text-[var(--dev-console-stat-purple)]"
+                            valStyle={valStyle}
+                            qValStyle={qValStyle}
+                            expandedStat={expandedStat}
+                            setExpandedStat={setExpandedStat}
+                            filteredTitle="Filtered Avg Duration"
+                            totalTitle="Total Avg Duration"
+                        />
                     </div>
                     <span className={descStyle}>Average active duration</span>
                 </div>
                 <div className="bg-[var(--dev-console-bg-active)] border border-[var(--dev-console-border)] p-3 rounded-md flex flex-col min-w-0">
                     <span className={headerStyle}>PRIVATE SESS</span>
                     <div className="flex items-center justify-between mt-1.5 w-full">
-                        <div className="flex items-baseline leading-none gap-1.5">
-                            <div className={`${valStyle} text-[var(--dev-console-stat-pink)]`} title="Filtered Private Sessions">{filteredMetrics.privateSessions}</div>
-                            <div className="text-[10px] text-[var(--dev-console-stat-pink)] opacity-40 font-bold font-sans">/</div>
-                            <div className={`${qValStyle} text-[var(--dev-console-stat-pink)] opacity-70`} title="Total Private Sessions">{summary.privateSessions !== undefined ? summary.privateSessions : 0}</div>
-                        </div>
+                        <InteractiveStatValue 
+                            id="privateSessions"
+                            filteredVal={filteredMetrics.privateSessions}
+                            totalVal={summary.privateSessions !== undefined ? summary.privateSessions : 0}
+                            colorClass="text-[var(--dev-console-stat-pink)]"
+                            valStyle={valStyle}
+                            qValStyle={qValStyle}
+                            expandedStat={expandedStat}
+                            setExpandedStat={setExpandedStat}
+                            filteredTitle="Filtered Private Sessions"
+                            totalTitle="Total Private Sessions"
+                        />
                         <TrendIndicator trend={summary.trends?.privateSessions} mode={trendMode} />
                     </div>
                     <span className={descStyle}>Private connections count</span>
@@ -566,43 +672,17 @@ export const DeviceAccordion: React.FC<DeviceAccordionProps> = ({
                                                                                             </button>
                                                                                         </div>
                                                                                     ) : (
-                                                                                        <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
-                                                                                            <button
-                                                                                                onClick={(e) => {
-                                                                                                    e.preventDefault();
-                                                                                                    e.stopPropagation();
-                                                                                                    setActiveSessionMenu(activeSessionMenu === s.sessionId ? null : s.sessionId);
-                                                                                                    setActiveDeviceMenu(null);
-                                                                                                    setActiveRecentSessionsMenu(null);
-                                                                                                }}
-                                                                                                className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] p-1 bg-transparent border-none outline-none hover:bg-neutral-500/10 rounded cursor-pointer flex items-center justify-center mx-auto"
-                                                                                                title="Session Actions"
-                                                                                            >
-                                                                                                <MoreVertical size={13} />
-                                                                                            </button>
-                                                                                            {activeSessionMenu === s.sessionId && (
-                                                                                                <div 
-                                                                                                    className="absolute right-0 mt-1.5 w-44 rounded-md shadow-lg bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] ring-1 ring-black ring-opacity-5 z-50 py-1"
-                                                                                                    onClick={(e) => e.stopPropagation()}
-                                                                                                >
-                                                                                                    <div className="absolute -top-[5px] right-[10px] w-2.5 h-2.5 rotate-45 bg-[var(--dev-console-bg)] border-t border-l border-[var(--dev-console-border)] z-40" />
-                                                                                                    
-                                                                                                    <div className="relative z-50 bg-[var(--dev-console-bg)] rounded-md">
-                                                                                                        <button
-                                                                                                            onClick={(e) => {
-                                                                                                                e.stopPropagation();
-                                                                                                                setActiveSessionMenu(null);
-                                                                                                                setDeletingSessionId(s.sessionId);
-                                                                                                            }}
-                                                                                                            className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-sans rounded-md"
-                                                                                                        >
-                                                                                                            <Trash2 size={12} />
-                                                                                                            <span>Delete Session</span>
-                                                                                                        </button>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
+                                                                                        <button
+                                                                                            onClick={(e) => {
+                                                                                                e.preventDefault();
+                                                                                                e.stopPropagation();
+                                                                                                setDeletingSessionId(s.sessionId);
+                                                                                            }}
+                                                                                            className="text-red-500 hover:text-red-600 p-1 bg-transparent border-none outline-none hover:bg-red-500/10 rounded cursor-pointer flex items-center justify-center mx-auto transition-colors"
+                                                                                            title="Delete Session"
+                                                                                        >
+                                                                                            <Trash2 size={13} />
+                                                                                        </button>
                                                                                     )}
                                                                                 </td>
                                                                             </tr>

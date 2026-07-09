@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Trash2, Copy, Check, Loader2 } from 'lucide-react';
+import { Image, Trash2, Copy, Check, Loader2, MoreVertical } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import { 
     serverImageCacheSummary, 
@@ -24,8 +24,17 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
     const [, forceRender] = useState(0);
     const [deletingImageUrl, setDeletingImageUrl] = useState<string | null>(null);
     const [isDeletingImage, setIsDeletingImage] = useState<string | null>(null);
+    const [activeImageMenu, setActiveImageMenu] = useState<string | null>(null);
 
     const trendMode = 'historical';
+
+    // Click outside handler for image action menus
+    useEffect(() => {
+        if (!activeImageMenu) return;
+        const handleOutsideClick = () => setActiveImageMenu(null);
+        document.addEventListener('click', handleOutsideClick);
+        return () => document.removeEventListener('click', handleOutsideClick);
+    }, [activeImageMenu]);
 
     // Subscribe to store updates
     useEffect(() => {
@@ -278,25 +287,50 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleCopy(item.url, `srv-copy-${idx}`)}
-                                                        className="p-1 hover:bg-[var(--dev-console-border)] rounded-md text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors"
-                                                        title="Copy URL"
-                                                    >
-                                                        {copiedId === `srv-copy-${idx}` ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                                                    </button>
+                                                <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={(e) => {
+                                                            e.preventDefault();
                                                             e.stopPropagation();
-                                                            setDeletingImageUrl(item.url);
+                                                            setActiveImageMenu(activeImageMenu === item.url ? null : item.url);
                                                         }}
-                                                        className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-md text-[var(--dev-console-text-muted)] hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                                        title="Remove Entry"
+                                                        className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] p-1 bg-transparent border-none outline-none hover:bg-neutral-500/10 rounded cursor-pointer flex items-center justify-center"
+                                                        title="Image Actions"
                                                     >
-                                                        <Trash2 size={12} />
+                                                        <MoreVertical size={13} />
                                                     </button>
-                                                </>
+                                                    {activeImageMenu === item.url && (
+                                                        <div 
+                                                            className="absolute right-0 mt-1 w-36 rounded-md shadow-lg bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] ring-1 ring-black ring-opacity-5 z-50 py-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <div className="absolute -top-[5px] right-[10px] w-2 h-2 rotate-45 bg-[var(--dev-console-bg)] border-t border-l border-[var(--dev-console-border)] z-40" />
+                                                            
+                                                            <div className="relative z-50 bg-[var(--dev-console-bg)] rounded-md">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleCopy(item.url, `srv-copy-${idx}`);
+                                                                        setActiveImageMenu(null);
+                                                                    }}
+                                                                    className="w-full text-left px-3 py-1.5 text-xs text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] transition-colors flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-sans"
+                                                                >
+                                                                    {copiedId === `srv-copy-${idx}` ? <Check size={12} className="text-green-400 shrink-0" /> : <Copy size={12} className="shrink-0" />}
+                                                                    <span>Copy URL</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setActiveImageMenu(null);
+                                                                        setDeletingImageUrl(item.url);
+                                                                    }}
+                                                                    className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-sans"
+                                                                >
+                                                                    <Trash2 size={12} className="shrink-0" />
+                                                                    <span>Remove Entry</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>

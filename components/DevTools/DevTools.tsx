@@ -653,7 +653,7 @@ export const DevTools = () => {
                                 onClick={() => {
                                     setShowHideConfirmation(true);
                                 }} 
-                                className="p-1 text-red-500 hover:text-red-600 hover:bg-[var(--dev-console-bg-active)] rounded transition-colors flex items-center gap-1 cursor-pointer font-medium" 
+                                className="p-1 text-red-500 hover:text-red-600 rounded transition-colors flex items-center gap-1 cursor-pointer font-medium bg-transparent border-0 outline-none focus:outline-none" 
                                 title="Hide Developer Console"
                             >
                                 <EyeOff size={13} />
@@ -668,7 +668,7 @@ export const DevTools = () => {
                                     onClick={() => {
                                         window.dispatchEvent(new CustomEvent('refresh-session-cache'));
                                     }}
-                                    className="p-1 hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] rounded transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                                    className="p-1 text-[#007fd4] hover:text-[#005a96] rounded transition-colors flex items-center gap-1 cursor-pointer font-medium bg-transparent border-0 outline-none focus:outline-none"
                                     title="Sync Sessions"
                                 >
                                     <svg 
@@ -680,7 +680,7 @@ export const DevTools = () => {
                                         strokeWidth="2.5" 
                                         strokeLinecap="round" 
                                         strokeLinejoin="round"
-                                        className="text-[#007fd4] shrink-0"
+                                        className="shrink-0"
                                     >
                                         <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
                                         <path d="M21 3v5h-5" />
@@ -690,7 +690,7 @@ export const DevTools = () => {
                                     </svg>
                                 </button>
                             ) : (
-                                <button onClick={handleCopyAll} className="p-1 hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] rounded transition-colors flex items-center gap-1" title="Copy All">
+                                <button onClick={handleCopyAll} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors flex items-center gap-1 bg-transparent border-0 outline-none focus:outline-none" title="Copy All">
                                     {copiedId === (activeTab === 'console' ? 'all-console' : activeTab === 'server-logs' ? 'all-server-logs' : 'all-network') ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
                                     <span>Copy</span>
                                 </button>
@@ -700,7 +700,7 @@ export const DevTools = () => {
                                     <button 
                                         onClick={fetchImageCacheData}
                                         disabled={isImageCacheLoading}
-                                        className="p-1 hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[#007fd4]" 
+                                        className="p-1 text-[#007fd4] hover:text-[#005a96] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-0 outline-none focus:outline-none" 
                                         title="Refresh Cache Analytics"
                                     >
                                         <RefreshCw size={13} className={`${isImageCacheLoading ? 'animate-spin' : ''}`} />
@@ -709,20 +709,20 @@ export const DevTools = () => {
                             )}
                             <button 
                                 onClick={handleClear} 
-                                className={`p-1 rounded transition-colors cursor-pointer ${
+                                className={`p-1 rounded transition-colors cursor-pointer bg-transparent border-0 outline-none focus:outline-none ${
                                     (activeTab === 'session-cache' || activeTab === 'image-cache')
-                                        ? 'text-red-500 hover:text-red-400 hover:bg-red-500/10' 
-                                        : 'hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)]'
+                                        ? 'text-red-500 hover:text-red-400' 
+                                        : 'hover:text-[var(--dev-console-text)]'
                                   }`} 
                                 title={activeTab === 'session-cache' ? "Clear All Session Logs" : activeTab === 'image-cache' ? "Flush Image Cache" : "Clear (Cmd/Ctrl+K)"}
                             >
                                 <Trash2 size={13} className={(activeTab === 'session-cache' || activeTab === 'image-cache') ? 'text-red-500' : ''} />
                             </button>
                             <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
-                            <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] rounded transition-colors" title={isMaximized ? 'Minimize' : 'Maximize'}>
+                            <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors bg-transparent border-0 outline-none focus:outline-none" title={isMaximized ? 'Minimize' : 'Maximize'}>
                                 {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                             </button>
-                            <button onClick={() => setIsOpen(false)} className="p-1 hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] rounded transition-colors" title="Close DevTools">
+                            <button onClick={() => setIsOpen(false)} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors bg-transparent border-0 outline-none focus:outline-none" title="Close DevTools">
                                 <ChevronDown size={16} />
                             </button>
                         </div>

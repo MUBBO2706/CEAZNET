@@ -87,7 +87,7 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full overflow-hidden w-full bg-[var(--dev-console-bg)]">
+        <div className="flex-1 flex flex-col h-full overflow-hidden w-full bg-[var(--dev-console-bg)] relative">
             {/* Toolbar Filter Section */}
             <div className="flex-none border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] w-full relative z-20">
                 {/* Mobile View Layout (md:hidden) */}
@@ -437,8 +437,8 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
 
             {/* Floating Search Toolbar overlay */}
             {sessionCacheSearch && sessionCacheSearch.trim() && (
-                <div className="absolute bottom-4 right-4 z-50 bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded-md shadow-lg py-1.5 px-3 flex items-center gap-3 font-sans text-xs">
-                    <div className="flex items-center gap-1.5 text-[var(--dev-console-text)] font-semibold border-r border-[var(--dev-console-border)] pr-3">
+                <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-2 md:right-4 md:left-auto md:w-auto z-50 bg-[var(--dev-console-bg)] border-t md:border border-[var(--dev-console-border)] rounded-none md:rounded-md shadow-none py-2 px-4 flex items-center justify-between md:justify-start gap-3 font-sans text-xs">
+                    <div className="flex items-center gap-1.5 text-[var(--dev-console-text)] font-semibold border-r border-[var(--dev-console-border)] pr-3 shrink-0">
                         <Search size={12} className="text-[#007fd4]" />
                         <span>
                             {getSessionMatches().length > 0 ? (
@@ -448,41 +448,8 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
                             )}
                         </span>
                     </div>
-                    
-                    <div className="flex items-center gap-1">
-                        <button
-                            disabled={getSessionMatches().length === 0}
-                            onClick={() => {
-                                const matches = getSessionMatches();
-                                if (matches.length === 0) return;
-                                const prevIndex = (activeMatchIndex - 1 + matches.length) % matches.length;
-                                setActiveMatchIndex(prevIndex);
-                                scrollToMatch(matches[prevIndex]);
-                            }}
-                            className="p-1 hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text)] hover:text-[#007fd4] disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center"
-                            title="Previous Match"
-                        >
-                            <ChevronUp size={14} />
-                        </button>
-                        <button
-                            disabled={getSessionMatches().length === 0}
-                            onClick={() => {
-                                const matches = getSessionMatches();
-                                if (matches.length === 0) return;
-                                const nextIndex = (activeMatchIndex + 1) % matches.length;
-                                setActiveMatchIndex(nextIndex);
-                                scrollToMatch(matches[nextIndex]);
-                            }}
-                            className="p-1 hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text)] hover:text-[#007fd4] disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center"
-                            title="Next Match"
-                        >
-                            <ChevronDown size={14} />
-                        </button>
-                    </div>
 
-                    <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
-
-                    <label className="flex items-center gap-1.5 cursor-pointer text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors select-none">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors select-none shrink-0">
                         <input
                             type="checkbox"
                             checked={sessionCacheHighlightSearch}
@@ -492,14 +459,50 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
                         <span className="text-[10px]">Highlight</span>
                     </label>
 
-                    <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
+                    {sessionCacheHighlightSearch && (
+                        <>
+                            <div className="w-px h-3 bg-[var(--dev-console-border)] shrink-0"></div>
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                    disabled={getSessionMatches().length === 0}
+                                    onClick={() => {
+                                        const matches = getSessionMatches();
+                                        if (matches.length === 0) return;
+                                        const prevIndex = (activeMatchIndex - 1 + matches.length) % matches.length;
+                                        setActiveMatchIndex(prevIndex);
+                                        scrollToMatch(matches[prevIndex]);
+                                    }}
+                                    className="p-1 text-[var(--dev-console-text-muted)] hover:text-[#007fd4] disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center outline-none"
+                                    title="Previous Match"
+                                >
+                                    <ChevronUp size={14} />
+                                </button>
+                                <button
+                                    disabled={getSessionMatches().length === 0}
+                                    onClick={() => {
+                                        const matches = getSessionMatches();
+                                        if (matches.length === 0) return;
+                                        const nextIndex = (activeMatchIndex + 1) % matches.length;
+                                        setActiveMatchIndex(nextIndex);
+                                        scrollToMatch(matches[nextIndex]);
+                                    }}
+                                    className="p-1 text-[var(--dev-console-text-muted)] hover:text-[#007fd4] disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center outline-none"
+                                    title="Next Match"
+                                >
+                                    <ChevronDown size={14} />
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="w-px h-3 bg-[var(--dev-console-border)] shrink-0"></div>
 
                     <button
                         onClick={() => {
                             setSessionCacheSearchInput('');
                             setSessionCacheSearch('');
                         }}
-                        className="p-1 hover:bg-red-500/10 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center"
+                        className="p-1 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center outline-none shrink-0"
                         title="Clear Search"
                     >
                         <X size={12} />
