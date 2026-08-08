@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DairyItem, DairyEntry } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
-import { X, Save, Calendar, Droplet, DollarSign, Trash2, ChevronDown, Loader2, IndianRupee } from 'lucide-react';
+import { X, Save, Calendar, Droplet, DollarSign, Trash2, ChevronDown, Loader2, IndianRupee, Eye } from 'lucide-react';
 import { useGlobalModal } from '../core/GlobalModalProvider';
 import ConfirmationModal from '../ConfirmationModal';
 
@@ -12,11 +12,12 @@ interface DairyEntryModalProps {
     onSave: (entry: DairyEntry) => Promise<void> | void;
     onDelete?: (id: string) => Promise<void> | void;
     onOpenPayment?: () => void;
+    onShowInfo?: () => void;
     initialEntry?: DairyEntry;
     initialDate?: string;
 }
 
-const DairyEntryModal: React.FC<DairyEntryModalProps> = ({ isOpen, onClose, item, onSave, onDelete, onOpenPayment, initialEntry, initialDate }) => {
+const DairyEntryModal: React.FC<DairyEntryModalProps> = ({ isOpen, onClose, item, onSave, onDelete, onOpenPayment, onShowInfo, initialEntry, initialDate }) => {
     const { confirm } = useGlobalModal();
     
     const getToday = () => {
@@ -202,6 +203,17 @@ const DairyEntryModal: React.FC<DairyEntryModalProps> = ({ isOpen, onClose, item
                     </h2>
                     {initialEntry && (
                         <div className="flex items-center gap-1">
+                            {onShowInfo && (
+                                <button
+                                    type="button"
+                                    onClick={onShowInfo}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                                    title="View Information"
+                                    aria-label="View Information"
+                                >
+                                    <Eye className="w-5 h-5" />
+                                </button>
+                            )}
                             {onOpenPayment && (
                                 <button
                                     type="button"

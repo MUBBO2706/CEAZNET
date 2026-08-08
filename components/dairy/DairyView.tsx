@@ -6,6 +6,7 @@ import DairyCalendar from './DairyCalendar';
 import DairyStats from './DairyStats';
 import { v4 as uuidv4 } from 'uuid';
 import DairyEntryModal from './DairyEntryModal';
+import DairyEntryInfoModal from './DairyEntryInfoModal';
 import DairyPaymentModal from './DairyPaymentModal';
 import DairyItemModal from './DairyItemModal';
 import ConfirmationModal from '../ConfirmationModal';
@@ -233,6 +234,7 @@ const DairyView: React.FC<DairyViewProps> = ({ setDairyHeaderState, isSuspended 
     const [selectedItem, setSelectedItem] = useState<DairyItem | null>(null);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+    const [isEntryInfoModalOpen, setIsEntryInfoModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<DairyPayment | null>(null);
     const [selectedEntryForPayment, setSelectedEntryForPayment] = useState<DairyEntry | null>(null);
@@ -409,6 +411,7 @@ const DairyView: React.FC<DairyViewProps> = ({ setDairyHeaderState, isSuspended 
         await deleteDairyEntry(id, user);
         await loadData();
         setIsEntryModalOpen(false);
+        setIsEntryInfoModalOpen(false);
     };
 
     const handleBackToDashboard = (fromUrl?: boolean) => {
@@ -1314,7 +1317,12 @@ const DairyView: React.FC<DairyViewProps> = ({ setDairyHeaderState, isSuspended 
                                     payments={payments.filter(p => p.itemId === selectedItem.id)}
                                     onDateClick={(date) => {
                                         setSelectedDate(date);
-                                        setIsEntryModalOpen(true);
+                                        const hasEntry = entries.some(e => e.itemId === selectedItem.id && e.date === date);
+                                        if (hasEntry) {
+                                            setIsEntryInfoModalOpen(true);
+                                        } else {
+                                            setIsEntryModalOpen(true);
+                                        }
                                     }}
                                     onPaymentClick={(payment) => {
                                         setSelectedPayment(payment);
@@ -1599,6 +1607,10 @@ const DairyView: React.FC<DairyViewProps> = ({ setDairyHeaderState, isSuspended 
                     item={selectedItem}
                     initialDate={selectedDate}
                     initialEntry={entries.find(e => e.itemId === selectedItem.id && e.date === selectedDate)}
+                    onShowInfo={() => {
+                        setIsEntryModalOpen(false);
+                        setIsEntryInfoModalOpen(true);
+                    }}
                     onOpenPayment={() => {
                         const activeEntry = entries.find(e => e.itemId === selectedItem.id && e.date === selectedDate);
                         if (activeEntry) {
@@ -1734,6 +1746,29 @@ const DairyView: React.FC<DairyViewProps> = ({ setDairyHeaderState, isSuspended 
                     onExport={handleDownloadPDF}
                 />
             )}
+
+            {selectedItem && isEntryInfoModalOpen && (() => {
+                const activeEntry = entries.find(e => e.itemId === selectedItem.id && e.date === selectedDate);
+                return activeEntry ? (
+                    <DairyEntryInfoModal
+                        isOpen={isEntryInfoModalOpen}
+                        onClose={() => setIsEntryInfoModalOpen(false)}
+                        item={selectedItem}
+                        entry={activeEntry}
+                        payments={payments}
+                        onEdit={() => {
+                            setIsEntryInfoModalOpen(false);
+                            setIsEntryModalOpen(true);
+                        }}
+                        onOpenPayment={() => {
+                            setSelectedEntryForPayment(activeEntry);
+                            setIsEntryInfoModalOpen(false);
+                            setIsPaymentModalOpen(true);
+                        }}
+                        onDelete={handleDeleteEntry}
+                    />
+                ) : null;
+            })()}
 
             <ConfirmationModal
                 isOpen={!!paymentToDelete}
