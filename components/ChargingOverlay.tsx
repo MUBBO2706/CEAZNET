@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
+import { Zap } from 'lucide-react';
 import { ChargingOverlayState } from '../hooks/useChargingMode';
 import { updateBrowserThemeColor } from '../utils/themeColor';
 
@@ -100,10 +101,13 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
               transition={{ type: 'spring', stiffness: 320, damping: 26, delay: 0.08 }}
               className="pointer-events-auto flex items-center justify-between gap-6 sm:gap-8 px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-black/90 border border-neutral-700/80 shadow-[0_8px_30px_rgba(0,0,0,0.85)] select-none backdrop-blur-md min-w-[220px] max-w-[90vw]"
             >
-              {/* Left label: Charging in crisp white */}
-              <span className="text-white font-semibold text-sm sm:text-base tracking-tight font-sans">
-                Charging
-              </span>
+              {/* Left label: Charging icon + Charging text */}
+              <div className="flex items-center gap-1.5 text-white">
+                <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#30D158] fill-[#30D158]" />
+                <span className="text-white font-semibold text-sm sm:text-base tracking-tight font-sans">
+                  Charging
+                </span>
+              </div>
 
               {/* Right section: Percentage + Live Battery Level Icon */}
               <div className="flex items-center gap-2 sm:gap-2.5">
@@ -126,8 +130,8 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
             </motion.div>
           </div>
 
-          {/* Main Visual Canvas Container - Centered */}
-          <div className="relative w-full max-w-[440px] h-full max-h-[860px] flex flex-col items-center justify-center">
+          {/* Main Visual Canvas Container - Centered and filling full screen height */}
+          <div className="relative w-full h-full max-w-[500px] flex flex-col items-center justify-center overflow-hidden">
             
             {/* Subtle, restrained background radial aura centered on the circle */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
@@ -136,11 +140,11 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
               />
             </div>
 
-            {/* System SVG Canvas: Conduits, Rings, Flowing Particles */}
+            {/* System SVG Canvas: Conduits, Rings, Flowing Particles reaching viewport bottom */}
             <svg
-              viewBox="0 0 400 800"
-              className="w-full h-full max-h-[800px] absolute inset-0 z-10 pointer-events-none"
-              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 400 1000"
+              className="w-full h-full absolute inset-0 z-10 pointer-events-none"
+              preserveAspectRatio="xMidYMid slice"
             >
               <defs>
                 {/* Clean Energy Gradient for Active Ring */}
@@ -183,52 +187,52 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                   </feMerge>
                 </filter>
 
-                {/* Defined Motion Paths starting from very bottom edge (y=800) -> Upwards into Central Circle (cy=400) */}
+                {/* Defined Motion Paths starting from well past bottom edge (y=1400) -> Upwards into Central Circle (cy=500) */}
                 {/* Center Stem Path */}
                 <path
                   id="path-center-stem"
-                  d="M 200,800 L 200,530"
+                  d="M 200,1400 L 200,630"
                   fill="none"
                 />
                 {/* Left Inner Conduit Path */}
                 <path
                   id="path-left-inner"
-                  d="M 194,800 L 194,600 C 194,545 135,530 111,506 A 138,138 0 0,1 200,262"
+                  d="M 194,1400 L 194,700 C 194,645 135,630 111,606 A 138,138 0 0,1 200,362"
                   fill="none"
                 />
                 {/* Right Inner Conduit Path */}
                 <path
                   id="path-right-inner"
-                  d="M 206,800 L 206,600 C 206,545 265,530 289,506 A 138,138 0 0,0 200,262"
+                  d="M 206,1400 L 206,700 C 206,645 265,630 289,606 A 138,138 0 0,0 200,362"
                   fill="none"
                 />
                 {/* Left Outer Conduit Path */}
                 <path
                   id="path-left-outer"
-                  d="M 184,800 L 184,610 C 184,550 125,535 101,510 A 148,148 0 0,1 200,252"
+                  d="M 184,1400 L 184,710 C 184,650 125,635 101,610 A 148,148 0 0,1 200,352"
                   fill="none"
                 />
                 {/* Right Outer Conduit Path */}
                 <path
                   id="path-right-outer"
-                  d="M 216,800 L 216,610 C 216,550 275,535 299,510 A 148,148 0 0,0 200,252"
+                  d="M 216,1400 L 216,710 C 216,650 275,635 299,610 A 148,148 0 0,0 200,352"
                   fill="none"
                 />
               </defs>
 
-              {/* 1. PHYSICAL CONDUIT LINES & PERFECT CONCENTRIC DASH RINGS (Parallel to circle, curving at bottom) */}
+              {/* 1. PHYSICAL CONDUIT LINES & PERFECT CONCENTRIC DASH RINGS (Extending to bottom of screen) */}
               <g opacity="0.65">
-                {/* Outermost Concentric Dash Path (Radius 158, perfectly parallel all around top and sides) */}
+                {/* Outermost Concentric Dash Path (Radius 158) */}
                 <path
-                  d="M 174,800 L 174,620 C 174,555 115,540 90,514 A 158,158 0 1,1 310,514 C 285,540 226,555 226,620 L 226,800"
+                  d="M 174,1600 L 174,720 C 174,655 115,640 90,614 A 158,158 0 1,1 310,614 C 285,640 226,655 226,720 L 226,1600"
                   fill="none"
                   stroke="url(#conduitGrad)"
                   strokeWidth="1"
                   strokeDasharray="4 6"
                 />
-                {/* Outer Concentric Dash Path (Radius 148, perfectly parallel) */}
+                {/* Outer Concentric Dash Path (Radius 148) */}
                 <path
-                  d="M 184,800 L 184,610 C 184,550 125,535 101,510 A 148,148 0 1,1 299,510 C 275,535 216,550 216,610 L 216,800"
+                  d="M 184,1600 L 184,710 C 184,650 125,635 101,610 A 148,148 0 1,1 299,610 C 275,635 216,650 216,710 L 216,1600"
                   fill="none"
                   stroke="url(#conduitGrad)"
                   strokeWidth="1.2"
@@ -236,20 +240,20 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                 />
                 {/* Inner Solid Conduits (Radius 138, parallel to active ring) */}
                 <path
-                  d="M 194,800 L 194,600 C 194,545 135,530 111,506 A 138,138 0 0,1 200,262"
+                  d="M 194,1600 L 194,700 C 194,645 135,630 111,606 A 138,138 0 0,1 200,362"
                   fill="none"
                   stroke="url(#conduitGrad)"
                   strokeWidth="1.4"
                 />
                 <path
-                  d="M 206,800 L 206,600 C 206,545 265,530 289,506 A 138,138 0 0,0 200,262"
+                  d="M 206,1600 L 206,700 C 206,645 265,630 289,606 A 138,138 0 0,0 200,362"
                   fill="none"
                   stroke="url(#conduitGrad)"
                   strokeWidth="1.4"
                 />
                 {/* Main Central Feeder Stem */}
                 <path
-                  d="M 200,800 L 200,530"
+                  d="M 200,1600 L 200,630"
                   fill="none"
                   stroke="url(#conduitGrad)"
                   strokeWidth="2"
@@ -287,12 +291,12 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                 </g>
               )}
 
-              {/* 3. ENLARGED & VERTICALLY CENTERED CHARGING INDICATOR RINGS (Center: cx=200, cy=400) */}
+              {/* 3. CHARGING INDICATOR RINGS (Center: cx=200, cy=500) */}
               <g className="central-indicator-ring">
                 {/* Outer Static Track Ring */}
                 <circle
                   cx="200"
-                  cy="400"
+                  cy="500"
                   r={ringRadius}
                   fill="none"
                   stroke="rgba(255, 255, 255, 0.08)"
@@ -302,20 +306,20 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                 {/* Subdued Glow Background Arc */}
                 <circle
                   cx="200"
-                  cy="400"
+                  cy="500"
                   r={ringRadius}
                   fill="none"
                   stroke="url(#ringEnergyGrad)"
                   strokeWidth="10"
                   opacity="0.25"
                   filter="url(#subtleArcGlow)"
-                  transform="rotate(-90 200 400)"
+                  transform="rotate(-90 200 500)"
                 />
 
                 {/* Main Dynamic Battery Progress Ring Arc */}
                 <motion.circle
                   cx="200"
-                  cy="400"
+                  cy="500"
                   r={ringRadius}
                   fill="none"
                   stroke="url(#ringEnergyGrad)"
@@ -325,14 +329,14 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                   initial={{ strokeDashoffset: circumference }}
                   animate={{ strokeDashoffset }}
                   transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-                  transform="rotate(-90 200 400)"
+                  transform="rotate(-90 200 500)"
                   filter="url(#subtleArcGlow)"
                 />
 
                 {/* Inner Precision Hairline Rim */}
                 <circle
                   cx="200"
-                  cy="400"
+                  cy="500"
                   r={ringRadius - 14}
                   fill="none"
                   stroke="rgba(255, 255, 255, 0.12)"
@@ -341,15 +345,15 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
               </g>
             </svg>
 
-            {/* 4. CENTRAL TYPOGRAPHY - 100% VERTICALLY & HORIZONTALLY CENTERED (No icon) */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center text-center select-none pointer-events-none">
+            {/* 4. CENTRAL TYPOGRAPHY - PERFECTLY OPTICALLY CENTERED INSIDE THE RING */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-0.5 z-20 flex flex-col items-center justify-center text-center select-none pointer-events-none">
               
               {/* Large Clean Battery Percentage Number */}
-              <div className="flex items-baseline justify-center select-none font-sans">
+              <div className="flex items-start justify-center select-none font-sans relative">
                 <span
-                  className="text-white font-extralight leading-none tracking-tight drop-shadow-[0_2px_16px_rgba(0,242,254,0.2)]"
+                  className="text-white font-extralight leading-[0.9] tracking-tight drop-shadow-[0_2px_16px_rgba(0,242,254,0.2)]"
                   style={{
-                    fontSize: '94px',
+                    fontSize: '92px',
                     letterSpacing: '-0.04em',
                     fontFamily: 'system-ui, -apple-system, SF Pro Display, sans-serif'
                   }}
@@ -357,9 +361,10 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                   {displayPercentage}
                 </span>
                 <span
-                  className="text-cyan-300/80 font-light ml-1.5"
+                  className="text-cyan-300/85 font-light ml-1.5 mt-1"
                   style={{
-                    fontSize: '30px',
+                    fontSize: '28px',
+                    lineHeight: '1',
                     fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}
                 >
@@ -367,8 +372,8 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                 </span>
               </div>
 
-              {/* Secondary Status Label: CHARGING (Centered underneath number, no icon) */}
-              <div className="mt-2.5 flex items-center justify-center">
+              {/* Secondary Status Label: CHARGING (Balanced spacing below number) */}
+              <div className="mt-2 flex items-center justify-center">
                 <span className="text-[12px] font-semibold tracking-[0.28em] text-cyan-300/90 uppercase font-sans">
                   Charging
                 </span>
