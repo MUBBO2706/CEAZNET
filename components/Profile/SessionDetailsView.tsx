@@ -51,6 +51,8 @@ export interface SessionItem {
   created_at: string;
   last_active_at?: string;
   is_current?: boolean;
+  browser_name?: string;
+  is_incognito?: boolean;
 }
 
 interface SessionDetailsViewProps {
@@ -240,6 +242,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
   const [confirmingTerminateId, setConfirmingTerminateId] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [isRowActionRunning, setIsRowActionRunning] = useState<string | null>(null);
+  
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
@@ -632,8 +636,14 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
       confirmText: 'Terminate All Others',
       isDangerous: true,
       action: async () => {
-        await onTerminateAllOther();
-        setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+        setIsBulkRunning(true);
+        setConfirmModalConfig(prev => ({ ...prev, confirmText: 'Terminating...' }));
+        try {
+          await onTerminateAllOther();
+        } finally {
+          setIsBulkRunning(false);
+          setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+        }
       },
     });
   };
@@ -647,14 +657,28 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
       confirmText: 'Clear Inactive Records',
       isDangerous: true,
       action: async () => {
-        await onDeleteAllInactive();
-        setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+        setIsBulkRunning(true);
+        setConfirmModalConfig(prev => ({ ...prev, confirmText: 'Deleting...' }));
+        try {
+          await onDeleteAllInactive();
+        } finally {
+          setIsBulkRunning(false);
+          setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+        }
       },
     });
   };
 
   const activeCount = useMemo(() => {
     return sessions.filter(s => getSessionStatus(s).status === 'active').length;
+  }, [sessions, currentSessionKey]);
+
+  const otherActiveSessionsCount = useMemo(() => {
+    return sessions.filter(s => getSessionStatus(s).status === 'active' && !s.is_current && s.session_key !== currentSessionKey).length;
+  }, [sessions, currentSessionKey]);
+
+  const deletableInactiveSessionsCount = useMemo(() => {
+    return sessions.filter(s => getSessionStatus(s).status !== 'active' && !s.is_current && s.session_key !== currentSessionKey).length;
   }, [sessions, currentSessionKey]);
 
   const statusLabels: Record<StatusFilter, string> = {
@@ -742,6 +766,45 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
             <h1 className="text-2xl font-bold text-[var(--profile-text-primary)]">
               Session History
             </h1>
+            {/* Bulk Actions Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsActionsDropdownOpen(!isActionsDropdownOpen);
+                  setIsExportDropdownOpen(false);
+                }}
+                className="p-0 bg-transparent border-0 text-[var(--profile-text-secondary)] hover:text-[var(--profile-accent)] transition-colors cursor-pointer focus:outline-none flex items-center justify-center"
+                title="Bulk Actions"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+
+              {isActionsDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setIsActionsDropdownOpen(false)} />
+                  <div 
+                    className="absolute right-0 mt-2 w-56 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-2xl shadow-xl z-30 py-1.5 animate-in fade-in zoom-in-95"
+                  >
+                    <button
+                      onClick={promptTerminateAllOther}
+                      disabled={otherActiveSessionsCount === 0}
+                      className="w-full px-3.5 py-2 text-left text-xs text-amber-600 dark:text-amber-400 hover:bg-[var(--profile-card-subtle-bg)] flex items-center gap-2.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ShieldAlert className="w-4 h-4 shrink-0" />
+                      <span>Terminate All Other Sessions</span>
+                    </button>
+                    <button
+                      onClick={promptDeleteAllInactive}
+                      disabled={deletableInactiveSessionsCount === 0}
+                      className="w-full px-3.5 py-2 text-left text-xs text-red-600 dark:text-red-400 hover:bg-[var(--profile-card-subtle-bg)] flex items-center gap-2.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <span>Clear All Inactive Records</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <p className="text-xs text-[var(--profile-text-muted)] w-full leading-relaxed">
             Comprehensive real-time device audit trail, active token connection codex, and remote access manager.
@@ -750,16 +813,16 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
 
         {/* Toolbar & Filters (Containerless) */}
         <div className="space-y-3.5">
-          {/* Search bar & Status Selector Adjacent */}
-          <div className="flex gap-2 w-full">
-            <div className="relative flex-1">
+          <div className="flex flex-col md:flex-row gap-2 w-full">
+            {/* Search Bar */}
+            <div className="relative w-full md:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--profile-text-muted)]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by IP, device, browser, OS, city..."
-                className="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] focus:outline-none focus:border-[var(--profile-accent)] transition-colors"
+                className="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] focus:outline-none focus:border-[var(--profile-accent)] transition-colors h-full min-h-[36px]"
               />
               {searchQuery && (
                 <button
@@ -771,62 +834,95 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               )}
             </div>
 
-            {/* Status Filter Selector - Adjacent to Search Bar */}
-            <div className="relative shrink-0">
-              <button
-                onClick={() => {
-                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
-                  setIsTimeRangeDropdownOpen(false);
-                  setIsSortDropdownOpen(false);
-                }}
-                className="px-3 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium h-full"
-              >
-                <span>Status: {statusLabels[statusFilter]}</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-              </button>
-              {isStatusDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-20" onClick={() => setIsStatusDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
-                    {(['all', 'active', 'logged_out', 'terminated', 'expired'] as StatusFilter[]).map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => {
-                          setStatusFilter(opt);
-                          setIsStatusDropdownOpen(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${statusFilter === opt ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
-                      >
-                        <span>{statusLabels[opt]}</span>
-                        {statusFilter === opt && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)]" />}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+            {/* Status, Sort, Time Range Row - Side-by-side on mobile */}
+            <div className="flex gap-2 w-full md:w-auto">
+              {/* Status Filter */}
+              <div className="relative flex-1 md:flex-none min-w-0">
+                <button
+                  onClick={() => {
+                    setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                    setIsTimeRangeDropdownOpen(false);
+                    setIsSortDropdownOpen(false);
+                  }}
+                  className="w-full md:w-auto px-2 md:px-3 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center justify-between md:justify-start gap-1.5 cursor-pointer font-medium h-full min-h-[36px]"
+                >
+                  <span className="truncate">Status: {statusLabels[statusFilter]}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                </button>
+                {isStatusDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setIsStatusDropdownOpen(false)} />
+                    <div className="absolute right-0 md:left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
+                      {(['all', 'active', 'logged_out', 'terminated', 'expired'] as StatusFilter[]).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            setStatusFilter(opt);
+                            setIsStatusDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${statusFilter === opt ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
+                        >
+                          <span className="truncate">{statusLabels[opt]}</span>
+                          {statusFilter === opt && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)] shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
 
-          {/* Filter Controls Row */}
-          <div className="flex items-center gap-2 flex-wrap justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Custom Time Range Dropdown */}
-              <div className="relative">
+              {/* Sort Filter */}
+              <div className="relative flex-1 md:flex-none min-w-0">
+                <button
+                  onClick={() => {
+                    setIsSortDropdownOpen(!isSortDropdownOpen);
+                    setIsStatusDropdownOpen(false);
+                    setIsTimeRangeDropdownOpen(false);
+                  }}
+                  className="w-full md:w-auto px-2 md:px-3 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center justify-between md:justify-start gap-1.5 cursor-pointer font-medium h-full min-h-[36px]"
+                >
+                  <span className="truncate">Sort: {sortLabels[sortOption]}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                </button>
+                {isSortDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setIsSortDropdownOpen(false)} />
+                    <div className="absolute right-0 md:left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
+                      {(['newest', 'oldest', 'browser_asc', 'os_asc'] as SortOption[]).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            setSortOption(opt);
+                            setIsSortDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${sortOption === opt ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
+                        >
+                          <span className="truncate">{sortLabels[opt]}</span>
+                          {sortOption === opt && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)] shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Time Range Filter */}
+              <div className="relative flex-1 md:flex-none min-w-0">
                 <button
                   onClick={() => {
                     setIsTimeRangeDropdownOpen(!isTimeRangeDropdownOpen);
                     setIsStatusDropdownOpen(false);
                     setIsSortDropdownOpen(false);
                   }}
-                  className="px-3 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
+                  className="w-full md:w-auto px-2 md:px-3 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center justify-between md:justify-start gap-1.5 cursor-pointer font-medium h-full min-h-[36px]"
                 >
-                  <span>Time: {timeLabels[timeRangeFilter]}</span>
-                  <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                  <span className="truncate">Time: {timeLabels[timeRangeFilter]}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
                 </button>
                 {isTimeRangeDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-20" onClick={() => setIsTimeRangeDropdownOpen(false)} />
-                    <div className="absolute left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute right-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
                       {(['all', '24h', '7d', '30d', 'custom'] as TimeRangeFilter[]).map((opt) => (
                         <button
                           key={opt}
@@ -836,43 +932,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                           }}
                           className={`w-full px-3 py-2 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${timeRangeFilter === opt ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
                         >
-                          <span>{timeLabels[opt]}</span>
-                          {timeRangeFilter === opt && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)]" />}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Custom Sort Option Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    setIsSortDropdownOpen(!isSortDropdownOpen);
-                    setIsStatusDropdownOpen(false);
-                    setIsTimeRangeDropdownOpen(false);
-                  }}
-                  className="px-3 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
-                >
-                  <span>Sort: {sortLabels[sortOption]}</span>
-                  <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                </button>
-                {isSortDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-20" onClick={() => setIsSortDropdownOpen(false)} />
-                    <div className="absolute left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
-                      {(['newest', 'oldest', 'browser_asc'] as SortOption[]).map((opt) => (
-                        <button
-                          key={opt}
-                          onClick={() => {
-                            setSortOption(opt);
-                            setIsSortDropdownOpen(false);
-                          }}
-                          className={`w-full px-3 py-2 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${sortOption === opt ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
-                        >
-                          <span>{sortLabels[opt]}</span>
-                          {sortOption === opt && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)]" />}
+                          <span className="truncate">{timeLabels[opt]}</span>
+                          {timeRangeFilter === opt && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)] shrink-0" />}
                         </button>
                       ))}
                     </div>
@@ -880,45 +941,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                 )}
               </div>
             </div>
-
-            {/* Bulk Actions Dropdown */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    setIsActionsDropdownOpen(!isActionsDropdownOpen);
-                    setIsExportDropdownOpen(false);
-                  }}
-                  className="p-0 bg-transparent border-0 text-[var(--profile-text-secondary)] hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer focus:outline-none flex items-center justify-center"
-                  title="Bulk Actions"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-
-                {isActionsDropdownOpen && (
-                  <div 
-                    className="absolute right-0 mt-2 w-56 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-2xl shadow-xl z-30 py-1.5 animate-in fade-in zoom-in-95"
-                    onMouseLeave={() => setIsActionsDropdownOpen(false)}
-                  >
-                    <button
-                      onClick={promptTerminateAllOther}
-                      className="w-full px-3.5 py-2 text-left text-xs text-amber-600 dark:text-amber-400 hover:bg-[var(--profile-card-subtle-bg)] flex items-center gap-2.5 transition-colors cursor-pointer"
-                    >
-                      <ShieldAlert className="w-4 h-4" />
-                      <span>Terminate All Other Sessions</span>
-                    </button>
-                    <button
-                      onClick={promptDeleteAllInactive}
-                      className="w-full px-3.5 py-2 text-left text-xs text-red-600 dark:text-red-400 hover:bg-[var(--profile-card-subtle-bg)] flex items-center gap-2.5 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Clear All Inactive Records</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-        </div>
+          </div>
 
       {/* Custom Date Range Picker (Container-less, Single Row on Mobile) */}
       {timeRangeFilter === 'custom' && (
@@ -1446,6 +1469,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
         message={confirmModalConfig.message}
         confirmButtonText={confirmModalConfig.confirmText}
         confirmButtonVariant={confirmModalConfig.isDangerous ? 'danger' : 'primary'}
+        isLoading={isBulkRunning}
+        loadingText={confirmModalConfig.confirmText}
       />
       </div>
     </div>

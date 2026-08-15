@@ -12,6 +12,7 @@ export interface ConfirmationModalProps {
     confirmButtonVariant?: 'primary' | 'danger';
     showCancel?: boolean;
     isLoading?: boolean;
+    loadingText?: string;
     // MCU-TRAKER compatibility fields
     onCancel?: () => void;
     confirmLabel?: string;
@@ -30,6 +31,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmButtonVariant = 'danger',
     showCancel = true,
     isLoading = false,
+    loadingText = 'Processing...',
     onCancel,
     confirmLabel,
     cancelLabel,
@@ -154,7 +156,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                                 {isLoading ? (
                                     <>
                                         <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                        <span>Processing...</span>
+                                        <span>{loadingText}</span>
                                     </>
                                 ) : (
                                     <span>{finalConfirmLabel}</span>

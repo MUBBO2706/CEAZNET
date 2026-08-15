@@ -1,0 +1,132 @@
+{
+  "fp_fea7825fe9829cb602a845433e863dc1": {
+    "deviceModel": "POCO X4 PRO 5G",
+    "accounts": {
+      "mubasshirsunni@gmail.com": {
+        "sessions": [
+          {
+            "sessionId": "cd5702db-f972-420f-8996-01c0c5f7843a",
+            "username": "mubasshirsunni@gmail.com",
+            "startTime": "2026-08-15T04:13:53.298Z",
+            "endTime": null,
+            "location": "Jeevan Baug, Mumbra, Maharashtra, India",
+            "ip": "2402:3a80:4172:c9aa:24f4:f2ff:fe9d:b891",
+            "is_incognito": false,
+            "browser_name": "Mobile Chrome",
+            "browser_version": "150.0.0.0",
+            "os_name": "Android",
+            "os_version": "10",
+            "duration": 0,
+            "status": "active",
+            "lastHeartbeat": "2026-08-15T04:15:47.598Z",
+            "provider": "email"
+          }
+        ],
+        "fullName": null
+      }
+    }
+  },
+  "_summary": {
+    "totalDevices": 1,
+    "activeSessions": 1,
+    "totalSessions": 1,
+    "activeUsers": 1,
+    "avgSessionTime": 0,
+    "avgSessionsPerDevice": 1,
+    "privateSessions": 0,
+    "locations": 1,
+    "trends": {
+      "totalDevices": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 1,
+        "isIncrease": false,
+        "historicalAverage": 1,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 1,
+        "max": 1,
+        "historyCount": 1
+      },
+      "activeSessions": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 1,
+        "isIncrease": false,
+        "historicalAverage": 1,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 1,
+        "max": 1,
+        "historyCount": 1
+      },
+      "totalSessions": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 1,
+        "isIncrease": false,
+        "historicalAverage": 1,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 1,
+        "max": 1,
+        "historyCount": 1
+      },
+      "activeUsers": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 1,
+        "isIncrease": false,
+        "historicalAverage": 1,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 1,
+        "max": 1,
+        "historyCount": 1
+      },
+      "avgSessionTime": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 0,
+        "isIncrease": false,
+        "historicalAverage": 0,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 0,
+        "max": 0,
+        "historyCount": 1
+      },
+      "privateSessions": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 0,
+        "isIncrease": false,
+        "historicalAverage": 0,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 0,
+        "max": 0,
+        "historyCount": 1
+      }
+    },
+    "history": [
+      {
+        "timestamp": "2026-08-15T04:13:53.299Z",
+        "totalDevices": 1,
+        "activeSessions": 1,
+        "totalSessions": 1,
+        "activeUsers": 1,
+        "avgSessionTime": 0,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      }
+    ]
+  }
+}
