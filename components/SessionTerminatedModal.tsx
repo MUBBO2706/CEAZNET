@@ -154,13 +154,17 @@ const SessionTerminatedModal: React.FC<Props> = ({
           </div>
         </div>
 
-        <button
-          id="session-terminated-return-btn"
-          onClick={handleReload}
-          className="w-full max-w-[240px] flex items-center justify-center bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-gray-900 py-3 px-6 rounded-full font-semibold transition-all active:scale-95 shadow-sm cursor-pointer"
+        <a
+          id="session-terminated-return-home-link"
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            handleReload();
+          }}
+          className="text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white underline underline-offset-4 decoration-gray-300 hover:decoration-gray-900 dark:decoration-neutral-600 dark:hover:decoration-white transition-colors cursor-pointer"
         >
-          Return to Login
-        </button>
+          Return to Home
+        </a>
       </div>
     </div>
   );
