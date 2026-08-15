@@ -17,9 +17,9 @@ import {
   VoicePersona,
 } from "./types";
 import { initializeAiClient } from "./services/aiClient";
-import FloatingHeader from "./components/FloatingHeader";
 import { useChargingMode } from "./hooks/useChargingMode";
 import ChargingOverlay from "./components/ChargingOverlay";
+import FloatingHeader from "./components/FloatingHeader";
 import ApiKeyModal from "./components/ApiKeyModal";
 import ViewRenderer from "./components/ViewRenderer";
 import {
@@ -96,9 +96,6 @@ const DEFAULT_UI_PREFS: UIPreferences = {
   fontFamily: "sans",
   layoutDensity: "comfortable",
   borderRadius: "medium",
-  chargingModeEnabled: true,
-  chargingModeDuration: 1,
-  chargingModeBlackScreen: true,
 };
 
 // --- ROUTING HELPERS ---
@@ -257,7 +254,6 @@ const App: React.FC = () => {
       return DEFAULT_UI_PREFS;
     }
   });
-
   const { overlayState: chargingOverlayState, batteryLevel } = useChargingMode(uiPreferences);
 
   const exploreActiveCategoryRef = useRef<string>("for-you");

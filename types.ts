@@ -78,7 +78,7 @@ export interface UIPreferences {
     layoutDensity: 'comfortable' | 'compact';
     borderRadius?: 'small' | 'medium' | 'large' | 'full'; 
     chargingModeEnabled?: boolean;
-    chargingModeDuration?: number; // In minutes
+    chargingModeDuration?: number;
     chargingModeBlackScreen?: boolean;
 }
 

@@ -10,7 +10,6 @@ export function useChargingMode(preferences: UIPreferences) {
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Defaults based on preferences or fallback
   const isEnabled = preferences.chargingModeEnabled ?? true;
   const durationMinutes = preferences.chargingModeDuration ?? 1;
   const useBlackScreen = preferences.chargingModeBlackScreen ?? true;
@@ -28,11 +27,8 @@ export function useChargingMode(preferences: UIPreferences) {
       }
 
       if (isCharging) {
-        // If we are already in some charging state, don't restart the timer if we just get a level update
         setOverlayState((prev) => {
           if (prev !== 'hidden') return prev;
-          
-          // Start animating
           if (timerRef.current) clearTimeout(timerRef.current);
           
           timerRef.current = setTimeout(() => {
@@ -42,7 +38,6 @@ export function useChargingMode(preferences: UIPreferences) {
           return 'animating';
         });
       } else {
-        // Disconnected
         setOverlayState('hidden');
         if (timerRef.current) clearTimeout(timerRef.current);
       }
@@ -53,7 +48,6 @@ export function useChargingMode(preferences: UIPreferences) {
       updateState(target.charging, target.level);
     };
 
-    // Check support
     if ('getBattery' in navigator) {
       setIsSupported(true);
       (navigator as any).getBattery().then((battery: any) => {
@@ -63,7 +57,7 @@ export function useChargingMode(preferences: UIPreferences) {
         battery.addEventListener('chargingchange', handleBatteryChange);
         battery.addEventListener('levelchange', handleBatteryChange);
       }).catch(() => {
-        setIsSupported(false); // E.g., blocked by permissions
+        setIsSupported(false);
       });
     }
 

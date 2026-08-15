@@ -8,17 +8,17 @@
             "sessionId": "cd5702db-f972-420f-8996-01c0c5f7843a",
             "username": "mubasshirsunni@gmail.com",
             "startTime": "2026-08-15T04:13:53.298Z",
-            "endTime": null,
+            "endTime": "2026-08-15T05:17:31.888Z",
             "location": "Jeevan Baug, Mumbra, Maharashtra, India",
-            "ip": "2402:3a80:4172:c9aa:24f4:f2ff:fe9d:b891",
+            "ip": "42.111.110.15",
             "is_incognito": false,
             "browser_name": "Mobile Chrome",
             "browser_version": "150.0.0.0",
             "os_name": "Android",
             "os_version": "10",
-            "duration": 0,
+            "duration": 3818,
             "status": "active",
-            "lastHeartbeat": "2026-08-15T04:15:47.598Z",
+            "lastHeartbeat": "2026-08-15T05:20:48.248Z",
             "provider": "email"
           }
         ],
@@ -31,7 +31,7 @@
     "activeSessions": 1,
     "totalSessions": 1,
     "activeUsers": 1,
-    "avgSessionTime": 0,
+    "avgSessionTime": 3818,
     "avgSessionsPerDevice": 1,
     "privateSessions": 0,
     "locations": 1,
@@ -47,20 +47,20 @@
         "isHistIncrease": false,
         "min": 1,
         "max": 1,
-        "historyCount": 1
+        "historyCount": 3
       },
       "activeSessions": {
-        "diff": 0,
+        "diff": 1,
         "percent": 0,
-        "previous": 1,
-        "isIncrease": false,
-        "historicalAverage": 1,
-        "historicalDiff": 0,
-        "historicalPercent": 0,
-        "isHistIncrease": false,
-        "min": 1,
+        "previous": 0,
+        "isIncrease": true,
+        "historicalAverage": 0.5,
+        "historicalDiff": 0.5,
+        "historicalPercent": 100,
+        "isHistIncrease": true,
+        "min": 0,
         "max": 1,
-        "historyCount": 1
+        "historyCount": 3
       },
       "totalSessions": {
         "diff": 0,
@@ -73,7 +73,7 @@
         "isHistIncrease": false,
         "min": 1,
         "max": 1,
-        "historyCount": 1
+        "historyCount": 3
       },
       "activeUsers": {
         "diff": 0,
@@ -86,20 +86,20 @@
         "isHistIncrease": false,
         "min": 1,
         "max": 1,
-        "historyCount": 1
+        "historyCount": 3
       },
       "avgSessionTime": {
         "diff": 0,
         "percent": 0,
-        "previous": 0,
+        "previous": 3818,
         "isIncrease": false,
-        "historicalAverage": 0,
-        "historicalDiff": 0,
-        "historicalPercent": 0,
-        "isHistIncrease": false,
+        "historicalAverage": 1909,
+        "historicalDiff": 1909,
+        "historicalPercent": 100,
+        "isHistIncrease": true,
         "min": 0,
-        "max": 0,
-        "historyCount": 1
+        "max": 3818,
+        "historyCount": 3
       },
       "privateSessions": {
         "diff": 0,
@@ -112,7 +112,7 @@
         "isHistIncrease": false,
         "min": 0,
         "max": 0,
-        "historyCount": 1
+        "historyCount": 3
       }
     },
     "history": [
@@ -123,6 +123,28 @@
         "totalSessions": 1,
         "activeUsers": 1,
         "avgSessionTime": 0,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      },
+      {
+        "timestamp": "2026-08-15T05:19:38.586Z",
+        "totalDevices": 1,
+        "activeSessions": 0,
+        "totalSessions": 1,
+        "activeUsers": 1,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      },
+      {
+        "timestamp": "2026-08-15T05:20:28.570Z",
+        "totalDevices": 1,
+        "activeSessions": 1,
+        "totalSessions": 1,
+        "activeUsers": 1,
+        "avgSessionTime": 3818,
         "avgSessionsPerDevice": 1,
         "privateSessions": 0,
         "locations": 1
