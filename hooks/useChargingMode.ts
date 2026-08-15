@@ -18,6 +18,7 @@ export function useChargingMode(preferences: UIPreferences) {
   });
   const [overlayState, setOverlayState] = useState<ChargingOverlayState>('hidden');
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
+  const [isPreview, setIsPreview] = useState<boolean>(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const prevChargingRef = useRef<boolean | null>(null);
@@ -27,13 +28,24 @@ export function useChargingMode(preferences: UIPreferences) {
   const useBlackScreen = preferences.chargingModeBlackScreen ?? true;
 
   const triggerPreview = useCallback(() => {
+    setIsPreview(true);
     setOverlayState('animating');
     if (timerRef.current) clearTimeout(timerRef.current);
     
     timerRef.current = setTimeout(() => {
       setOverlayState(useBlackScreen ? 'black-screen' : 'hidden');
+      setIsPreview(false);
     }, durationMinutes * 60 * 1000);
   }, [durationMinutes, useBlackScreen]);
+
+  const closePreview = useCallback(() => {
+    setOverlayState('hidden');
+    setIsPreview(false);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     let batteryManager: any = null;
@@ -54,6 +66,7 @@ export function useChargingMode(preferences: UIPreferences) {
 
       if (!isEnabled) {
         setOverlayState('hidden');
+        setIsPreview(false);
         if (timerRef.current) clearTimeout(timerRef.current);
         prevChargingRef.current = isCharging;
         return;
@@ -64,12 +77,14 @@ export function useChargingMode(preferences: UIPreferences) {
 
       if (isCharging) {
         if (wasCharging === false || wasCharging === null) {
+          setIsPreview(false);
           setOverlayState('animating');
           startAnimationTimer();
         }
       } else {
         // Disconnected from charger -> Hide overlay immediately
         setOverlayState('hidden');
+        setIsPreview(false);
         if (timerRef.current) clearTimeout(timerRef.current);
       }
     };
@@ -93,6 +108,7 @@ export function useChargingMode(preferences: UIPreferences) {
           // Desktop PC detected -> Disable charging mode and hide from settings
           setIsSupported(false);
           setOverlayState('hidden');
+          setIsPreview(false);
           prevChargingRef.current = true;
           return;
         }
@@ -105,6 +121,7 @@ export function useChargingMode(preferences: UIPreferences) {
         // If charger is ALREADY connected on page load, trigger the animation!
         if (isEnabled && isCharging) {
           if (isMobile || level < 1) {
+            setIsPreview(false);
             setOverlayState('animating');
             startAnimationTimer();
           }
@@ -132,7 +149,9 @@ export function useChargingMode(preferences: UIPreferences) {
     isSupported,
     overlayState,
     batteryLevel,
-    triggerPreview
+    isPreview,
+    triggerPreview,
+    closePreview,
   };
 }
 

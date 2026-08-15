@@ -1,6 +1,6 @@
 {
   "name": "Ceaznet v6.9",
-  "description": "Ceaznet",
+  "description": "Ceaznet is a secure, offline-first digital workspace and sandbox combining global news, markdown logging, budgeting, chemistry simulations, and neural translation.",
   "requestFramePermissions": [
     "camera",
     "microphone",

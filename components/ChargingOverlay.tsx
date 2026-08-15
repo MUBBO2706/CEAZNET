@@ -1,15 +1,22 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
-import { Zap } from 'lucide-react';
+import { Zap, X } from 'lucide-react';
 import { ChargingOverlayState } from '../hooks/useChargingMode';
 import { updateBrowserThemeColor } from '../utils/themeColor';
 
 interface ChargingOverlayProps {
   state: ChargingOverlayState;
   batteryLevel: number | null;
+  isPreview?: boolean;
+  onClose?: () => void;
 }
 
-const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }) => {
+const ChargingOverlay: React.FC<ChargingOverlayProps> = ({
+  state,
+  batteryLevel,
+  isPreview = false,
+  onClose,
+}) => {
   const count = useMotionValue(0);
   const [displayPercentage, setDisplayPercentage] = useState<number>(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -59,19 +66,52 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
     };
   }, [state]);
 
-  // Streamlined Glowing Rod Particles moving along the conduits from bottom to circle
+  // Dynamic Multi-Speed Energy Particles with Variable Velocity (Fast Sparks, Medium Rods, Slow Surges & Micro-Dots)
   const energyParticles = useMemo(() => {
     return [
-      { id: 1, path: 'left-inner', delay: 0, speed: 2.2, length: 22, thickness: 3.2, opacity: 0.95 },
-      { id: 2, path: 'right-inner', delay: 0.35, speed: 2.2, length: 24, thickness: 3.2, opacity: 0.95 },
-      { id: 3, path: 'center-stem', delay: 0.7, speed: 1.8, length: 28, thickness: 3.6, opacity: 1 },
-      { id: 4, path: 'left-outer', delay: 1.0, speed: 2.4, length: 18, thickness: 2.8, opacity: 0.85 },
-      { id: 5, path: 'right-outer', delay: 1.3, speed: 2.4, length: 18, thickness: 2.8, opacity: 0.85 },
-      { id: 6, path: 'left-inner', delay: 1.6, speed: 2.0, length: 22, thickness: 3.0, opacity: 0.9 },
-      { id: 7, path: 'right-inner', delay: 1.9, speed: 2.0, length: 22, thickness: 3.0, opacity: 0.9 },
-      { id: 8, path: 'center-stem', delay: 1.4, speed: 1.7, length: 26, thickness: 3.4, opacity: 0.95 },
-      { id: 9, path: 'left-outer', delay: 2.1, speed: 2.3, length: 20, thickness: 2.6, opacity: 0.8 },
-      { id: 10, path: 'right-outer', delay: 2.4, speed: 2.3, length: 20, thickness: 2.6, opacity: 0.8 },
+      // 1. FAST SPARKS (High Velocity: 0.75s - 1.3s, small lengths: 3 - 9px, thin: 1.4 - 2.2px)
+      { id: 1, path: 'center-stem', delay: 0.1, speed: 0.9, length: 6, thickness: 1.8, opacity: 1, grad: 'sparkGrad' },
+      { id: 2, path: 'left-inner', delay: 0.25, speed: 1.1, length: 8, thickness: 2.0, opacity: 0.95, grad: 'sparkGrad' },
+      { id: 3, path: 'right-inner', delay: 0.45, speed: 1.05, length: 7, thickness: 2.0, opacity: 0.95, grad: 'sparkGrad' },
+      { id: 4, path: 'left-outer', delay: 0.7, speed: 1.2, length: 9, thickness: 1.8, opacity: 0.9, grad: 'sparkGrad' },
+      { id: 5, path: 'right-outer', delay: 0.95, speed: 1.15, length: 8, thickness: 1.8, opacity: 0.9, grad: 'sparkGrad' },
+      { id: 6, path: 'center-stem', delay: 0.6, speed: 0.8, length: 4, thickness: 1.5, opacity: 1, grad: 'sparkGrad' },
+      { id: 7, path: 'left-far', delay: 0.3, speed: 1.25, length: 7, thickness: 1.6, opacity: 0.85, grad: 'sparkGrad' },
+      { id: 8, path: 'right-far', delay: 0.8, speed: 1.3, length: 7, thickness: 1.6, opacity: 0.85, grad: 'sparkGrad' },
+      { id: 9, path: 'center-stem', delay: 1.2, speed: 0.75, length: 5, thickness: 1.6, opacity: 1, grad: 'sparkGrad' },
+      { id: 10, path: 'left-inner', delay: 1.4, speed: 1.1, length: 6, thickness: 1.9, opacity: 0.9, grad: 'sparkGrad' },
+      { id: 11, path: 'right-inner', delay: 1.65, speed: 1.0, length: 8, thickness: 2.1, opacity: 0.95, grad: 'sparkGrad' },
+      { id: 12, path: 'left-outer', delay: 1.9, speed: 1.25, length: 6, thickness: 1.8, opacity: 0.85, grad: 'sparkGrad' },
+
+      // 2. MEDIUM ENERGY RODS (Moderate Velocity: 1.6s - 2.5s, lengths: 14 - 24px, thickness: 2.6 - 3.4px)
+      { id: 13, path: 'left-inner', delay: 0.0, speed: 2.1, length: 22, thickness: 3.2, opacity: 0.95, grad: 'rodGrad' },
+      { id: 14, path: 'right-inner', delay: 0.35, speed: 2.1, length: 24, thickness: 3.2, opacity: 0.95, grad: 'rodGrad' },
+      { id: 15, path: 'center-stem', delay: 0.5, speed: 1.8, length: 20, thickness: 3.0, opacity: 0.95, grad: 'rodGrad' },
+      { id: 16, path: 'left-outer', delay: 0.85, speed: 2.3, length: 18, thickness: 2.8, opacity: 0.85, grad: 'rodGrad' },
+      { id: 17, path: 'right-outer', delay: 1.15, speed: 2.3, length: 18, thickness: 2.8, opacity: 0.85, grad: 'rodGrad' },
+      { id: 18, path: 'left-far', delay: 1.35, speed: 2.4, length: 16, thickness: 2.5, opacity: 0.8, grad: 'rodGrad' },
+      { id: 19, path: 'right-far', delay: 1.55, speed: 2.4, length: 16, thickness: 2.5, opacity: 0.8, grad: 'rodGrad' },
+      { id: 20, path: 'left-inner', delay: 1.75, speed: 2.0, length: 20, thickness: 3.0, opacity: 0.9, grad: 'rodGrad' },
+      { id: 21, path: 'right-inner', delay: 2.0, speed: 2.0, length: 20, thickness: 3.0, opacity: 0.9, grad: 'rodGrad' },
+      { id: 22, path: 'center-stem', delay: 2.2, speed: 1.7, length: 22, thickness: 3.2, opacity: 0.95, grad: 'rodGrad' },
+      { id: 23, path: 'left-outer', delay: 2.5, speed: 2.2, length: 19, thickness: 2.7, opacity: 0.85, grad: 'rodGrad' },
+      { id: 24, path: 'right-outer', delay: 2.75, speed: 2.2, length: 19, thickness: 2.7, opacity: 0.85, grad: 'rodGrad' },
+
+      // 3. SLOW POWER PULSES & HEAVY ENERGY SURGES (Low Velocity: 3.0s - 4.2s, long lengths: 28 - 38px, thickness: 3.4 - 4.2px)
+      { id: 25, path: 'center-stem', delay: 0.2, speed: 3.4, length: 34, thickness: 3.8, opacity: 1, grad: 'slowGrad' },
+      { id: 26, path: 'left-inner', delay: 0.6, speed: 3.6, length: 30, thickness: 3.5, opacity: 0.9, grad: 'slowGrad' },
+      { id: 27, path: 'right-inner', delay: 1.0, speed: 3.6, length: 30, thickness: 3.5, opacity: 0.9, grad: 'slowGrad' },
+      { id: 28, path: 'left-outer', delay: 1.5, speed: 3.8, length: 28, thickness: 3.2, opacity: 0.85, grad: 'slowGrad' },
+      { id: 29, path: 'right-outer', delay: 1.8, speed: 3.8, length: 28, thickness: 3.2, opacity: 0.85, grad: 'slowGrad' },
+      { id: 30, path: 'center-stem', delay: 2.4, speed: 3.2, length: 36, thickness: 4.0, opacity: 0.95, grad: 'slowGrad' },
+      { id: 31, path: 'left-far', delay: 2.1, speed: 4.0, length: 26, thickness: 3.0, opacity: 0.75, grad: 'slowGrad' },
+      { id: 32, path: 'right-far', delay: 2.6, speed: 4.0, length: 26, thickness: 3.0, opacity: 0.75, grad: 'slowGrad' },
+
+      // 4. MICRO ENERGY DOTS & GLOWING EMITTED SPARKS (Small high/low velocity variety: 1.1s - 2.8s, tiny size: 3px)
+      { id: 33, path: 'center-stem', delay: 1.0, speed: 1.3, length: 3.5, thickness: 2.4, opacity: 1, grad: 'sparkGrad' },
+      { id: 34, path: 'left-inner', delay: 2.3, speed: 1.5, length: 4, thickness: 2.2, opacity: 0.95, grad: 'sparkGrad' },
+      { id: 35, path: 'right-inner', delay: 2.7, speed: 1.4, length: 4, thickness: 2.2, opacity: 0.95, grad: 'sparkGrad' },
+      { id: 36, path: 'center-stem', delay: 3.1, speed: 2.6, length: 5, thickness: 2.8, opacity: 0.9, grad: 'rodGrad' },
     ];
   }, []);
 
@@ -92,7 +132,25 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black text-white pointer-events-auto overflow-hidden select-none"
           style={{ touchAction: 'none' }}
         >
-          {/* Top Notch-Like Charging Indicator Pill (as requested in reference image) */}
+          {/* Close button shown strictly in preview mode */}
+          {isPreview && onClose && (
+            <motion.button
+              id="charging-preview-close-button"
+              onClick={onClose}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="absolute top-5 sm:top-7 right-5 sm:right-7 z-50 p-2.5 sm:p-3 rounded-full bg-neutral-900/90 border border-neutral-700/80 text-white/80 hover:text-white hover:bg-neutral-800 transition-all backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.7)] cursor-pointer flex items-center justify-center"
+              aria-label="Close Charging Preview"
+              title="Close Preview"
+            >
+              <X className="w-5 h-5" />
+            </motion.button>
+          )}
+
+          {/* Top Notch-Like Charging/Charged Indicator Pill */}
           <div className="absolute top-5 sm:top-7 left-0 right-0 z-40 flex justify-center pointer-events-none px-4">
             <motion.div
               id="charging-top-notch"
@@ -101,11 +159,11 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
               transition={{ type: 'spring', stiffness: 320, damping: 26, delay: 0.08 }}
               className="pointer-events-auto flex items-center justify-between gap-6 sm:gap-8 px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-black/90 border border-neutral-700/80 shadow-[0_8px_30px_rgba(0,0,0,0.85)] select-none backdrop-blur-md min-w-[220px] max-w-[90vw]"
             >
-              {/* Left label: Charging icon + Charging text */}
+              {/* Left label: Icon + Status text (Shows 'Charged' in preview mode, 'Charging' in real mode) */}
               <div className="flex items-center gap-1.5 text-white">
                 <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#30D158] fill-[#30D158]" />
                 <span className="text-white font-semibold text-sm sm:text-base tracking-tight font-sans">
-                  Charging
+                  {isPreview ? 'Charged' : 'Charging'}
                 </span>
               </div>
 
@@ -161,12 +219,27 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                   <stop offset="100%" stopColor="rgba(59, 130, 246, 0.2)" />
                 </linearGradient>
 
-                {/* Glowing Linear Gradient for Energy Rod Particles */}
+                {/* Glowing Linear Gradient for Standard Energy Rod Particles */}
                 <linearGradient id="rodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#00F2FE" stopOpacity="0.2" />
                   <stop offset="40%" stopColor="#00E5FF" stopOpacity="0.8" />
                   <stop offset="85%" stopColor="#38BDF8" stopOpacity="1" />
                   <stop offset="100%" stopColor="#FFFFFF" stopOpacity="1" />
+                </linearGradient>
+
+                {/* Bright Spark Gradient for High-Velocity Particles */}
+                <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.3" />
+                  <stop offset="50%" stopColor="#A5F3FC" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="1" />
+                </linearGradient>
+
+                {/* Deep Cyan-Blue Pulse Gradient for Slow-Velocity Surges */}
+                <linearGradient id="slowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#1E40AF" stopOpacity="0.1" />
+                  <stop offset="35%" stopColor="#0284C7" stopOpacity="0.75" />
+                  <stop offset="80%" stopColor="#00F2FE" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#E0F2FE" stopOpacity="1" />
                 </linearGradient>
 
                 {/* Particle Glow Filter */}
@@ -218,6 +291,18 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                   d="M 216,1400 L 216,710 C 216,650 275,635 299,610 A 148,148 0 0,0 200,352"
                   fill="none"
                 />
+                {/* Outermost Left Conduit Path */}
+                <path
+                  id="path-left-far"
+                  d="M 174,1400 L 174,720 C 174,655 115,640 90,614 A 158,158 0 0,1 200,342"
+                  fill="none"
+                />
+                {/* Outermost Right Conduit Path */}
+                <path
+                  id="path-right-far"
+                  d="M 226,1400 L 226,720 C 226,655 285,640 310,614 A 158,158 0 0,0 200,342"
+                  fill="none"
+                />
               </defs>
 
               {/* 1. PHYSICAL CONDUIT LINES & PERFECT CONCENTRIC DASH RINGS (Extending to bottom of screen) */}
@@ -260,7 +345,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                 />
               </g>
 
-              {/* 2. ACTIVE GLOWING ROD-LIKE ENERGY PARTICLES TRAVELLING FROM BOTTOM EDGE UP TO CIRCLE */}
+              {/* 2. ACTIVE GLOWING ROD & SPARK PARTICLES WITH VARIABLE VELOCITIES */}
               {!prefersReducedMotion && (
                 <g className="energy-rods">
                   {energyParticles.map((p) => (
@@ -272,7 +357,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                         height={p.thickness}
                         rx={p.thickness / 2}
                         ry={p.thickness / 2}
-                        fill="url(#rodGrad)"
+                        fill={`url(#${p.grad || 'rodGrad'})`}
                       >
                         <animateMotion
                           dur={`${p.speed}s`}
@@ -372,10 +457,10 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
                 </span>
               </div>
 
-              {/* Secondary Status Label: CHARGING (Balanced spacing below number) */}
+              {/* Secondary Status Label: CHARGED in preview mode, CHARGING in real mode */}
               <div className="mt-2 flex items-center justify-center">
                 <span className="text-[12px] font-semibold tracking-[0.28em] text-cyan-300/90 uppercase font-sans">
-                  Charging
+                  {isPreview ? 'Charged' : 'Charging'}
                 </span>
               </div>
             </div>
@@ -394,6 +479,22 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
           className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center pointer-events-auto select-none"
           style={{ touchAction: 'none' }}
         >
+          {isPreview && onClose && (
+            <motion.button
+              id="charging-preview-blackscreen-close-button"
+              onClick={onClose}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="absolute top-5 sm:top-7 right-5 sm:right-7 z-50 p-2.5 sm:p-3 rounded-full bg-neutral-900/90 border border-neutral-700/80 text-white/80 hover:text-white hover:bg-neutral-800 transition-all backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.7)] cursor-pointer flex items-center justify-center"
+              aria-label="Close Charging Preview"
+              title="Close Preview"
+            >
+              <X className="w-5 h-5" />
+            </motion.button>
+          )}
           <div className="flex flex-col items-center justify-center">
             {batteryLevel !== null && (
               <div className="flex items-baseline justify-center mb-5">
@@ -414,3 +515,4 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
 };
 
 export default ChargingOverlay;
+

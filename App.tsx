@@ -259,7 +259,9 @@ const App: React.FC = () => {
     isSupported: isChargingSupported,
     overlayState: chargingOverlayState,
     batteryLevel,
+    isPreview: isChargingPreview,
     triggerPreview: triggerChargingPreview,
+    closePreview: closeChargingPreview,
   } = useChargingMode(uiPreferences);
 
   const exploreActiveCategoryRef = useRef<string>("for-you");
@@ -1524,6 +1526,8 @@ const App: React.FC = () => {
       <ChargingOverlay
         state={chargingOverlayState}
         batteryLevel={batteryLevel}
+        isPreview={isChargingPreview}
+        onClose={closeChargingPreview}
       />
     </>
   );

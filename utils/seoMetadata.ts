@@ -13,12 +13,12 @@ export interface PageSeoMetadata {
 export const seoMetadataMap: Record<View, PageSeoMetadata> = {
   home: {
     title: "Overview",
-    description: "Welcome to Ceaznet - Your all-in-one personalized dashboard for notes, finance tracking, live translation, chemistry molecule analysis, and real-time smart tools.",
-    keywords: "ceaznet, dashboard, overview, personal manager, smart tools, productivity, hub",
-    ogTitle: "Ceaznet Overview - Personal Smart Dashboard",
-    ogDescription: "Manage your daily activities, track finances, organize notes, explore curated news, and access powerful AI-powered utilities in one elegant interface.",
-    twitterTitle: "Ceaznet Overview - Personal Smart Dashboard",
-    twitterDescription: "Manage your daily activities, track finances, organize notes, and access powerful AI-powered utilities in one elegant interface."
+    description: "Welcome to Ceaznet - A secure, offline-first digital workspace and sandbox combining real-time global news, secure markdown logging, personal budgeting, 3D chemistry simulations, and neural translation.",
+    keywords: "Ceaznet, digital workspace, offline-first workspace, markdown notes, chemistry simulation, molecule viewer, finance tracker, budget planner, neural translation, global news",
+    ogTitle: "Ceaznet - Secure, Offline-First Digital Workspace & Sandbox",
+    ogDescription: "An elegant offline-first workspace combining markdown notes, 3D chemistry simulations, financial budgeting, fast neural translation, and global news.",
+    twitterTitle: "Ceaznet - Secure, Offline-First Digital Workspace & Sandbox",
+    twitterDescription: "An elegant offline-first workspace combining markdown notes, 3D chemistry simulations, financial budgeting, fast neural translation, and global news."
   },
   explore: {
     title: "Explore",
