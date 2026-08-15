@@ -77,6 +77,9 @@ export interface UIPreferences {
     fontFamily: 'sans' | 'serif' | 'mono' | 'inter' | 'playfair' | 'quicksand';
     layoutDensity: 'comfortable' | 'compact';
     borderRadius?: 'small' | 'medium' | 'large' | 'full'; 
+    chargingModeEnabled?: boolean;
+    chargingModeDuration?: number; // In minutes
+    chargingModeBlackScreen?: boolean;
 }
 
 export interface ModelInfo {
