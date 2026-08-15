@@ -13,6 +13,7 @@ export const initializeAiClient = (apiKey: string) => {
 export const getAiClient = (): GoogleGenAI => {
     if (!aiClient) {
         const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        console.log(`[aiClient] Initializing... environment: ${process.env.NODE_ENV}, key present: ${!!envKey}, key length: ${envKey ? envKey.length : 0}`);
         if (envKey) {
             aiClient = new GoogleGenAI({ apiKey: envKey });
             return aiClient;

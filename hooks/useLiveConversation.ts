@@ -185,7 +185,8 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
         };
     }, [status, stopMasterAudioAnalysis]);
     
-    const cleanup = useCallback(async (isError = false) => {
+    const cleanup = useCallback(async (isError = false, reason?: string) => {
+        console.log(`[LiveConversation] EVENT: SESSION_TERMINATED | environment: ${process.env.NODE_ENV} | reason: ${reason || 'normal_cleanup'} | isError: ${isError}`);
         let audioBlob: Blob | undefined;
         
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -256,18 +257,34 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
         outputSourcesRef.current.clear();
         setIsMicMuted(false);
         setIsSpeakerMuted(false);
-        setStatus('disconnected');
+        if (!isError) {
+            setStatus('disconnected');
+        }
     }, [stopMasterAudioAnalysis]);
 
     useEffect(() => {
+        const handleGlobalError = (event: ErrorEvent) => {
+            console.error(`[LiveConversation] EVENT: UNHANDLED_ERROR | environment: ${process.env.NODE_ENV} | message: ${event.message}`);
+        };
+        const handleGlobalRejection = (event: PromiseRejectionEvent) => {
+            console.error(`[LiveConversation] EVENT: UNHANDLED_REJECTION | environment: ${process.env.NODE_ENV} | reason:`, event.reason);
+        };
+        
+        window.addEventListener('error', handleGlobalError);
+        window.addEventListener('unhandledrejection', handleGlobalRejection);
+        
         return () => {
+            window.removeEventListener('error', handleGlobalError);
+            window.removeEventListener('unhandledrejection', handleGlobalRejection);
+            console.log(`[LiveConversation] EVENT: COMPONENT_UNMOUNT | environment: ${process.env.NODE_ENV} | Triggering cleanup`);
             // We cannot await in the cleanup function of useEffect, but we trigger it.
             // For navigation triggered cleanup, the parent component should handle the await via handleStop if needed.
-            cleanup(true); 
+            cleanup(true, 'component_unmount'); 
         };
     }, [cleanup]);
 
     const handleStart = useCallback(async () => {
+        console.log(`[LiveConversation] EVENT: LIVE_CONVERSATION_START | environment: ${process.env.NODE_ENV}`);
         setError(null);
         setStatus('connecting');
         setAiTranscript('');
@@ -346,6 +363,7 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                 model: 'gemini-3.1-flash-live-preview',
                 callbacks: {
                     onopen: async () => {
+                        console.log(`[LiveConversation] EVENT: CONNECTION_OPEN | environment: ${process.env.NODE_ENV}`);
                         playConnectSound();
                         triggerHapticFeedback();
                         setStatus('listening');
@@ -559,13 +577,23 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                         }
                     },
                     onerror: (e: ErrorEvent) => {
-                        console.error('Live session error:', e);
-                        setError('Connection error. Please try again.');
+                        console.error('[LiveConversation] EVENT: CONNECTION_ERROR | environment:', process.env.NODE_ENV, '| Error:', e);
+                        // The actual error details for WebSockets are usually in the browser console, but we capture what we can
+                        const errorMessage = (e as any).message || 'WebSocket connection error';
+                        setError(`Connection error: ${errorMessage}. Please check console logs.`);
                         setStatus('error');
-                        cleanup(true);
+                        cleanup(true, 'websocket_onerror');
                     },
                     onclose: (e: CloseEvent) => {
-                        cleanup();
+                        console.log(`[LiveConversation] EVENT: SESSION_CLOSED | environment: ${process.env.NODE_ENV} | code: ${e.code} | reason: ${e.reason} | wasClean: ${e.wasClean}`);
+                        
+                        if (!e.wasClean || e.code !== 1000) {
+                            setError(`Connection closed abnormally (Code: ${e.code}). ${e.reason || 'No reason provided.'}`);
+                            setStatus('error');
+                            cleanup(true, `websocket_onclose_error_code_${e.code}`);
+                        } else {
+                            cleanup(false, `websocket_onclose_code_${e.code}_${e.reason}`);
+                        }
                     },
                 },
                 config: {
@@ -578,16 +606,17 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                 },
             });
 
-        } catch (err) {
-            console.error('Failed to start conversation:', err);
-            setError('Could not access microphone. Please grant permission and try again.');
+        } catch (err: any) {
+            console.error('[LiveConversation] EVENT: START_FAILED | environment:', process.env.NODE_ENV, '| err:', err);
+            const errorMessage = err?.message || 'Could not access microphone. Please grant permission and try again.';
+            setError(errorMessage.includes('API key') ? errorMessage : 'Connection failed. Please check permissions and try again.');
             setStatus('error');
-            cleanup(true);
+            cleanup(true, 'start_exception');
         }
     }, [cleanup]);
 
     const handleStop = useCallback(async () => {
-        await cleanup();
+        await cleanup(false, 'manual_stop');
     }, [cleanup]);
 
     const handleSendText = useCallback(async (text: string) => {
