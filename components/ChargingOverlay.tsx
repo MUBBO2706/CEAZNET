@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
+import { Zap } from 'lucide-react';
 import { ChargingOverlayState } from '../hooks/useChargingMode';
 import { updateBrowserThemeColor } from '../utils/themeColor';
 
@@ -100,10 +101,13 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
               transition={{ type: 'spring', stiffness: 320, damping: 26, delay: 0.08 }}
               className="pointer-events-auto flex items-center justify-between gap-6 sm:gap-8 px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-black/90 border border-neutral-700/80 shadow-[0_8px_30px_rgba(0,0,0,0.85)] select-none backdrop-blur-md min-w-[220px] max-w-[90vw]"
             >
-              {/* Left label: Charging in crisp white */}
-              <span className="text-white font-semibold text-sm sm:text-base tracking-tight font-sans">
-                Charging
-              </span>
+              {/* Left label: Charging icon + Charging text */}
+              <div className="flex items-center gap-1.5 text-white">
+                <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#30D158] fill-[#30D158]" />
+                <span className="text-white font-semibold text-sm sm:text-base tracking-tight font-sans">
+                  Charging
+                </span>
+              </div>
 
               {/* Right section: Percentage + Live Battery Level Icon */}
               <div className="flex items-center gap-2 sm:gap-2.5">
@@ -342,7 +346,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
             </svg>
 
             {/* 4. CENTRAL TYPOGRAPHY - PERFECTLY OPTICALLY CENTERED INSIDE THE RING */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-3.5 z-20 flex flex-col items-center justify-center text-center select-none pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-0.5 z-20 flex flex-col items-center justify-center text-center select-none pointer-events-none">
               
               {/* Large Clean Battery Percentage Number */}
               <div className="flex items-start justify-center select-none font-sans relative">
