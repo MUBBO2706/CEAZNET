@@ -329,13 +329,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     if (!user || !session?.access_token) return;
     try {
       const deviceName = await getExactDeviceName();
+      const currentSessionItem = sessions.find(s => s.is_current || s.session_key === currentSessionKey);
+      const currentLocation = currentSessionItem?.location || undefined;
       const res = await fetch('/api/sessions?action=terminate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ id: sessionId, terminator_device_name: deviceName }),
+        body: JSON.stringify({
+          id: sessionId,
+          terminator_device_name: deviceName,
+          terminator_location: currentLocation,
+          terminator_time: new Date().toISOString(),
+        }),
       });
 
       if (!res.ok) throw new Error('Failed to terminate session');
@@ -385,6 +392,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       let successCount = 0;
       const deviceName = await getExactDeviceName();
+      const currentSessionItem = sessions.find(s => s.is_current || s.session_key === currentSessionKey);
+      const currentLocation = currentSessionItem?.location || undefined;
       for (const s of otherSessions) {
         const res = await fetch('/api/sessions?action=terminate', {
           method: 'POST',
@@ -392,7 +401,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ id: s.id, terminator_device_name: deviceName }),
+          body: JSON.stringify({
+            id: s.id,
+            terminator_device_name: deviceName,
+            terminator_location: currentLocation,
+            terminator_time: new Date().toISOString(),
+          }),
         });
         if (res.ok) {
           successCount++;

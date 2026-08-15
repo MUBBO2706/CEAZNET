@@ -294,3 +294,53 @@ export const resolveDeviceName = async (rawDeviceName: string): Promise<string> 
     return rawDeviceName;
 };
 
+export interface SessionTerminationInfo {
+  deviceName?: string;
+  location?: string;
+  time?: string;
+}
+
+export function parseTerminationSessionKey(key?: string | null): SessionTerminationInfo {
+  if (!key) return {};
+
+  let deviceName: string | undefined;
+  let location: string | undefined;
+  let time: string | undefined;
+
+  const byIndex = key.indexOf('_BY_');
+  if (byIndex !== -1) {
+    const afterBy = key.substring(byIndex + 4);
+    const locIndex = afterBy.indexOf('_LOC_');
+    const timeIndex = afterBy.indexOf('_TIME_');
+
+    if (locIndex !== -1) {
+      deviceName = safeDecode(afterBy.substring(0, locIndex));
+      if (timeIndex !== -1 && timeIndex > locIndex) {
+        location = safeDecode(afterBy.substring(locIndex + 5, timeIndex));
+        time = safeDecode(afterBy.substring(timeIndex + 6));
+      } else {
+        location = safeDecode(afterBy.substring(locIndex + 5));
+      }
+    } else if (timeIndex !== -1) {
+      deviceName = safeDecode(afterBy.substring(0, timeIndex));
+      time = safeDecode(afterBy.substring(timeIndex + 6));
+    } else {
+      deviceName = safeDecode(afterBy);
+    }
+  }
+
+  return {
+    deviceName: deviceName?.trim() || undefined,
+    location: location?.trim() || undefined,
+    time: time?.trim() || undefined,
+  };
+}
+
+function safeDecode(val: string): string {
+  try {
+    return decodeURIComponent(val);
+  } catch {
+    return val;
+  }
+}
+

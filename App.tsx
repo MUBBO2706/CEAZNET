@@ -57,6 +57,7 @@ import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { useToast } from "./components/ToastSystem";
 import { updateBrowserThemeColor } from "./utils/themeColor";
 import { updatePageMetadata } from "./utils/seoMetadata";
+import { parseTerminationSessionKey, SessionTerminationInfo } from "./utils/deviceUtils";
 
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -144,7 +145,7 @@ const App: React.FC = () => {
     useState(false);
   const [isSessionTerminatedModalOpen, setIsSessionTerminatedModalOpen] =
     useState(false);
-  const [terminatorDeviceName, setTerminatorDeviceName] = useState<string | undefined>(undefined);
+  const [terminationInfo, setTerminationInfo] = useState<SessionTerminationInfo>({});
 
   useEffect(() => {
     if (authEvent === "PASSWORD_RECOVERY") {
@@ -815,8 +816,11 @@ const App: React.FC = () => {
           );
           if (errData.isTerminated) {
             if (errData.session_key) {
-               const match = errData.session_key.match(/_BY_(.+)$/);
-               if (match) setTerminatorDeviceName(match[1]);
+               const parsed = parseTerminationSessionKey(errData.session_key);
+               if (errData.terminated_at && !parsed.time) {
+                 parsed.time = errData.terminated_at;
+               }
+               setTerminationInfo(parsed);
             }
             addToast("Your session was terminated remotely.", "warning");
             setIsSessionTerminatedModalOpen(true);
@@ -949,10 +953,11 @@ const App: React.FC = () => {
           
           // If they are explicitly terminated, log out.
           if (terminatedSession) {
-            const match = terminatedSession.session_key.match(/_BY_(.+)$/);
-            if (match) {
-               setTerminatorDeviceName(match[1]);
+            const parsed = parseTerminationSessionKey(terminatedSession.session_key);
+            if (terminatedSession.last_active_at && !parsed.time) {
+               parsed.time = terminatedSession.last_active_at;
             }
+            setTerminationInfo(parsed);
             addToast(
               "Your session has been terminated from another device.",
               "warning",
@@ -990,10 +995,11 @@ const App: React.FC = () => {
             payload.new.session_key &&
             payload.new.session_key.startsWith(`TERMINATED_${sessionKey}`)
           ) {
-            const match = payload.new.session_key.match(/_BY_(.+)$/);
-            if (match) {
-               setTerminatorDeviceName(match[1]);
+            const parsed = parseTerminationSessionKey(payload.new.session_key);
+            if (payload.new.last_active_at && !parsed.time) {
+               parsed.time = payload.new.last_active_at;
             }
+            setTerminationInfo(parsed);
             addToast("Your session was terminated remotely.", "warning");
             setIsSessionTerminatedModalOpen(true);
             logout();
@@ -1005,6 +1011,10 @@ const App: React.FC = () => {
             payload.old &&
             payload.old.session_key === sessionKey
           ) {
+            setTerminationInfo({
+              deviceName: "Another Device",
+              time: new Date().toISOString(),
+            });
             addToast("Your session was deleted remotely.", "warning");
             setIsSessionTerminatedModalOpen(true);
             logout();
@@ -1505,7 +1515,9 @@ const App: React.FC = () => {
       />
       <SessionTerminatedModal
         isOpen={isSessionTerminatedModalOpen}
-        terminatorDeviceName={terminatorDeviceName}
+        terminatorDeviceName={terminationInfo.deviceName}
+        terminatorLocation={terminationInfo.location}
+        terminatorTime={terminationInfo.time}
       />
       <BroadcastPopup />
       <VersionUpdateModal />

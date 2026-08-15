@@ -467,18 +467,24 @@ export default async function handler(req: any, res: any) {
       }
 
       if (action === 'terminate') {
-        const { id, terminator_device_name } = req.body || {};
+        const { id, terminator_device_name, terminator_location, terminator_time } = req.body || {};
         if (!id) return res.status(400).json({ error: "Missing session id to terminate" });
         try {
           const { data: sessionData } = await userClient.from('user_sessions').select('session_key, device_id, device_name').eq('id', id).eq('user_id', user.id).single();
           if (sessionData && !sessionData.session_key.startsWith('TERMINATED_')) {
-             let newSessionKey = `TERMINATED_${sessionData.session_key}`;
-             if (terminator_device_name) {
-                 newSessionKey += `_BY_${terminator_device_name}`;
+             const devName = terminator_device_name || parseUserAgentAdv(req) || 'Unknown Device';
+             let locName = terminator_location;
+             if (!locName || locName === 'Unknown Location') {
+                 const ip = getClientIp(req);
+                 locName = await getIpLocation(ip);
              }
+             const termTime = terminator_time || new Date().toISOString();
+             
+             let newSessionKey = `TERMINATED_${sessionData.session_key}_BY_${encodeURIComponent(devName)}_LOC_${encodeURIComponent(locName || 'Unknown Location')}_TIME_${encodeURIComponent(termTime)}`;
+
              await userClient.from('user_sessions').update({ 
                  session_key: newSessionKey,
-                 last_active_at: new Date().toISOString()
+                 last_active_at: termTime
              }).eq('id', id).eq('user_id', user.id);
              
              if (sessionData.device_id) {
