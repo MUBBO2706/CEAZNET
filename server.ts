@@ -848,19 +848,26 @@ Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in 
 
   app.get(["/api/version-control", "/api/version/check"], async (req, res) => {
     try {
-      const clientVersion = req.query.currentVersion;
+      const clientVersion = req.query.currentVersion as string;
       
-      // Locate the version.json file on disk
-      let versionFilePath = path.join(process.cwd(), 'dist', 'version.json');
-      if (!fs.existsSync(versionFilePath)) {
-        versionFilePath = path.join(process.cwd(), 'public', 'version.json');
-      }
-      
+      const candidatePaths = [
+        path.join(process.cwd(), 'dist', 'version.json'),
+        path.join(process.cwd(), 'public', 'version.json'),
+        path.join(process.cwd(), 'version.json'),
+      ];
+
       let serverVersion = 'unknown';
-      if (fs.existsSync(versionFilePath)) {
-        const fileContent = fs.readFileSync(versionFilePath, 'utf8');
-        const parsed = JSON.parse(fileContent);
-        serverVersion = parsed.version || 'unknown';
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          try {
+            const fileContent = fs.readFileSync(p, 'utf8');
+            const parsed = JSON.parse(fileContent);
+            if (parsed.version) {
+              serverVersion = parsed.version;
+              break;
+            }
+          } catch {}
+        }
       }
 
       // Fallback: If filesystem failed, try fetching via HTTP from the current host
@@ -868,8 +875,10 @@ Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in 
         try {
           const host = req.headers.host;
           const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
-          const url = `${protocol}://${host}/version.json`;
-          const response = await fetch(url);
+          const url = `${protocol}://${host}/version.json?t=${Date.now()}`;
+          const response = await fetch(url, {
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+          });
           if (response.ok) {
             const parsed = await response.json();
             serverVersion = parsed.version || 'unknown';
@@ -879,7 +888,12 @@ Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in 
         }
       }
       
-      const isNewVersionAvailable = clientVersion && clientVersion !== 'dev' && serverVersion !== 'unknown' && serverVersion !== clientVersion;
+      const isNewVersionAvailable = Boolean(
+        clientVersion &&
+        clientVersion !== 'unknown' &&
+        serverVersion !== 'unknown' &&
+        serverVersion !== clientVersion
+      );
       
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
@@ -888,10 +902,10 @@ Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in 
       res.json({
         serverVersion,
         clientVersion: clientVersion || 'unknown',
-        hasUpdate: !!isNewVersionAvailable,
+        hasUpdate: isNewVersionAvailable,
         message: isNewVersionAvailable 
           ? `New version found! Update from version ${clientVersion} to ${serverVersion} is available.` 
-          : `You are up to date (Version ${clientVersion}).`
+          : `You are up to date (Version ${clientVersion || serverVersion}).`
       });
     } catch (e: any) {
       res.status(500).json({ error: e.message });

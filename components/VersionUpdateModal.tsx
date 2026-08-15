@@ -5,13 +5,36 @@ import { motion, AnimatePresence } from 'motion/react';
 // Tell TypeScript that __BUILD_ID__ is injected by Vite at compile time
 declare const __BUILD_ID__: string;
 
+const isDevelopmentEnvironment = (): boolean => {
+    // 1. Check Vite standard dev flag
+    if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+        return true;
+    }
+    // 2. Check Build ID
+    if (typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ === 'dev') {
+        return true;
+    }
+    // 3. Check dev hostnames
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        if (
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname.includes('ais-dev-') ||
+            hostname.startsWith('dev.')
+        ) {
+            return true;
+        }
+    }
+    return false;
+};
+
 const playUpdateSound = () => {
     try {
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContextClass) return;
         const ctx = new AudioContextClass();
         
-        // Beautiful notification double chime
         const now = ctx.currentTime;
         
         // First chime (A5 - 880 Hz)
@@ -43,34 +66,60 @@ const playUpdateSound = () => {
 };
 
 export const VersionUpdateModal: React.FC = () => {
-    // 1. Instantly check if we are in development environment (Localhost or dev flag)
-    const isDevMode = 
-        import.meta.env.DEV || 
-        window.location.hostname === 'localhost' || 
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('ais-dev'); // Skip on dev container previews too
+    // Completely disable in development environments
+    const isDev = isDevelopmentEnvironment();
 
     const [hasUpdate, setHasUpdate] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const initialVersionRef = useRef<string | null>(
+        typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ !== 'dev' ? __BUILD_ID__ : null
+    );
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Read compiled build ID of the running client
-    const clientBuildId = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev';
-
-    // Play a lovely notification sound once the update modal is triggered
+    // Play a notification sound once the update modal is triggered
     useEffect(() => {
-        if (hasUpdate && isVisible) {
+        if (hasUpdate && isVisible && !isDev) {
             playUpdateSound();
         }
-    }, [hasUpdate, isVisible]);
+    }, [hasUpdate, isVisible, isDev]);
 
     const checkForUpdates = useCallback(async () => {
-        // Prevent executing any network requests if in development mode
-        if (isDevMode) return;
+        if (isDev) return;
 
         try {
-            // Fetch version check api with current version as parameter
-            const response = await fetch(`/api/version-control?currentVersion=${clientBuildId}&t=${Date.now()}`, {
+            // Check 1: Direct fetch to static version.json (Fastest, zero serverless latency, works on Vercel CDN/Vite)
+            try {
+                const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+
+                if (staticRes.ok) {
+                    const staticData = await staticRes.json();
+                    const serverVer = staticData?.version;
+
+                    if (serverVer && serverVer !== 'dev' && serverVer !== 'unknown') {
+                        if (!initialVersionRef.current) {
+                            initialVersionRef.current = String(serverVer);
+                        } else if (String(serverVer) !== String(initialVersionRef.current)) {
+                            console.log(`[Version Update] Direct version mismatch detected: Client=${initialVersionRef.current} -> Server=${serverVer}`);
+                            setHasUpdate(true);
+                            return;
+                        }
+                    }
+                }
+            } catch (staticErr) {
+                console.debug('[Update Checker] Direct version.json check error:', staticErr);
+            }
+
+            // Check 2: Version Control API endpoint
+            const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'unknown');
+            const response = await fetch(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
                 method: 'GET',
                 cache: 'no-store',
                 headers: {
@@ -79,49 +128,78 @@ export const VersionUpdateModal: React.FC = () => {
                     'Expires': '0'
                 }
             });
-            if (!response.ok) return;
 
-            const data = await response.json();
-            if (data?.hasUpdate) {
-                setHasUpdate(true);
-                console.log(`[Version Update] ${data.message}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.hasUpdate) {
+                    console.log(`[Version Update] API update detected: ${data.message}`);
+                    setHasUpdate(true);
+                } else if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
+                    if (!initialVersionRef.current) {
+                        initialVersionRef.current = String(data.serverVersion);
+                    } else if (String(data.serverVersion) !== String(initialVersionRef.current)) {
+                        console.log(`[Version Update] Server version difference detected: ${initialVersionRef.current} vs ${data.serverVersion}`);
+                        setHasUpdate(true);
+                    }
+                }
             }
         } catch (error) {
             console.debug('[Update Checker] Error checking for version updates:', error);
         }
-    }, [clientBuildId, isDevMode]);
+    }, [isDev]);
 
     useEffect(() => {
-        // Stop entirely in development mode
-        if (isDevMode) return;
+        if (isDev) return;
 
-        // Run instantly on initial load
+        // Run check on initial load
         checkForUpdates();
 
-        // Periodically check every 60 seconds
+        // Periodically check every 45 seconds
         checkIntervalRef.current = setInterval(() => {
             checkForUpdates();
-        }, 60000);
+        }, 45000);
 
-        // Instantly check when window is focused or tab becomes visible again
+        // Check when window or tab gains focus/visibility
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 checkForUpdates();
             }
         };
+        const handleFocus = () => {
+            checkForUpdates();
+        };
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        // Service Worker Update Listener (PWA) in production
+        if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((reg) => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('[Service Worker] New content is available; please refresh.');
+                                setHasUpdate(true);
+                                setIsVisible(true);
+                            }
+                        });
+                    }
+                });
+            }).catch(() => {});
+        }
 
         return () => {
             if (checkIntervalRef.current) {
                 clearInterval(checkIntervalRef.current);
             }
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
         };
-    }, [checkForUpdates, isDevMode]);
+    }, [checkForUpdates, isDev]);
 
     const handleUpdate = async () => {
-        // Safe, clean reload by clearing cache and appending a unique timestamp.
-        // This forces the browser to pull the absolute latest build directly from the network.
         try {
             // 1. Clear Cache Storage to purge old index.html and assets
             if (typeof window !== 'undefined' && 'caches' in window) {
@@ -149,7 +227,7 @@ export const VersionUpdateModal: React.FC = () => {
                 }
             }
 
-            // 3. Clear session storage flags if any, and perform hard reload
+            // 3. Perform hard reload with cache-busting timestamp
             const targetUrl = new URL(window.location.href);
             targetUrl.searchParams.set('v', Date.now().toString());
             window.location.replace(targetUrl.toString());
@@ -159,14 +237,15 @@ export const VersionUpdateModal: React.FC = () => {
         }
     };
 
-    // Return absolutely nothing in dev mode or if update is not visible/not triggered
-    if (isDevMode || !hasUpdate || !isVisible) return null;
+    // If running in development, do not render or run anything
+    if (isDev || !hasUpdate || !isVisible) return null;
 
     return (
         <AnimatePresence>
-            <div className="fixed bottom-6 right-6 z-[10000] w-full max-w-xs px-4 sm:px-0 pointer-events-none">
+            <div id="version-update-popup-container" className="fixed bottom-6 right-6 z-[10000] w-full max-w-xs px-4 sm:px-0 pointer-events-none">
                 {/* Compact Elegant Toast */}
                 <motion.div
+                    id="version-update-card"
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 20, opacity: 0 }}
@@ -183,8 +262,8 @@ export const VersionUpdateModal: React.FC = () => {
                     <div className="flex justify-between items-start gap-2">
                         <div className="flex gap-2">
                             <div className="space-y-0.5">
-                                <h4 className="text-xs font-bold tracking-tight">New Version Ready</h4>
-                                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--update-popup-text-muted)' }}>
+                                <h4 id="version-update-title" className="text-xs font-bold tracking-tight">New Version Ready</h4>
+                                <p id="version-update-description" className="text-[11px] leading-relaxed" style={{ color: 'var(--update-popup-text-muted)' }}>
                                     Reload to apply the latest features and updates.
                                 </p>
                             </div>
@@ -194,15 +273,17 @@ export const VersionUpdateModal: React.FC = () => {
                     {/* Compact actions row */}
                     <div className="flex items-center gap-1.5 justify-end">
                         <button
+                            id="version-update-later-btn"
                             onClick={() => setIsVisible(false)}
-                            className="px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-neutral-500/5 transition-colors focus:outline-none"
+                            className="px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-neutral-500/5 transition-colors focus:outline-none cursor-pointer"
                             style={{ color: 'var(--update-popup-text-muted)' }}
                         >
                             Later
                         </button>
                         <button
+                            id="version-update-reload-btn"
                             onClick={handleUpdate}
-                            className="px-2.5 py-1 rounded-md font-bold text-[11px] shadow-sm hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-1 focus:outline-none"
+                            className="px-2.5 py-1 rounded-md font-bold text-[11px] shadow-sm hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-1 focus:outline-none cursor-pointer"
                             style={{ 
                                 backgroundColor: 'var(--update-popup-btn-bg)', 
                                 color: 'var(--update-popup-btn-text)' 
