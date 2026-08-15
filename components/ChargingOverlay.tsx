@@ -88,7 +88,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black text-white pointer-events-auto overflow-hidden select-none"
           style={{ touchAction: 'none' }}
         >
@@ -390,7 +390,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({ state, batteryLevel }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1, ease: 'easeInOut' }}
+          transition={{ duration: 0.6, ease: 'easeInOut' }}
           className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center pointer-events-auto select-none"
           style={{ touchAction: 'none' }}
         >

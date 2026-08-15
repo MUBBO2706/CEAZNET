@@ -12,6 +12,7 @@ import {
   Globe,
   RotateCw,
   Zap,
+  Play,
 } from "lucide-react";
 import { motion } from "motion/react";
 import ConfirmationModal from "./ConfirmationModal";
@@ -30,12 +31,16 @@ interface SettingsViewProps {
   onThemeChange?: (theme: "light" | "dark" | "system") => void;
   userProfile?: UserProfile;
   onEditProfile?: () => void;
+  isChargingSupported?: boolean;
+  onPreviewCharging?: () => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
   preferences,
   onUpdatePreferences,
   onNavigate,
+  isChargingSupported = true,
+  onPreviewCharging,
 }) => {
   const { user } = useAuth();
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
@@ -380,107 +385,121 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </motion.div>
 
-          {/* Clean Horizontal Divider */}
-          <hr className="border-t border-gray-200 dark:border-white/10" />
-
           {/* --- SECTION 3: POWER & FOCUS --- */}
-          <motion.div variants={itemVariants} className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-gray-900 dark:text-white">
-                  Power & Focus
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-white/50">
-                  Manage charging behavior and focus modes
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-5 w-full">
-              {/* Charging Mode Option */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                    Charging Mode Overlay
-                  </span>
-                  <p className="text-xs text-gray-500 dark:text-white/50">
-                    Block interaction and show charging animation when plugged in
-                  </p>
+          {isChargingSupported && (
+            <>
+              <hr className="border-t border-gray-200 dark:border-white/10" />
+              <motion.div variants={itemVariants} className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white">
+                      Power & Focus
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-white/50">
+                      Manage charging behavior and focus modes
+                    </p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => onUpdatePreferences({ chargingModeEnabled: !(preferences.chargingModeEnabled ?? true) })}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-                    (preferences.chargingModeEnabled ?? true) ? 'bg-amber-500' : 'bg-gray-200 dark:bg-white/10'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-                      (preferences.chargingModeEnabled ?? true) ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
 
-              {(preferences.chargingModeEnabled ?? true) && (
-                <>
+                <div className="space-y-5 w-full">
+                  {/* Charging Mode Option */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                        Animation Duration
+                        Charging Mode Overlay
                       </span>
                       <p className="text-xs text-gray-500 dark:text-white/50">
-                        How long to show the rich animation before saving power
+                        Plays charging animation when plugged into a charger
                       </p>
                     </div>
-                    <div className="p-1.5 bg-gray-100/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 rounded-2xl flex items-center gap-1 self-start sm:self-auto">
-                      {[1, 2, 5].map((mins) => (
+                    <div className="flex items-center gap-3">
+                      {onPreviewCharging && (preferences.chargingModeEnabled ?? true) && (
                         <button
-                          key={mins}
-                          onClick={() => onUpdatePreferences({ chargingModeDuration: mins })}
-                          className={`
-                            px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-2
-                            ${
-                              (preferences.chargingModeDuration ?? 1) === mins
-                                ? "bg-white dark:bg-white/10 text-amber-600 dark:text-amber-400 shadow-sm border border-black/5 dark:border-white/10"
-                                : "text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white"
-                            }
-                          `}
+                          onClick={onPreviewCharging}
+                          title="Preview Charging Animation"
+                          className="px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95 transition-all flex items-center gap-1.5 border border-amber-500/20"
                         >
-                          {mins} min
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Preview</span>
                         </button>
-                      ))}
+                      )}
+                      <button
+                        onClick={() => onUpdatePreferences({ chargingModeEnabled: !(preferences.chargingModeEnabled ?? true) })}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                          (preferences.chargingModeEnabled ?? true) ? 'bg-amber-500' : 'bg-gray-200 dark:bg-white/10'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                            (preferences.chargingModeEnabled ?? true) ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                        Minimal Black Screen
-                      </span>
-                      <p className="text-xs text-gray-500 dark:text-white/50">
-                        Switch to a minimal black screen after animation ends
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => onUpdatePreferences({ chargingModeBlackScreen: !(preferences.chargingModeBlackScreen ?? true) })}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-                        (preferences.chargingModeBlackScreen ?? true) ? 'bg-amber-500' : 'bg-gray-200 dark:bg-white/10'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-                          (preferences.chargingModeBlackScreen ?? true) ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </motion.div>
+                  {(preferences.chargingModeEnabled ?? true) && (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                            Animation Duration
+                          </span>
+                          <p className="text-xs text-gray-500 dark:text-white/50">
+                            How long to show the rich animation before saving power
+                          </p>
+                        </div>
+                        <div className="p-1.5 bg-gray-100/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 rounded-2xl flex items-center gap-1 self-start sm:self-auto">
+                          {[1, 2, 5].map((mins) => (
+                            <button
+                              key={mins}
+                              onClick={() => onUpdatePreferences({ chargingModeDuration: mins })}
+                              className={`
+                                px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-2
+                                ${
+                                  (preferences.chargingModeDuration ?? 1) === mins
+                                    ? "bg-white dark:bg-white/10 text-amber-600 dark:text-amber-400 shadow-sm border border-black/5 dark:border-white/10"
+                                    : "text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white"
+                                }
+                              `}
+                            >
+                              {mins} min
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                            Minimal Black Screen
+                          </span>
+                          <p className="text-xs text-gray-500 dark:text-white/50">
+                            Switch to a minimal black screen after animation ends
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => onUpdatePreferences({ chargingModeBlackScreen: !(preferences.chargingModeBlackScreen ?? true) })}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                            (preferences.chargingModeBlackScreen ?? true) ? 'bg-amber-500' : 'bg-gray-200 dark:bg-white/10'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                              (preferences.chargingModeBlackScreen ?? true) ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
 
           {/* Clean Horizontal Divider */}
           <hr className="border-t border-gray-200 dark:border-white/10" />

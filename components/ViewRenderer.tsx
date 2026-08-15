@@ -112,6 +112,8 @@ interface ViewRendererProps {
     setActiveVoicePersona?: (persona: string | null) => void;
     onVoiceSettingChange?: (key: string, value: any) => Promise<void>;
     onVoiceSettingsChangeMulti?: (settings: Record<string, any>) => Promise<void>;
+    isChargingSupported?: boolean;
+    onPreviewCharging?: () => void;
 }
 
 const PageTransition: React.FC<{ children: React.ReactNode; viewKey: string }> = React.memo(({ children, viewKey }) => {
@@ -195,7 +197,9 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
     activeVoicePersona,
     setActiveVoicePersona,
     onVoiceSettingChange,
-    onVoiceSettingsChangeMulti
+    onVoiceSettingsChangeMulti,
+    isChargingSupported,
+    onPreviewCharging,
 }) => {
 
     const renderView = () => {
@@ -235,6 +239,8 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
                         onThemeChange={onThemeChange}
                         userProfile={userProfile}
                         onEditProfile={onEditProfile}
+                        isChargingSupported={isChargingSupported}
+                        onPreviewCharging={onPreviewCharging}
                     />
                 );
             case 'voice-settings':

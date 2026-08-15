@@ -254,7 +254,12 @@ const App: React.FC = () => {
       return DEFAULT_UI_PREFS;
     }
   });
-  const { overlayState: chargingOverlayState, batteryLevel } = useChargingMode(uiPreferences);
+  const {
+    isSupported: isChargingSupported,
+    overlayState: chargingOverlayState,
+    batteryLevel,
+    triggerPreview: triggerChargingPreview,
+  } = useChargingMode(uiPreferences);
 
   const exploreActiveCategoryRef = useRef<string>("for-you");
 
@@ -1466,6 +1471,8 @@ const App: React.FC = () => {
                 onVoiceSettingChange={handleVoiceSettingChange}
                 onVoiceSettingsChangeMulti={handleVoiceSettingsChangeMulti}
                 voiceHistoryVersion={voiceHistoryVersion}
+                isChargingSupported={isChargingSupported}
+                onPreviewCharging={triggerChargingPreview}
               />
             </div>
           </div>
@@ -1502,7 +1509,10 @@ const App: React.FC = () => {
       />
       <BroadcastPopup />
       <VersionUpdateModal />
-      <ChargingOverlay state={chargingOverlayState} batteryLevel={batteryLevel} />
+      <ChargingOverlay
+        state={chargingOverlayState}
+        batteryLevel={batteryLevel}
+      />
     </>
   );
 };
