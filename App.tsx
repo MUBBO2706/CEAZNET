@@ -94,9 +94,9 @@ try {
 
 const DEFAULT_UI_PREFS: UIPreferences = {
   fontSize: "medium",
-  fontFamily: "sans",
+  fontFamily: "quicksand",
   layoutDensity: "comfortable",
-  borderRadius: "medium",
+  borderRadius: "small",
 };
 
 // --- ROUTING HELPERS ---

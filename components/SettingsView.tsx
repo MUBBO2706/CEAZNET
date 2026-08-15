@@ -50,9 +50,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
   const [systemInfo, setSystemInfo] = useState({
     os: "Unknown",
+    deviceType: "Desktop",
     browser: "Unknown",
+    browserVersion: "",
+    engine: "WebKit",
     screen: "",
+    dpr: "1.0x",
+    orientation: "Portrait",
     network: "Online",
+    connType: "Active",
+    rtt: "",
   });
 
   useEffect(() => {
@@ -64,23 +71,77 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     if (ua.indexOf("Android") !== -1) os = "Android";
     if (ua.indexOf("like Mac") !== -1) os = "iOS";
 
+    let deviceType = "Desktop";
+    if (/Mobi|Android|iPhone|iPad/i.test(ua)) {
+      deviceType = /iPad|Tablet/i.test(ua) ? "Tablet" : "Mobile";
+    }
+
     let browser = "Unknown Browser";
-    if (ua.indexOf("Chrome") !== -1) browser = "Chrome";
-    else if (ua.indexOf("Safari") !== -1) browser = "Safari";
-    if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
-    if (ua.indexOf("Edge") !== -1) browser = "Edge";
+    let browserVersion = "";
+    let engine = "Blink";
+
+    const chromeMatch = ua.match(/Chrome\/([0-9.]+)/);
+    const safariMatch = ua.match(/Version\/([0-9.]+).*Safari/);
+    const firefoxMatch = ua.match(/Firefox\/([0-9.]+)/);
+    const edgeMatch = ua.match(/Edg\/([0-9.]+)/);
+
+    if (edgeMatch) {
+      browser = "Edge";
+      browserVersion = "v" + edgeMatch[1].split(".")[0];
+      engine = "Blink";
+    } else if (chromeMatch) {
+      browser = "Chrome";
+      browserVersion = "v" + chromeMatch[1].split(".")[0];
+      engine = "Blink";
+    } else if (firefoxMatch) {
+      browser = "Firefox";
+      browserVersion = "v" + firefoxMatch[1].split(".")[0];
+      engine = "Gecko";
+    } else if (safariMatch) {
+      browser = "Safari";
+      browserVersion = "v" + safariMatch[1].split(".")[0];
+      engine = "WebKit";
+    } else {
+      if (ua.indexOf("Safari") !== -1 && ua.indexOf("Chrome") === -1) {
+        browser = "Safari";
+        engine = "WebKit";
+      }
+    }
+
+    const dpr = `${window.devicePixelRatio.toFixed(1)}x`;
+    const getOrientation = () => window.innerWidth > window.innerHeight ? "Landscape" : "Portrait";
+
+    let connType = "Active";
+    let rtt = "";
+    const conn = (navigator as any).connection;
+    if (conn) {
+      if (conn.effectiveType) {
+        connType = conn.effectiveType.toUpperCase();
+      }
+      if (conn.rtt !== undefined) {
+        rtt = `${conn.rtt}ms`;
+      }
+    }
 
     setSystemInfo({
       os,
+      deviceType,
       browser,
+      browserVersion,
+      engine,
       screen: `${window.innerWidth} × ${window.innerHeight}`,
+      dpr,
+      orientation: getOrientation(),
       network: navigator.onLine ? "Online" : "Offline",
+      connType,
+      rtt,
     });
 
     const handleResize = () =>
       setSystemInfo((prev) => ({
         ...prev,
         screen: `${window.innerWidth} × ${window.innerHeight}`,
+        orientation: getOrientation(),
       }));
     const handleOnline = () =>
       setSystemInfo((prev) => ({ ...prev, network: "Online" }));
@@ -121,9 +182,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const fonts = [
+    { id: "quicksand", label: "Quicksand", class: "font-quicksand" },
     { id: "sans", label: "Geist Sans", class: "font-sans" },
     { id: "inter", label: "Inter", class: "font-inter" },
-    { id: "quicksand", label: "Quicksand", class: "font-quicksand" },
     { id: "serif", label: "Source Serif", class: "font-serif" },
     { id: "playfair", label: "Playfair", class: "font-playfair" },
     { id: "mono", label: "JetBrains", class: "font-mono" },
@@ -184,9 +245,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           {/* --- SECTION 1: INTERFACE --- */}
           <motion.div variants={itemVariants} className="space-y-5 w-full">
             <div className="flex items-center gap-3 shrink-0">
-              <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-400 shrink-0">
-                <Layout className="w-5 h-5" />
-              </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
                   Interface
@@ -293,9 +351,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           {/* --- SECTION 2: TYPOGRAPHY --- */}
           <motion.div variants={itemVariants} className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400">
-                <Type className="w-5 h-5" />
-              </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">
                   Typography
@@ -391,9 +446,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               <hr className="border-t border-gray-200 dark:border-white/10" />
               <motion.div variants={itemVariants} className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400">
-                    <Zap className="w-5 h-5" />
-                  </div>
                   <div>
                     <h2 className="text-base font-bold text-gray-900 dark:text-white">
                       Power & Focus
@@ -507,64 +559,105 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           {/* --- SECTION 4: SYSTEM INFORMATION --- */}
           <motion.div variants={itemVariants} className="space-y-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-400">
-                <Cpu className="w-5 h-5" />
-              </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">
                   System Information
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-white/50">
-                  Client v{packageInfo.version || "1.0.0"} •{" "}
-                  {import.meta.env.MODE === "development"
-                    ? "Development"
-                    : "Production"}
+                  Real-time environment diagnostics and system telemetry status
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex flex-col justify-center">
-                <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                  <Monitor className="w-3 h-3" /> Platform
+              {/* Platform Card */}
+              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
+                <div className="flex flex-col justify-center min-w-0">
+                  <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
+                    <Monitor className="w-3 h-3 text-blue-500 shrink-0" /> Platform
+                  </div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
+                    {systemInfo.os}
+                  </div>
                 </div>
-                <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
-                  {systemInfo.os}
-                </div>
-              </div>
-              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex flex-col justify-center">
-                <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                  <Globe className="w-3 h-3" /> Engine
-                </div>
-                <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
-                  {systemInfo.browser}
-                </div>
-              </div>
-              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex flex-col justify-center">
-                <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                  <Layout className="w-3 h-3" /> Display
-                </div>
-                <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
-                  {systemInfo.screen}
+                <div className="text-right shrink-0 pl-1">
+                  <div className="text-[9px] uppercase font-bold text-gray-400 dark:text-white/30">
+                    Device
+                  </div>
+                  <div className="text-[10px] font-semibold text-gray-600 dark:text-white/50 truncate max-w-[70px]">
+                    {systemInfo.deviceType}
+                  </div>
                 </div>
               </div>
-              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex flex-col justify-center">
-                <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                  <RotateCw className="w-3 h-3" /> Network
+
+              {/* Engine Card */}
+              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
+                <div className="flex flex-col justify-center min-w-0">
+                  <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-emerald-500 shrink-0" /> Engine
+                  </div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
+                    {systemInfo.browser}
+                  </div>
                 </div>
-                <div className="text-xs font-semibold text-gray-800 dark:text-white/80 flex items-center gap-1.5 truncate">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${systemInfo.network === "Online" ? "bg-emerald-500" : "bg-red-500"}`}
-                  ></span>
-                  {systemInfo.network}
+                <div className="text-right shrink-0 pl-1">
+                  <div className="text-[9px] uppercase font-bold text-gray-400 dark:text-white/30">
+                    {systemInfo.engine}
+                  </div>
+                  <div className="text-[10px] font-semibold text-gray-600 dark:text-white/50 truncate max-w-[70px]">
+                    {systemInfo.browserVersion || "Latest"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Display Card */}
+              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
+                <div className="flex flex-col justify-center min-w-0">
+                  <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
+                    <Layout className="w-3 h-3 text-purple-500 shrink-0" /> Display
+                  </div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
+                    {systemInfo.screen}
+                  </div>
+                </div>
+                <div className="text-right shrink-0 pl-1">
+                  <div className="text-[9px] uppercase font-bold text-gray-400 dark:text-white/30">
+                    {systemInfo.orientation}
+                  </div>
+                  <div className="text-[10px] font-semibold text-gray-600 dark:text-white/50 truncate max-w-[70px]">
+                    {systemInfo.dpr} DPR
+                  </div>
+                </div>
+              </div>
+
+              {/* Network Card */}
+              <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
+                <div className="flex flex-col justify-center min-w-0">
+                  <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
+                    <RotateCw className="w-3 h-3 text-amber-500 shrink-0" /> Network
+                  </div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-white/80 flex items-center gap-1.5 truncate">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${systemInfo.network === "Online" ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+                    ></span>
+                    {systemInfo.network}
+                  </div>
+                </div>
+                <div className="text-right shrink-0 pl-1">
+                  <div className="text-[9px] uppercase font-bold text-gray-400 dark:text-white/30">
+                    {systemInfo.connType}
+                  </div>
+                  <div className="text-[10px] font-semibold text-gray-600 dark:text-white/50 truncate max-w-[70px]">
+                    {systemInfo.rtt || "Active"}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-row gap-3 max-w-md pt-1">
+            <div className="flex flex-row justify-end gap-3 pt-1 w-full">
               <button
                 onClick={() => setIsApiKeyModalOpen(true)}
-                className="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl bg-gray-100/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-all shadow-sm"
+                className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-gray-100/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-all shadow-sm"
               >
                 <div className="flex items-center gap-2">
                   <Key
@@ -578,7 +671,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
               <button
                 onClick={() => setIsResetConfirmOpen(true)}
-                className="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200/60 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all text-red-600 dark:text-red-400 shadow-sm"
+                className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200/60 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all text-red-600 dark:text-red-400 shadow-sm"
               >
                 <div className="flex items-center gap-2">
                   <Trash2 className="w-4 h-4" />
