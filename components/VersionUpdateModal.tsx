@@ -75,6 +75,7 @@ export const VersionUpdateModal: React.FC = () => {
         typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ !== 'dev' ? __BUILD_ID__ : null
     );
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const lastCheckTimeRef = useRef<number>(0);
 
     // Play a notification sound once the update modal is triggered
     useEffect(() => {
@@ -83,10 +84,18 @@ export const VersionUpdateModal: React.FC = () => {
         }
     }, [hasUpdate, isVisible, isDev]);
 
-    const checkForUpdates = useCallback(async () => {
+    const checkForUpdates = useCallback(async (isManual = false) => {
         if (isDev) return;
 
+        const now = Date.now();
+        // Throttle automatic checks to at most once every 15 seconds to prevent spam during window focus/visibility events
+        if (!isManual && now - lastCheckTimeRef.current < 15000) {
+            return;
+        }
+        lastCheckTimeRef.current = now;
+
         try {
+            let check1Successful = false;
             // Check 1: Direct fetch to static version.json (Fastest, zero serverless latency, works on Vercel CDN/Vite)
             try {
                 const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
@@ -104,6 +113,7 @@ export const VersionUpdateModal: React.FC = () => {
                     const serverVer = staticData?.version;
 
                     if (serverVer && serverVer !== 'dev' && serverVer !== 'unknown') {
+                        check1Successful = true;
                         if (!initialVersionRef.current) {
                             initialVersionRef.current = String(serverVer);
                         } else if (String(serverVer) !== String(initialVersionRef.current)) {
@@ -117,7 +127,12 @@ export const VersionUpdateModal: React.FC = () => {
                 console.debug('[Update Checker] Direct version.json check error:', staticErr);
             }
 
-            // Check 2: Version Control API endpoint
+            // If direct check was successful, skip the redundant serverless API check
+            if (check1Successful) {
+                return;
+            }
+
+            // Check 2: Version Control API endpoint (Fallback only if static file fetch failed or was missing)
             const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'unknown');
             const response = await fetch(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
                 method: 'GET',

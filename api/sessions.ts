@@ -428,12 +428,12 @@ export default async function handler(req: any, res: any) {
       }
 
       if (action === 'heartbeat') {
-        const { session_key, device_id, client_device_name, status_override, battery_percentage } = req.body || {};
+        const { session_key, device_id, client_device_name, status_override, battery_percentage, skip_db_update } = req.body || {};
         if (!session_key) return res.status(400).json({ error: "Missing session_key" });
         try {
           // If status_override is 'tab_closed' or 'background', we don't necessarily want to update last_active_at in supabase (or we can, but it doesn't matter much)
           // We mainly want to update the dev console session cache
-          if (!status_override || status_override === 'active') {
+          if (!skip_db_update && (!status_override || status_override === 'active')) {
              const updatePayload: any = { last_active_at: new Date().toISOString() };
              if (typeof battery_percentage === 'number') {
                updatePayload.battery_percentage = battery_percentage;

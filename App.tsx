@@ -700,6 +700,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user || !session) return;
 
+    let lastSupabaseUpdate = Date.now();
+
     const getCoordinates = (): Promise<{
       latitude: number;
       longitude: number;
@@ -859,6 +861,11 @@ const App: React.FC = () => {
           const deviceName = await getExactDeviceName();
           const batteryPercentage = await getBatteryPercentage();
           
+          const skipDbUpdate = !statusOverride && (Date.now() - lastSupabaseUpdate < 5 * 60 * 1000);
+          if (!skipDbUpdate && !statusOverride) {
+            lastSupabaseUpdate = Date.now();
+          }
+          
           if (statusOverride) {
             // Use sendBeacon for reliable delivery on unload/hide
             const blob = new Blob([JSON.stringify({
@@ -881,6 +888,7 @@ const App: React.FC = () => {
                 device_id: deviceId,
                 client_device_name: deviceName,
                 battery_percentage: batteryPercentage,
+                skip_db_update: skipDbUpdate
               }),
             }).catch(() => {});
           }
