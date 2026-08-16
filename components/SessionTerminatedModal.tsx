@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, MapPin, MonitorSmartphone, MonitorX } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, MonitorSmartphone, MonitorX } from 'lucide-react';
 import { getExactDeviceName } from '../utils/deviceUtils';
 
 interface Props {
@@ -161,9 +161,10 @@ const SessionTerminatedModal: React.FC<Props> = ({
             e.preventDefault();
             handleReload();
           }}
-          className="text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white underline underline-offset-4 decoration-gray-300 hover:decoration-gray-900 dark:decoration-neutral-600 dark:hover:decoration-white transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white transition-colors cursor-pointer"
         >
           Return to Home
+          <ArrowRight className="w-4 h-4" />
         </a>
       </div>
     </div>
