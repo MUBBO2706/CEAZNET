@@ -1009,7 +1009,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                 <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200/40 dark:divide-white/5 text-gray-700 dark:text-neutral-300">
+            <tbody className="divide-y divide-gray-300/70 dark:divide-white/15 text-gray-700 dark:text-neutral-300">
               {paginatedSessions.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-12 text-center text-[var(--profile-text-muted)]">
