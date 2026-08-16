@@ -102,7 +102,7 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({ transaction
     }, [transactions, budget, period]);
 
     return (
-        <div className={`w-full h-full flex flex-col justify-between p-5 lg:p-5 rounded-2xl bg-white dark:bg-[#121212] border border-gray-200/80 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-all gap-3.5 ${className || ''}`}>
+        <div className={`w-full h-full flex flex-col justify-between p-5 lg:p-5 rounded-2xl bg-white dark:bg-black border border-gray-200/80 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-all gap-3.5 ${className || ''}`}>
             
             {/* Top Row: Daily Metric & Status */}
             <div className="flex justify-between items-start">

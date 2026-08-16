@@ -89,8 +89,8 @@ const TransactionItem = React.memo<{
             ${isSelected 
                 ? 'bg-indigo-50/70 dark:bg-indigo-950/20' 
                 : isExpanded
-                    ? 'bg-gray-100/70 dark:bg-[#0c0c0d]/60'
-                    : ''
+                    ? (isIncome ? 'bg-emerald-50/70 dark:bg-emerald-950/15' : 'bg-rose-50/70 dark:bg-rose-950/15')
+                    : (isIncome ? 'bg-emerald-50/25 dark:bg-emerald-950/5' : 'bg-rose-50/25 dark:bg-rose-950/5')
             }
         `}>
             {/* Transaction Header Row */}
@@ -101,21 +101,27 @@ const TransactionItem = React.memo<{
                 onPointerCancel={onPointerUp}
                 onClick={() => onClick(t)}
                 className={`group relative flex items-center justify-between px-4 py-3 transition-colors duration-150 text-left active:scale-[0.99] cursor-pointer w-full
-                    ${!isSelected && !isExpanded ? 'hover:bg-gray-50 dark:hover:bg-gray-900/40' : ''}
+                    ${!isSelected && !isExpanded 
+                        ? (isIncome ? 'hover:bg-emerald-100/40 dark:hover:bg-emerald-950/20' : 'hover:bg-rose-100/40 dark:hover:bg-rose-950/20') 
+                        : ''
+                    }
                 `}
             >
                 <div className="flex items-center gap-4 lg:gap-3 min-w-0 flex-1">
                     {/* Icon or Checkbox */}
-                    <div className={`w-12 h-12 lg:w-9 lg:h-9 rounded-xl lg:rounded-lg flex items-center justify-center flex-shrink-0 transition-transform ${isSelectionMode ? '' : 'group-hover:scale-105'} 
-                        ${isSelected ? 'bg-indigo-500 text-white' : 
-                            isIncome ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
-                            isExpense ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' :
-                            'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                        }`}>
+                    <div className={`w-12 h-12 lg:w-9 lg:h-9 flex items-center justify-center flex-shrink-0 transition-transform ${isSelectionMode ? 'rounded-xl lg:rounded-lg' : 'group-hover:scale-105'} 
+                        ${isSelected ? 'bg-indigo-500 text-white rounded-xl lg:rounded-lg' : 
+                            isSelectionMode ? 'bg-gray-100 dark:bg-neutral-800 rounded-xl lg:rounded-lg' : ''
+                        }
+                        ${!isSelected ? (
+                            isIncome ? 'text-emerald-600 dark:text-emerald-400' :
+                            isExpense ? 'text-rose-600 dark:text-rose-400' :
+                            'text-indigo-600 dark:text-indigo-400'
+                        ) : ''}`}>
                         {isSelectionMode ? (
                             isSelected ? <Check className="w-6 h-6 lg:w-4 lg:h-4" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
                         ) : (
-                            <CategoryIcon categoryId={t.category} type={t.type} className="w-5 h-5 lg:w-4 lg:h-4" customCategories={customCategories} />
+                            <CategoryIcon categoryId={t.category} type={t.type} className="w-6 h-6 lg:w-5 lg:h-5" customCategories={customCategories} />
                         )}
                     </div>
                     
@@ -230,7 +236,11 @@ const TransactionItem = React.memo<{
                             {/* Details Grid (Informative 2x2 on mobile, 4 cols on desktop) */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {/* Date Card */}
-                                <div className="bg-white dark:bg-[#161618] p-2.5 rounded-xl border border-gray-200/80 dark:border-gray-800/80 flex flex-col justify-between gap-1 shadow-2xs">
+                                <div className={`p-2.5 rounded-xl border flex flex-col justify-between gap-1 shadow-2xs ${
+                                    isIncome 
+                                        ? 'bg-white/70 dark:bg-black/45 border-emerald-100/70 dark:border-emerald-900/30' 
+                                        : 'bg-white/70 dark:bg-black/45 border-rose-100/70 dark:border-rose-900/30'
+                                }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                                             <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -245,7 +255,11 @@ const TransactionItem = React.memo<{
                                 </div>
 
                                 {/* Time Card */}
-                                <div className="bg-white dark:bg-[#161618] p-2.5 rounded-xl border border-gray-200/80 dark:border-gray-800/80 flex flex-col justify-between gap-1 shadow-2xs">
+                                <div className={`p-2.5 rounded-xl border flex flex-col justify-between gap-1 shadow-2xs ${
+                                    isIncome 
+                                        ? 'bg-white/70 dark:bg-black/45 border-emerald-100/70 dark:border-emerald-900/30' 
+                                        : 'bg-white/70 dark:bg-black/45 border-rose-100/70 dark:border-rose-900/30'
+                                }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                                             <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -260,7 +274,11 @@ const TransactionItem = React.memo<{
                                 </div>
 
                                 {/* Wallet Card */}
-                                <div className="bg-white dark:bg-[#161618] p-2.5 rounded-xl border border-gray-200/80 dark:border-gray-800/80 flex flex-col justify-between gap-1 shadow-2xs">
+                                <div className={`p-2.5 rounded-xl border flex flex-col justify-between gap-1 shadow-2xs ${
+                                    isIncome 
+                                        ? 'bg-white/70 dark:bg-black/45 border-emerald-100/70 dark:border-emerald-900/30' 
+                                        : 'bg-white/70 dark:bg-black/45 border-rose-100/70 dark:border-rose-900/30'
+                                }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                                             <Wallet className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -279,7 +297,11 @@ const TransactionItem = React.memo<{
                                 </div>
 
                                 {/* Payment Method Card */}
-                                <div className="bg-white dark:bg-[#161618] p-2.5 rounded-xl border border-gray-200/80 dark:border-gray-800/80 flex flex-col justify-between gap-1 shadow-2xs">
+                                <div className={`p-2.5 rounded-xl border flex flex-col justify-between gap-1 shadow-2xs ${
+                                    isIncome 
+                                        ? 'bg-white/70 dark:bg-black/45 border-emerald-100/70 dark:border-emerald-900/30' 
+                                        : 'bg-white/70 dark:bg-black/45 border-rose-100/70 dark:border-rose-900/30'
+                                }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                                             <CreditCard className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -353,7 +375,7 @@ const TransactionItem = React.memo<{
                     onClick={(e) => { e.stopPropagation(); setIsDescModalOpen(false); }}
                 >
                     <div 
-                        className="bg-white dark:bg-[#161618] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 max-w-md w-full shadow-2xl relative flex flex-col gap-4 text-left"
+                        className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl p-5 max-w-md w-full shadow-2xl relative flex flex-col gap-4 text-left"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}

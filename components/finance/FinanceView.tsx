@@ -1813,8 +1813,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     }`}
                                                                 >
                                                                     <div className="flex items-center gap-2.5 min-w-0">
-                                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${cat.bg} ${cat.color}`}>
-                                                                            <IconComp className="w-4 h-4" />
+                                                                        <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${cat.color}`}>
+                                                                            <IconComp className="w-4.5 h-4.5" />
                                                                         </div>
                                                                         <span className="truncate text-xs font-bold">{cat.label}</span>
                                                                     </div>
@@ -2378,7 +2378,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
 
             {isImporting && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
+                    <div className="bg-white dark:bg-black p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
                         <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
                         <p className="text-gray-900 dark:text-white font-medium">Importing Data...</p>
                     </div>
@@ -2407,7 +2407,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
                         onClick={() => setIsCalendarModalOpen(false)} 
                     />
-                    <div className="relative w-full max-w-lg bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[80vh] animate-fade-in-up">
+                    <div className="relative w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[80vh] animate-fade-in-up">
                         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-indigo-500" />

@@ -22,7 +22,7 @@ const CategoryIcon: React.FC<{ categoryId: string, type: string, className?: str
 const getCategoryColor = (categoryId: string, type: string) => {
     const configList = CATEGORY_CONFIG[type as keyof typeof CATEGORY_CONFIG] || CATEGORY_CONFIG.expense;
     const categoryData = configList.find(c => c.id === categoryId);
-    return categoryData ? `${categoryData.color} ${categoryData.bg}` : 'text-gray-500 bg-gray-100 dark:bg-gray-800';
+    return categoryData ? categoryData.color : 'text-gray-500';
 }
 
 const TopExpenses: React.FC<TopExpensesProps> = ({ transactions }) => {
@@ -61,8 +61,8 @@ const TopExpenses: React.FC<TopExpensesProps> = ({ transactions }) => {
                         >
                             <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                                 <div className="relative">
-                                    <div className={`w-10 h-10 md:w-11 md:h-11 rounded-full ${colorClass} flex items-center justify-center shadow-sm shrink-0`}>
-                                        <CategoryIcon categoryId={t.category} type={t.type} className="w-4 h-4 md:w-5 md:h-5" />
+                                    <div className={`w-10 h-10 md:w-11 md:h-11 rounded-full ${colorClass} flex items-center justify-center shrink-0`}>
+                                        <CategoryIcon categoryId={t.category} type={t.type} className="w-5 h-5 md:w-6 md:h-6" />
                                     </div>
                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-[9px] md:text-[10px] shadow-sm border-2 border-white dark:border-gray-900 transition-transform group-hover:scale-110">
                                         {i + 1}

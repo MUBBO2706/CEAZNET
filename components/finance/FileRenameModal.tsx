@@ -50,7 +50,7 @@ const FileRenameModal: React.FC<FileRenameModalProps> = ({
             />
             
             <div className="relative w-full max-w-sm transform transition-all">
-                <div className="relative bg-white/90 dark:bg-[#161618]/95 backdrop-blur-2xl rounded-[1.5rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden">
+                <div className="relative bg-white/90 dark:bg-black/95 backdrop-blur-2xl rounded-[1.5rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden">
                     
                     <div className="px-6 py-5 border-b border-gray-200/50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-white/5 backdrop-blur-md">
                         <div className="flex items-center gap-3">

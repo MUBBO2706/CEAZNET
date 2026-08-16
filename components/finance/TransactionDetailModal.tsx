@@ -62,7 +62,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ isOpen,
             <div className="relative w-full max-w-md transform transition-all animate-fade-in-up">
                 
                 {/* Main Card */}
-                <div className="relative bg-white/90 dark:bg-[#161618]/95 backdrop-blur-2xl rounded-[1.9rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col">
+                <div className="relative bg-white/90 dark:bg-black/95 backdrop-blur-2xl rounded-[1.9rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col">
                     
                     {/* 1. Header / Hero Section */}
                     <div className={`relative p-8 flex flex-col items-center justify-center text-white bg-gradient-to-br ${gradient}`}>

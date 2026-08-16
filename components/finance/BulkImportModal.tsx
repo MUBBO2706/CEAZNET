@@ -97,7 +97,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onSa
                 {/* Glow Border */}
                 <div className="absolute -inset-[1px] bg-gradient-to-br from-indigo-500 via-blue-500 to-teal-500 rounded-[2rem] opacity-15 dark:opacity-25 blur-sm" />
 
-                <div className="relative w-full bg-white/90 dark:bg-[#161618]/95 backdrop-blur-2xl rounded-[1.9rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="relative w-full bg-white/90 dark:bg-black/95 backdrop-blur-2xl rounded-[1.9rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col max-h-[85vh]">
                     
                     {/* Header */}
                     <div className="px-6 py-5 border-b border-gray-200/50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-white/5 backdrop-blur-md">

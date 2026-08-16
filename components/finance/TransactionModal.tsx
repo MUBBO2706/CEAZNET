@@ -462,8 +462,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
                     : 'hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-100 dark:hover:border-white/5'
             }`}
         >
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${cat.bg} ${cat.color} transition-transform ${category === cat.id ? 'scale-105' : ''}`}>
-                <cat.icon className="w-4.5 h-4.5" />
+            <div className={`w-9 h-9 flex items-center justify-center ${cat.color} transition-transform ${category === cat.id ? 'scale-105' : ''}`}>
+                <cat.icon className="w-5.5 h-5.5" />
             </div>
             <span className={`text-[10px] font-medium truncate w-full text-center ${category === cat.id ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}>
                 {cat.label}
@@ -565,7 +565,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
                                     {isPaymentSelectorOpen && (
                                         <div 
                                             ref={paymentDropdownRef} 
-                                            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl z-50 overflow-hidden py-1 max-h-60 overflow-y-auto"
+                                            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl z-50 overflow-hidden py-1 max-h-60 overflow-y-auto"
                                         >
                                             {PAYMENT_METHODS.map((m) => {
                                                 const Icon = m.icon;
@@ -891,7 +891,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
             {/* AI Category Icon Confirmation Modal */}
             {isAiModalOpen && (
                 <div className="fixed inset-0 z-[100] bg-slate-900/20 dark:bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white max-w-sm w-full rounded-2xl p-6 shadow-2xl relative z-10 text-left">
+                    <div className="bg-white dark:bg-black border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white max-w-sm w-full rounded-2xl p-6 shadow-2xl relative z-10 text-left">
                         <div className="flex items-center gap-3 mb-3">
                             {(() => {
                                 const iconName = aiSuggestion?.iconName || 'Tag';

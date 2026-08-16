@@ -90,7 +90,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
             />
             
             <div className="relative w-full max-w-sm transform transition-all animate-fade-in-up">
-                 <div className="relative bg-white/90 dark:bg-[#161618]/95 backdrop-blur-2xl rounded-[1.9rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col max-h-[85vh]">
+                 <div className="relative bg-white/90 dark:bg-black/95 backdrop-blur-2xl rounded-[1.9rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden flex flex-col max-h-[85vh]">
                     
                     {/* Header */}
                     <div className="px-6 py-5 border-b border-gray-200/50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-white/5 backdrop-blur-md">
