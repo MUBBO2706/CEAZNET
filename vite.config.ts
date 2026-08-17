@@ -22,6 +22,12 @@ export default defineConfig(async ({ mode }) => {
         fs.mkdirSync(publicDir, { recursive: true });
       }
       fs.writeFileSync(path.join(publicDir, 'version.json'), JSON.stringify({ version: buildId }), 'utf8');
+
+      // Also write version.json to api/ folder so Vercel serverless builder automatically bundles it into the Lambda environment
+      const apiDir = path.resolve(import.meta.dirname, 'api');
+      if (fs.existsSync(apiDir)) {
+        fs.writeFileSync(path.join(apiDir, 'version.json'), JSON.stringify({ version: buildId }), 'utf8');
+      }
     } catch (err: any) {
       console.warn('[Vite Config] Failed to handle buildId configuration:', err.message);
       buildId = Date.now().toString();

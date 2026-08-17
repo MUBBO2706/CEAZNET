@@ -1494,7 +1494,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
             </div>
 
             {/* Modal Body */}
-            <div className="p-4.5 flex flex-col divide-y divide-[var(--profile-card-border)]/50 text-xs">
+            <div className="p-5 flex flex-col divide-y divide-[var(--profile-card-border)]/50 text-xs">
               
               {/* Device & Client */}
               <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">

@@ -16,6 +16,8 @@ export default async function handler(req: any, res: any) {
       const candidatePaths = [
         path.join(process.cwd(), 'dist', 'version.json'),
         path.join(process.cwd(), 'public', 'version.json'),
+        path.join(process.cwd(), 'api', 'version.json'),
+        path.join(__dirname, 'version.json'),
         path.join(process.cwd(), 'version.json'),
       ];
 

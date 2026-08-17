@@ -14,14 +14,13 @@ const isDevelopmentEnvironment = (): boolean => {
     if (typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ === 'dev') {
         return true;
     }
-    // 3. Check dev hostnames
+    // 3. Check dev hostnames (only localhost, 127.0.0.1 and AI Studio workspace preview url)
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
         if (
             hostname === 'localhost' ||
             hostname === '127.0.0.1' ||
-            hostname.includes('ais-dev-') ||
-            hostname.startsWith('dev.')
+            hostname.includes('ais-dev-')
         ) {
             return true;
         }
@@ -112,12 +111,14 @@ export const VersionUpdateModal: React.FC = () => {
                 if (data?.hasUpdate) {
                     console.log(`[Version Update] Live API update detected: ${data.message}`);
                     setHasUpdate(true);
+                    setIsVisible(true); // Ensure modal pops up when an update is found
                 } else if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
                     if (!initialVersionRef.current) {
                         initialVersionRef.current = String(data.serverVersion);
                     } else if (String(data.serverVersion) !== String(initialVersionRef.current)) {
                         console.log(`[Version Update] Server version difference detected: ${initialVersionRef.current} vs ${data.serverVersion}`);
                         setHasUpdate(true);
+                        setIsVisible(true); // Ensure modal pops up when an update is found
                     }
                 }
             }
