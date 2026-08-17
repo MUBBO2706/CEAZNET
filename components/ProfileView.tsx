@@ -479,7 +479,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       }
       addToast(`Terminated ${successCount} other active sessions.`, 'success');
       invalidateUserSessionsCache();
-      await fetchSessions(true);
+      // REALTIME handles the UI update!
     } catch (err: any) {
       console.error('Error terminating other sessions:', err);
       addToast('Failed to terminate other sessions.', 'error');
@@ -506,7 +506,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       }
       addToast(`Deleted ${inactiveSessions.length} inactive records.`, 'success');
       invalidateUserSessionsCache();
-      await fetchSessions(true);
+      // REALTIME handles the UI update!
     } catch (err: any) {
       console.error('Error clearing inactive sessions:', err);
       addToast('Failed to delete inactive sessions.', 'error');

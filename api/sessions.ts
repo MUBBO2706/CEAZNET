@@ -436,8 +436,9 @@ export default async function handler(req: any, res: any) {
         const { session_key, device_id, client_device_name, status_override, battery_percentage, skip_db_update } = req.body || {};
         if (!session_key) return res.status(400).json({ error: "Missing session_key" });
         try {
-          // If status_override is 'tab_closed' or 'background', we don't necessarily want to update last_active_at in supabase (or we can, but it doesn't matter much)
-          // We mainly want to update the dev console session cache
+          // As requested: Do NOT update Supabase with heartbeats anymore to avoid excessive realtime egress
+          // The dev console telegram cache will still receive the heartbeat update below.
+          /* 
           if (!skip_db_update && (!status_override || status_override === 'active')) {
              const updatePayload: any = { last_active_at: new Date().toISOString() };
              if (typeof battery_percentage === 'number') {
@@ -445,6 +446,7 @@ export default async function handler(req: any, res: any) {
              }
              await userClient.from('user_sessions').update(updatePayload).eq('session_key', session_key).eq('user_id', user.id);
           }
+          */
           
           if (device_id) {
             const finalStatus = status_override || 'active';
