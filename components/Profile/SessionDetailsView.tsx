@@ -852,7 +852,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                 {isStatusDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-20" onClick={() => setIsStatusDropdownOpen(false)} />
-                    <div className="absolute right-0 md:left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
                       {(['all', 'active', 'logged_out', 'terminated', 'expired'] as StatusFilter[]).map((opt) => (
                         <button
                           key={opt}
@@ -887,7 +887,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                 {isSortDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-20" onClick={() => setIsSortDropdownOpen(false)} />
-                    <div className="absolute right-0 md:left-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 mt-1.5 w-48 bg-[var(--profile-modal-bg)] border border-[var(--profile-card-border)] rounded-xl shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1">
                       {(['newest', 'oldest', 'browser_asc', 'os_asc'] as SortOption[]).map((opt) => (
                         <button
                           key={opt}
@@ -1289,11 +1289,11 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               <span className="font-semibold text-[var(--profile-text-primary)]">
                 {filteredSessions.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
               </span>
-              <span>-</span>
+              <span>to</span>
               <span className="font-semibold text-[var(--profile-text-primary)]">
                 {Math.min(currentPage * itemsPerPage, filteredSessions.length)}
               </span>
-              <span>of</span>
+              <span>from</span>
               <span className="font-semibold text-[var(--profile-text-primary)]">
                 {filteredSessions.length}
               </span>
