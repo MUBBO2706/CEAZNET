@@ -213,7 +213,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'user_sessions', filter: `user_id=eq.${user.id}` },
-          (payload) => {
+          (payload: any) => {
+            if (payload.eventType === 'UPDATE') {
+              const newRow = payload.new;
+              if (newRow) {
+                const newKey = newRow.session_key || '';
+                const isTerminatedOrLoggedOut = newKey.startsWith('TERMINATED_') || newKey.startsWith('LOGGED_OUT_');
+                
+                // If it is just a heartbeat/battery update of an active session, skip re-fetching
+                if (!isTerminatedOrLoggedOut) {
+                  return;
+                }
+              }
+            }
             invalidateUserSessionsCache();
             fetchSessions(true);
           }
@@ -1149,81 +1161,125 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Detail Modal for IP & Location (if clicked in overview preview) */}
       {detailModalSession && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
           onClick={() => setDetailModalSession(null)}
         >
           <div 
-            className="w-full max-w-md bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden"
+            className="w-full max-w-md bg-[var(--profile-modal-bg)] border border-[var(--profile-modal-border)] rounded-2xl shadow-[var(--profile-modal-shadow)] overflow-hidden animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-200 dark:border-white/10 flex items-center justify-between bg-gray-50 dark:bg-white/5">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-[var(--profile-card-border)] flex items-center justify-between bg-[var(--profile-card-subtle-bg)]">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-500" />
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                  Session Node Telemetry
+                <ShieldCheck className="w-5 h-5 text-[var(--profile-accent)]" />
+                <h3 className="text-sm font-bold text-[var(--profile-text-primary)]">
+                  Session Node Telemetry Details
                 </h3>
               </div>
               <button
                 onClick={() => setDetailModalSession(null)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+                className="p-1 rounded-lg text-[var(--profile-text-muted)] hover:text-[var(--profile-text-primary)] hover:bg-[var(--profile-card-border)] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-5 flex flex-col gap-3 text-xs">
-              <div className="flex flex-col gap-1 p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 tracking-wider">Device Name</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {detailModalSession.device_name || 'Generic Web Device'}
+            {/* Modal Body */}
+            <div className="p-4.5 flex flex-col divide-y divide-[var(--profile-card-border)]/50 text-xs">
+              
+              {/* Device & Client */}
+              <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Device & Client</span>
+                <div className="flex flex-col sm:items-end gap-0.5">
+                  <span className="text-sm font-semibold text-[var(--profile-text-primary)]">
+                    {detailModalSession.device_name || 'Generic Web Device'}
+                  </span>
+                  {(detailModalSession.is_current || detailModalSession.session_key === currentSessionKey) && (
+                    <span className="text-[10px] text-[var(--profile-accent)] font-semibold bg-[var(--profile-accent-subtle)] px-2 py-0.5 rounded border border-[var(--profile-accent-border)] w-fit sm:self-end">
+                      Current Active Device
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Status</span>
+                <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
+                  {getSessionStatus(detailModalSession).label}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1 p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 tracking-wider">IP Address</span>
-                  <span className="font-mono text-xs font-semibold text-gray-900 dark:text-white select-all">
-                    {detailModalSession.ip_address || '127.0.0.1'}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1 p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 tracking-wider">Status</span>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                    {getSessionStatus(detailModalSession).label}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1 p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 tracking-wider">Geo-Location Metadata</span>
-                <span className="text-xs font-medium text-gray-800 dark:text-white/90 flex items-start gap-1.5 mt-0.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span>{detailModalSession.location || 'Unknown Location'}</span>
+              {/* Public IP Address */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Public IP Address</span>
+                <span className="font-mono text-xs font-semibold text-[var(--profile-text-primary)] select-all">
+                  {detailModalSession.ip_address || '127.0.0.1'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1 p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 tracking-wider">Session Started</span>
-                  <span className="text-xs font-medium text-gray-800 dark:text-white/90">
-                    {formatDateTime(detailModalSession.created_at).full}
-                  </span>
-                </div>
+              {/* Geo-Location Metadata */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Geo-Location Metadata</span>
+                <span className="text-xs font-medium text-[var(--profile-text-primary)] flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                  <span>{detailModalSession.location || 'Unknown Location Coordinates'}</span>
+                </span>
+              </div>
 
-                <div className="flex flex-col gap-1 p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 tracking-wider">Last Activity</span>
-                  <span className="text-xs font-medium text-gray-800 dark:text-white/90">
-                    {formatDateTime(detailModalSession.last_active_at).full}
-                  </span>
-                </div>
+              {/* Battery */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Battery Status</span>
+                <span className="font-mono text-xs font-semibold text-[var(--profile-text-primary)]">
+                  {detailModalSession.battery_percentage !== undefined && detailModalSession.battery_percentage !== null ? `${detailModalSession.battery_percentage}%` : 'N/A'}
+                </span>
+              </div>
+
+              {/* Session Started */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Session Started</span>
+                <span className="text-xs font-medium text-[var(--profile-text-primary)]">
+                  {formatDateTime(detailModalSession.created_at).full}
+                </span>
+              </div>
+
+              {/* Last Heartbeat */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Last Heartbeat</span>
+                <span className="text-xs font-medium text-[var(--profile-text-primary)]">
+                  {formatDateTime(detailModalSession.last_active_at).full}
+                </span>
+              </div>
+
+              {/* Action By */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">Action By</span>
+                <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
+                  {getSessionActions(detailModalSession, userProfile.full_name || '', user?.email).actionBy}
+                </span>
+              </div>
+
+              {/* Action From */}
+              <div className="py-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 tracking-wider">Action From</span>
+                <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
+                  {getSessionActions(detailModalSession, userProfile.full_name || '', user?.email).actionFrom}
+                </span>
+              </div>
+
+              {/* Unique Session Identifier */}
+              <div className="py-2.5 flex flex-col gap-1">
+                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Unique Session Identifier</span>
+                <span className="font-mono text-[10px] text-[var(--profile-text-muted)] break-all select-all">
+                  {detailModalSession.id || detailModalSession.session_key}
+                </span>
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex justify-end">
+            <div className="p-4 border-t border-[var(--profile-card-border)] bg-[var(--profile-card-subtle-bg)] flex justify-end">
               <button
                 onClick={() => setDetailModalSession(null)}
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold transition-colors"
+                className="px-4 py-2 rounded-xl bg-[var(--profile-accent)] text-white hover:bg-[var(--profile-accent)]/90 text-xs font-semibold transition-colors shadow-sm"
               >
                 Close
               </button>
