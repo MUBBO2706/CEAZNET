@@ -1478,7 +1478,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-4 border-b border-[var(--profile-card-border)] flex items-center justify-between bg-[var(--profile-card-subtle-bg)]">
+            <div className="p-3 px-4 border-b border-[var(--profile-card-border)] flex items-center justify-between bg-[var(--profile-card-subtle-bg)]">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-[var(--profile-accent)]" />
                 <h3 className="text-sm font-bold text-[var(--profile-text-primary)]">
@@ -1494,10 +1494,10 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 flex flex-col divide-y divide-[var(--profile-card-border)]/50 text-xs">
+            <div className="p-4 flex flex-col divide-y divide-[var(--profile-card-border)]/50 text-xs">
               
               {/* Device & Client */}
-              <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <div className="py-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Device & Client</span>
                 <div className="flex flex-col sm:items-end gap-0.5">
                   <span className="text-sm font-semibold text-[var(--profile-text-primary)]">
@@ -1512,7 +1512,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Status */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Status</span>
                 <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
                   {getSessionStatus(selectedSessionForModal).label}
@@ -1520,7 +1520,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Public IP Address */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Public IP Address</span>
                 <span className="font-mono text-xs font-semibold text-[var(--profile-text-primary)] select-all">
                   {selectedSessionForModal.ip_address || '127.0.0.1'}
@@ -1528,7 +1528,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Geo-Location Metadata */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Geo-Location Metadata</span>
                 <span className="text-xs font-medium text-[var(--profile-text-primary)] flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
@@ -1537,7 +1537,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Battery */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Battery Status</span>
                 <span className="font-mono text-xs font-semibold text-[var(--profile-text-primary)]">
                   {selectedSessionForModal.battery_percentage !== undefined && selectedSessionForModal.battery_percentage !== null ? `${selectedSessionForModal.battery_percentage}%` : 'N/A'}
@@ -1545,7 +1545,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Session Started */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Session Started</span>
                 <span className="text-xs font-medium text-[var(--profile-text-primary)]">
                   {formatDateTime(selectedSessionForModal.created_at).full}
@@ -1553,7 +1553,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Last Heartbeat */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Last Heartbeat</span>
                 <span className="text-xs font-medium text-[var(--profile-text-primary)]">
                   {formatDateTime(selectedSessionForModal.last_active_at).full}
@@ -1561,7 +1561,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Action By */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">Action By</span>
                 <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
                   {getSessionActions(selectedSessionForModal, userName, userEmail).actionBy}
@@ -1569,7 +1569,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Action From */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
+              <div className="py-1.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 tracking-wider">Action From</span>
                 <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
                   {getSessionActions(selectedSessionForModal, userName, userEmail).actionFrom}
@@ -1577,7 +1577,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </div>
 
               {/* Unique Session Identifier */}
-              <div className="py-2.5 flex flex-col gap-1">
+              <div className="py-1.5 flex flex-col gap-1">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Unique Session Identifier</span>
                 <span className="font-mono text-[10px] text-[var(--profile-text-muted)] break-all select-all">
                   {selectedSessionForModal.id || selectedSessionForModal.session_key}
@@ -1586,7 +1586,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-[var(--profile-card-border)] bg-[var(--profile-card-subtle-bg)] flex items-center justify-between">
+            <div className="p-3 px-4 border-t border-[var(--profile-card-border)] bg-[var(--profile-card-subtle-bg)] flex items-center justify-between">
               <button
                 onClick={handleCopyModalDetails}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--profile-card-bg)] hover:bg-[var(--profile-card-border)] text-[var(--profile-text-primary)] border border-[var(--profile-card-border)] text-xs font-medium transition-colors"

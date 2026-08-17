@@ -2,7 +2,7 @@
 let inFlightSessionsPromise: Promise<any> | null = null;
 let cachedSessionsData: any = null;
 let lastFetchTimestamp = 0;
-const SESSIONS_CACHE_TTL_MS = 2000; // 2 seconds cache window for concurrent calls
+const SESSIONS_CACHE_TTL_MS = 10000; // 10 seconds cache window for non-force-refreshed concurrent calls
 
 export async function fetchUserSessions(token: string, forceRefresh = false): Promise<any> {
   const now = Date.now();

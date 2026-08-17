@@ -167,10 +167,8 @@ export const SystemBanner: React.FC<{ isSuspended?: boolean }> = ({ isSuspended 
                 }
             )
             .subscribe((status) => {
-                if (isUnmounted) return;
-                if (status === 'SUBSCRIBED') {
-                    fetchBanner(false); // do not force connection-level fetch, let rate limiter handle it
-                }
+                // Do not fetch on subscription status updates to prevent redundant network requests.
+                // The initial load fetch on mount is sufficient, and real-time events handle updates.
             });
 
         return () => {

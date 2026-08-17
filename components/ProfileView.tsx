@@ -214,20 +214,73 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           'postgres_changes',
           { event: '*', schema: 'public', table: 'user_sessions', filter: `user_id=eq.${user.id}` },
           (payload: any) => {
-            if (payload.eventType === 'UPDATE') {
-              const newRow = payload.new;
-              if (newRow) {
-                const newKey = newRow.session_key || '';
-                const isTerminatedOrLoggedOut = newKey.startsWith('TERMINATED_') || newKey.startsWith('LOGGED_OUT_');
-                
-                // If it is just a heartbeat/battery update of an active session, skip re-fetching
-                if (!isTerminatedOrLoggedOut) {
-                  return;
-                }
-              }
-            }
+            console.log('[Realtime Session Profile View] event received:', payload);
+            
+            // Invalidate the fetch cache in the background so future manual updates have clean state
             invalidateUserSessionsCache();
-            fetchSessions(true);
+
+            // Directly update local state based on the payload to prevent any redundant GET requests!
+            import('../utils/deviceUtils').then(({ resolveDeviceName }) => {
+              setSessions(prevSessions => {
+                let updated = [...prevSessions];
+                
+                if (payload.eventType === 'INSERT') {
+                  const newSession = payload.new;
+                  if (!newSession) return prevSessions;
+                  
+                  // Check if already exists
+                  const index = updated.findIndex(s => s.id === newSession.id);
+                  if (index === -1) {
+                    updated.unshift(newSession);
+                    // Asynchronously resolve its device name
+                    if (newSession.device_name) {
+                      resolveDeviceName(newSession.device_name).then(resolvedName => {
+                        setSessions(current => current.map(s => s.id === newSession.id ? { ...s, device_name: resolvedName } : s));
+                      }).catch(() => {});
+                    }
+                  }
+                } else if (payload.eventType === 'UPDATE') {
+                  const updatedSession = payload.new;
+                  if (!updatedSession) return prevSessions;
+                  
+                  const index = updated.findIndex(s => s.id === updatedSession.id);
+                  if (index !== -1) {
+                    const oldSession = updated[index];
+                    const resolvedName = oldSession.device_name;
+                    
+                    updated[index] = {
+                      ...updatedSession,
+                      // Preserve resolved device_name if raw device_name matches, otherwise resolve new raw device_name
+                      device_name: updatedSession.device_name === oldSession.device_name && resolvedName ? resolvedName : updatedSession.device_name
+                    };
+                    
+                    if (updatedSession.device_name !== oldSession.device_name && updatedSession.device_name) {
+                      resolveDeviceName(updatedSession.device_name).then(resolved => {
+                        setSessions(current => current.map(s => s.id === updatedSession.id ? { ...s, device_name: resolved } : s));
+                      }).catch(() => {});
+                    }
+                  } else {
+                    updated.unshift(updatedSession);
+                  }
+                } else if (payload.eventType === 'DELETE') {
+                  const oldSession = payload.old;
+                  if (oldSession && oldSession.id) {
+                    updated = updated.filter(s => s.id !== oldSession.id);
+                  }
+                }
+                
+                // Sort by last_active_at or created_at desc
+                return updated.sort((a, b) => {
+                  const timeA = new Date(a.last_active_at || a.created_at || 0).getTime();
+                  const timeB = new Date(b.last_active_at || b.created_at || 0).getTime();
+                  return timeB - timeA;
+                });
+              });
+            }).catch(err => {
+              console.error('Error resolving device name for realtime session update:', err);
+              // Fallback: simple fetch if something broke
+              fetchSessions(true);
+            });
           }
         )
         .subscribe();
