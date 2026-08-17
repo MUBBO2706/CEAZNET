@@ -384,6 +384,19 @@ export default async function handler(req: any, res: any) {
               return res.status(403).json({ error: "Session has been terminated", isTerminated: true, session_key: terminatedCheck.session_key });
           }
 
+          let fullName = "";
+          try {
+            const { data: profile } = await userClient.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+            if (profile && profile.full_name) {
+              fullName = profile.full_name;
+            }
+          } catch (profileErr) {
+            console.error("Failed to fetch user profile for session tracking:", profileErr);
+          }
+
+          const actionBy = fullName || user.email || "User";
+          const actionFrom = deviceName;
+
           const sessionPayload: any = {
             session_key,
             device_id,
@@ -394,6 +407,8 @@ export default async function handler(req: any, res: any) {
             browser_name: browser_name || 'Unknown',
             browser_version: browser_version || '',
             is_incognito: Boolean(is_incognito),
+            action_by: actionBy,
+            action_from: actionFrom,
             last_active_at: new Date().toISOString()
           };
 
@@ -405,16 +420,6 @@ export default async function handler(req: any, res: any) {
               ...sessionPayload,
               created_at: new Date().toISOString()
             });
-          }
-
-          let fullName = "";
-          try {
-            const { data: profile } = await userClient.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
-            if (profile && profile.full_name) {
-              fullName = profile.full_name;
-            }
-          } catch (profileErr) {
-            console.error("Failed to fetch user profile for session tracking:", profileErr);
           }
 
           if (device_id) {
@@ -482,9 +487,24 @@ export default async function handler(req: any, res: any) {
              
              let newSessionKey = `TERMINATED_${sessionData.session_key}_BY_${encodeURIComponent(devName)}_LOC_${encodeURIComponent(locName || 'Unknown Location')}_TIME_${encodeURIComponent(termTime)}`;
 
+             let fullName = "";
+             try {
+               const { data: profile } = await userClient.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+               if (profile && profile.full_name) {
+                 fullName = profile.full_name;
+               }
+             } catch (profileErr) {
+               console.error("Failed to fetch user profile for session tracking:", profileErr);
+             }
+
+             const actionBy = fullName || user.email || "User";
+             const actionFrom = devName;
+
              await userClient.from('user_sessions').update({ 
                  session_key: newSessionKey,
-                 last_active_at: termTime
+                 last_active_at: termTime,
+                 action_by: actionBy,
+                 action_from: actionFrom
              }).eq('id', id).eq('user_id', user.id);
              
              if (sessionData.device_id) {
@@ -517,9 +537,25 @@ export default async function handler(req: any, res: any) {
           const { data: sessionData } = await userClient.from('user_sessions').select('id, session_key, device_id, device_name').eq('session_key', session_key).eq('user_id', user.id).maybeSingle();
           if (sessionData && !sessionData.session_key.startsWith('TERMINATED_') && !sessionData.session_key.startsWith('LOGGED_OUT_')) {
              const newSessionKey = `LOGGED_OUT_${sessionData.session_key}_${Date.now()}`;
+
+             let fullName = "";
+             try {
+               const { data: profile } = await userClient.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+               if (profile && profile.full_name) {
+                 fullName = profile.full_name;
+               }
+             } catch (profileErr) {
+               console.error("Failed to fetch user profile for session tracking:", profileErr);
+             }
+
+             const actionBy = fullName || user.email || "User";
+             const actionFrom = sessionData.device_name || "Unknown Device";
+
              await userClient.from('user_sessions').update({ 
                session_key: newSessionKey,
-               last_active_at: new Date().toISOString()
+               last_active_at: new Date().toISOString(),
+               action_by: actionBy,
+               action_from: actionFrom
              }).eq('id', sessionData.id).eq('user_id', user.id);
              
              if (sessionData.device_id) {

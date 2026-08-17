@@ -402,6 +402,8 @@ CREATE TABLE IF NOT EXISTS public.user_sessions (
     browser_name TEXT,
     browser_version TEXT,
     is_incognito BOOLEAN,
+    action_by TEXT,
+    action_from TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     last_active_at TIMESTAMPTZ DEFAULT now()
 );
@@ -415,6 +417,8 @@ ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS battery_percentage NUM
 ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS browser_name TEXT;
 ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS browser_version TEXT;
 ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS is_incognito BOOLEAN;
+ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS action_by TEXT;
+ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS action_from TEXT;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;

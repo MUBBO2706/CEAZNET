@@ -53,6 +53,8 @@ export interface SessionItem {
   is_current?: boolean;
   browser_name?: string;
   is_incognito?: boolean;
+  action_by?: string;
+  action_from?: string;
 }
 
 interface SessionDetailsViewProps {
@@ -147,6 +149,103 @@ export const parseDeviceAndOS = (deviceName?: string): { device: string; os: str
   }
 
   return { device, os };
+};
+
+export const getSessionActions = (
+  session: SessionItem, 
+  userName?: string, 
+  userEmail?: string
+): { actionBy: string; actionFrom: string } => {
+  const key = session.session_key || '';
+  let status: 'active' | 'logged_out' | 'terminated' | 'expired' = 'active';
+  if (key.startsWith('LOGGED_OUT_')) {
+    status = 'logged_out';
+  } else if (key.startsWith('TERMINATED_')) {
+    status = 'terminated';
+  } else {
+    const now = Date.now();
+    const lastActive = new Date(session.last_active_at || session.created_at).getTime();
+    if (now - lastActive > 35 * 60 * 1000 && !session.is_current && session.session_key !== 'current') {
+      status = 'expired';
+    }
+  }
+
+  // Active/ongoing sessions have no termination action yet
+  if (status === 'active') {
+    return {
+      actionBy: '-',
+      actionFrom: 'Ongoing'
+    };
+  }
+
+  if (session.action_by) {
+    return {
+      actionBy: session.action_by,
+      actionFrom: session.action_from || parseDeviceAndOS(session.device_name).device
+    };
+  }
+
+  const displayName = userName || userEmail || 'User';
+
+  if (status === 'expired') {
+    return {
+      actionBy: 'System',
+      actionFrom: 'System'
+    };
+  }
+
+  if (status === 'logged_out') {
+    if (key.includes('SYSTEM') || key.includes('EXPIRED') || key.includes('TIMEOUT')) {
+      return {
+        actionBy: 'System',
+        actionFrom: 'System'
+      };
+    }
+    return {
+      actionBy: displayName,
+      actionFrom: parseDeviceAndOS(session.device_name).device
+    };
+  }
+
+  if (status === 'terminated') {
+    const byIndex = key.indexOf('_BY_');
+    const locIndex = key.indexOf('_LOC_');
+    let terminatorDevice = '';
+    if (byIndex !== -1) {
+      const rawDevice = locIndex !== -1 ? key.substring(byIndex + 4, locIndex) : key.substring(byIndex + 4);
+      try {
+        terminatorDevice = decodeURIComponent(rawDevice);
+      } catch (e) {
+        terminatorDevice = rawDevice;
+      }
+    }
+
+    const parsedTerminator = terminatorDevice ? parseDeviceAndOS(terminatorDevice).device : 'Unknown Device';
+
+    if (key.toUpperCase().includes('_BY_ADMIN')) {
+      return {
+        actionBy: 'Admin',
+        actionFrom: 'Admin Panel'
+      };
+    }
+
+    if (key.toUpperCase().includes('_BY_SYSTEM') || key.toUpperCase().includes('_BY_HEARTBEAT')) {
+      return {
+        actionBy: 'System',
+        actionFrom: 'System'
+      };
+    }
+
+    return {
+      actionBy: displayName,
+      actionFrom: parsedTerminator
+    };
+  }
+
+  return {
+    actionBy: displayName,
+    actionFrom: parseDeviceAndOS(session.device_name).device
+  };
 };
 
 export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
@@ -385,6 +484,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
   // Filtered & Sorted sessions
   const filteredSessions = useMemo(() => {
     return resolvedSessions.filter((s) => {
+      const actions = getSessionActions(s, userName, userEmail);
       // 1. Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -393,7 +493,9 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
         const matchLocation = (s.location || '').toLowerCase().includes(q);
         const matchKey = (s.session_key || '').toLowerCase().includes(q);
         const matchId = (s.id || '').toLowerCase().includes(q);
-        if (!matchIp && !matchDevice && !matchLocation && !matchKey && !matchId) {
+        const matchActionBy = (actions.actionBy || '').toLowerCase().includes(q);
+        const matchActionFrom = (actions.actionFrom || '').toLowerCase().includes(q);
+        if (!matchIp && !matchDevice && !matchLocation && !matchKey && !matchId && !matchActionBy && !matchActionFrom) {
           return false;
         }
       }
@@ -470,6 +572,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
         const end = statusInfo.status === 'active' ? 'Ongoing (Active)' : formatDateTime(s.last_active_at).full;
         const duration = getDuration(s.created_at, s.last_active_at, statusInfo.status === 'active');
         const isCur = s.is_current || s.session_key === currentSessionKey ? '(Current)' : '';
+        const actions = getSessionActions(s, userName, userEmail);
 
         const battery = s.battery_percentage !== undefined && s.battery_percentage !== null ? `${s.battery_percentage}%` : 'N/A';
 
@@ -482,15 +585,17 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
           s.ip_address || '-',
           s.location || 'Unknown',
           battery,
+          actions.actionBy,
+          actions.actionFrom,
           statusInfo.label,
         ];
       });
 
       autoTable(doc, {
-        head: [['#', 'Started At', 'End Time', 'Duration', 'Device & OS', 'IP Address', 'Location', 'Battery', 'Status']],
+        head: [['#', 'Started At', 'End Time', 'Duration', 'Device & OS', 'IP Address', 'Location', 'Battery', 'Action By', 'Action From', 'Status']],
         body: tableData,
         startY: 40,
-        styles: { fontSize: 8, cellPadding: 3 },
+        styles: { fontSize: 7, cellPadding: 2 },
         headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [248, 250, 252] },
       });
@@ -507,7 +612,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
   // Export as CSV
   const handleExportCSV = () => {
     try {
-      const headers = ['ID', 'Started At', 'Last Active / End Time', 'Duration', 'Device & OS', 'IP Address', 'Location', 'Battery', 'Status', 'Is Current Session'];
+      const headers = ['ID', 'Started At', 'Last Active / End Time', 'Duration', 'Device & OS', 'IP Address', 'Location', 'Battery', 'Action By', 'Action From', 'Status', 'Is Current Session'];
       const rows = filteredSessions.map((s) => {
         const statusInfo = getSessionStatus(s);
         const isCur = s.is_current || s.session_key === currentSessionKey ? 'YES' : 'NO';
@@ -515,6 +620,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
         const end = statusInfo.status === 'active' ? 'Ongoing' : formatDateTime(s.last_active_at).full;
         const duration = getDuration(s.created_at, s.last_active_at, statusInfo.status === 'active');
         const battery = s.battery_percentage !== undefined && s.battery_percentage !== null ? `${s.battery_percentage}%` : 'N/A';
+        const actions = getSessionActions(s, userName, userEmail);
 
         return [
           `"${s.id || ''}"`,
@@ -525,6 +631,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
           `"${s.ip_address || ''}"`,
           `"${(s.location || '').replace(/"/g, '""')}"`,
           `"${battery}"`,
+          `"${(actions.actionBy || '').replace(/"/g, '""')}"`,
+          `"${(actions.actionFrom || '').replace(/"/g, '""')}"`,
           `"${statusInfo.label}"`,
           `"${isCur}"`,
         ].join(',');
@@ -554,11 +662,16 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
         exported_at: new Date().toISOString(),
         user: { name: userName, email: userEmail },
         total_records: filteredSessions.length,
-        sessions: filteredSessions.map(s => ({
-          ...s,
-          computed_status: getSessionStatus(s).label,
-          is_current_session: s.is_current || s.session_key === currentSessionKey
-        }))
+        sessions: filteredSessions.map(s => {
+          const actions = getSessionActions(s, userName, userEmail);
+          return {
+            ...s,
+            action_by: actions.actionBy,
+            action_from: actions.actionFrom,
+            computed_status: getSessionStatus(s).label,
+            is_current_session: s.is_current || s.session_key === currentSessionKey
+          };
+        })
       };
 
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObj, null, 2));
@@ -581,6 +694,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
     if (!selectedSessionForModal) return;
     const s = selectedSessionForModal;
     const statusInfo = getSessionStatus(s);
+    const actions = getSessionActions(s, userName, userEmail);
     const text = [
       `--- Ceaznet Session Record ---`,
       `Device: ${s.device_name || 'Unknown Device'}`,
@@ -588,6 +702,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
       `Location: ${s.location || 'N/A'}`,
       `Started: ${formatDateTime(s.created_at).full}`,
       `Last Active: ${formatDateTime(s.last_active_at).full}`,
+      `Action By: ${actions.actionBy}`,
+      `Action From: ${actions.actionFrom}`,
       `Status: ${statusInfo.label}`,
       `Session ID: ${s.id || s.session_key}`,
     ].join('\n');
@@ -1005,6 +1121,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                 <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">IP Address</th>
                 <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Location</th>
                 <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Battery</th>
+                <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap text-amber-600 dark:text-amber-400">Action By</th>
+                <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap text-blue-600 dark:text-blue-400">Action From</th>
                 <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Status</th>
                 <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Actions</th>
               </tr>
@@ -1116,6 +1234,20 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                       <td className="py-2.5 px-3 whitespace-nowrap text-left font-mono text-[10px]">
                         <span className="font-semibold text-[var(--profile-text-primary)]">
                           {session.battery_percentage !== undefined && session.battery_percentage !== null ? `${session.battery_percentage}%` : 'N/A'}
+                        </span>
+                      </td>
+
+                      {/* Action By */}
+                      <td className="py-2.5 px-3 whitespace-nowrap text-left font-mono text-[10px]">
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">
+                          {getSessionActions(session, userName, userEmail).actionBy}
+                        </span>
+                      </td>
+
+                      {/* Action From */}
+                      <td className="py-2.5 px-3 text-left font-mono text-[10px]">
+                        <span className="font-semibold text-blue-600 dark:text-blue-400 truncate block max-w-[150px]" title={getSessionActions(session, userName, userEmail).actionFrom}>
+                          {getSessionActions(session, userName, userEmail).actionFrom}
                         </span>
                       </td>
 
@@ -1418,6 +1550,22 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                   <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Last Heartbeat</span>
                   <span className="text-xs font-medium text-[var(--profile-text-primary)]">
                     {formatDateTime(selectedSessionForModal.last_active_at).full}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1 p-3 rounded-xl bg-[var(--profile-card-subtle-bg)] border border-[var(--profile-card-border)]">
+                  <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">Action By</span>
+                  <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
+                    {getSessionActions(selectedSessionForModal, userName, userEmail).actionBy}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 p-3 rounded-xl bg-[var(--profile-card-subtle-bg)] border border-[var(--profile-card-border)]">
+                  <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 tracking-wider">Action From</span>
+                  <span className="text-xs font-semibold text-[var(--profile-text-primary)]">
+                    {getSessionActions(selectedSessionForModal, userName, userEmail).actionFrom}
                   </span>
                 </div>
               </div>
