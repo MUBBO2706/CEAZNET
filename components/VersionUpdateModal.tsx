@@ -95,44 +95,7 @@ export const VersionUpdateModal: React.FC = () => {
         lastCheckTimeRef.current = now;
 
         try {
-            let check1Successful = false;
-            // Check 1: Direct fetch to static version.json (Fastest, zero serverless latency, works on Vercel CDN/Vite)
-            try {
-                const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
-                    method: 'GET',
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    }
-                });
-
-                if (staticRes.ok) {
-                    const staticData = await staticRes.json();
-                    const serverVer = staticData?.version;
-
-                    if (serverVer && serverVer !== 'dev' && serverVer !== 'unknown') {
-                        check1Successful = true;
-                        if (!initialVersionRef.current) {
-                            initialVersionRef.current = String(serverVer);
-                        } else if (String(serverVer) !== String(initialVersionRef.current)) {
-                            console.log(`[Version Update] Direct version mismatch detected: Client=${initialVersionRef.current} -> Server=${serverVer}`);
-                            setHasUpdate(true);
-                            return;
-                        }
-                    }
-                }
-            } catch (staticErr) {
-                console.debug('[Update Checker] Direct version.json check error:', staticErr);
-            }
-
-            // If direct check was successful, skip the redundant serverless API check
-            if (check1Successful) {
-                return;
-            }
-
-            // Check 2: Version Control API endpoint (Fallback only if static file fetch failed or was missing)
+            // Version Control API endpoint: ALWAYS used as primary to bypass client-side PWA / Service Worker caching of static version.json
             const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'unknown');
             const response = await fetch(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
                 method: 'GET',
@@ -147,7 +110,7 @@ export const VersionUpdateModal: React.FC = () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data?.hasUpdate) {
-                    console.log(`[Version Update] API update detected: ${data.message}`);
+                    console.log(`[Version Update] Live API update detected: ${data.message}`);
                     setHasUpdate(true);
                 } else if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
                     if (!initialVersionRef.current) {

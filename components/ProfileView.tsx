@@ -40,7 +40,7 @@ import { UIPreferences, UserProfile, View } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastSystem';
-import { SessionDetailsView, SessionItem, parseDeviceAndOS } from './Profile/SessionDetailsView';
+import { SessionDetailsView, SessionItem, parseDeviceAndOS, getSessionActions } from './Profile/SessionDetailsView';
 import ConfirmationModal from './ConfirmationModal';
 import metadata from '../metadata.json';
 import { fetchUserSessions, invalidateUserSessionsCache } from '../utils/sessionApi';
@@ -887,6 +887,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">IP Address</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Location</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Battery</th>
+                          <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap text-amber-600 dark:text-amber-400">Action By</th>
+                          <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap text-blue-600 dark:text-blue-400">Action From</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Status</th>
                           <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Actions</th>
                         </tr>
@@ -966,6 +968,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                               <td className="py-2.5 px-3 text-left whitespace-nowrap font-mono text-[10px]">
                                 <span className="font-semibold text-gray-800 dark:text-neutral-300">
                                   {s.battery_percentage !== undefined && s.battery_percentage !== null ? `${s.battery_percentage}%` : 'N/A'}
+                                </span>
+                              </td>
+                              {/* Action By */}
+                              <td className="py-2.5 px-3 whitespace-nowrap text-left font-mono text-[10px]">
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                                  {getSessionActions(s, userProfile.full_name || '', user?.email).actionBy}
+                                </span>
+                              </td>
+                              {/* Action From */}
+                              <td className="py-2.5 px-3 text-left font-mono text-[10px]">
+                                <span className="font-semibold text-blue-600 dark:text-blue-400 truncate block max-w-[150px]" title={getSessionActions(s, userProfile.full_name || '', user?.email).actionFrom}>
+                                  {getSessionActions(s, userProfile.full_name || '', user?.email).actionFrom}
                                 </span>
                               </td>
                               <td className="py-2.5 px-3 text-left whitespace-nowrap">
