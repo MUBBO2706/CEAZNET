@@ -139,21 +139,36 @@ async function saveCacheIndex(token: string, cacheChatId: string, index: CacheIn
   const indexString = JSON.stringify(index);
   const formattedText = `📊 <b>System Caches Index</b>\n\n📂 <b>deviceCache.json</b>\n📂 <b>imageCache.json</b>\n📂 <b>sessionCache.json</b>\n📂 <b>apiKeyCache.json</b>\n\n<tg-spoiler>${indexString}</tg-spoiler>`;
   
+  let messageIdsChanged = false;
+  if (!cachedIndex) {
+    messageIdsChanged = true;
+  } else {
+    for (const key of Object.keys(index) as (keyof CacheIndex)[]) {
+      if (index[key]?.messageId !== cachedIndex[key]?.messageId) {
+        messageIdsChanged = true;
+        break;
+      }
+    }
+  }
+
   cachedIndex = { ...index };
   lastIndexFetchTime = Date.now();
 
   // 1. Persist index in Supabase platform_settings so it survives all Vercel cold-starts
-  try {
-    await supabaseAdmin
-      .from('platform_settings')
-      .upsert({
-        setting_key: 'telegram_cache_index',
-        setting_value: index,
-        description: 'System cache index mapping cache files to Telegram message and file IDs',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'setting_key' });
-  } catch (err) {
-    console.warn("[Telegram Cache] Failed to persist index to Supabase platform_settings:", err);
+  // ONLY if messageIds changed to save unnecessary egress for fileId-only updates
+  if (messageIdsChanged) {
+    try {
+      await supabaseAdmin
+        .from('platform_settings')
+        .upsert({
+          setting_key: 'telegram_cache_index',
+          setting_value: index,
+          description: 'System cache index mapping cache files to Telegram message and file IDs',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'setting_key' });
+    } catch (err) {
+      console.warn("[Telegram Cache] Failed to persist index to Supabase platform_settings:", err);
+    }
   }
 
   // 2. Update or pin message in Telegram
