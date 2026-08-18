@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supportService } from '../services/supportService';
 import { SupportConversation, SupportMessage } from '../types';
-import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User, Sparkles, Bot, ChevronDown, Archive, Film, Music, FileSpreadsheet } from 'lucide-react';
+import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User, Sparkles, Bot, ChevronDown, Archive, Film, Music, FileSpreadsheet, Maximize2, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -114,134 +114,372 @@ function parseSupportAttachments(rawUrl?: string | null, rawName?: string | null
     });
 }
 
-const SingleAttachmentItem = ({ att, isUser, isChat }: { att: ParsedAttachment, isUser: boolean, isChat: boolean }) => {
-    const [realUrl, setRealUrl] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+export interface FullScreenPreviewProps {
+    isOpen: boolean;
+    onClose: () => void;
+    url: string | null;
+    name?: string;
+    isImage?: boolean;
+    sizeFormatted?: string;
+}
 
+export const FullScreenAttachmentPreview: React.FC<FullScreenPreviewProps> = ({
+    isOpen,
+    onClose,
+    url,
+    name,
+    isImage = true,
+    sizeFormatted
+}) => {
     useEffect(() => {
-        if (!att.url) return;
-        if (att.url.startsWith('tg://')) {
-            setIsLoading(true);
-            getFileUrlFromTelegram(att.url).then(url => {
-                if (url && url !== '__NOT_FOUND__' && url !== '__TOO_LARGE__') {
-                    setRealUrl(url);
-                }
-            }).finally(() => {
-                setIsLoading(false);
-            });
-        } else {
-            setRealUrl(att.url);
-        }
-    }, [att.url]);
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
 
-    const renderPreviewModal = () => {
-        return createPortal(
-            <AnimatePresence>
-                {isPreviewOpen && realUrl && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 p-4"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsPreviewOpen(false); }}
+    if (!isOpen || !url) return null;
+
+    return createPortal(
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={onClose}
+                className="fixed inset-0 z-[99999] bg-black/90 sm:bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 select-none overflow-hidden"
+            >
+                {/* Top Left Title info pill with shadow */}
+                {name && (
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-4 left-4 sm:top-6 sm:left-6 z-50 max-w-[55vw] sm:max-w-[40vw] flex items-center gap-2 px-3.5 py-2 bg-neutral-900/90 rounded-full border border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-md text-white text-xs sm:text-sm font-medium truncate pointer-events-none"
                     >
-                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsPreviewOpen(false); }} className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[100000]">
-                            <X className="w-6 h-6" />
-                        </button>
-                        <img src={realUrl} alt={att.name || 'Preview'} className="max-w-full max-h-full object-contain pointer-events-auto rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
-                        <a href={realUrl} download={att.name || 'attachment'} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 p-3 bg-blue-600/90 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center gap-2 transition-all hover:scale-105 z-[100000]" onClick={(e) => e.stopPropagation()}>
-                            <Download className="w-5 h-5" />
-                            <span className="hidden sm:inline font-medium pr-1">Download</span>
+                        <span className="truncate">{name}</span>
+                        {sizeFormatted && (
+                            <span className="text-[11px] text-neutral-400 font-normal shrink-0">({sizeFormatted})</span>
+                        )}
+                    </div>
+                )}
+
+                {/* Top Right Floating Action Controls */}
+                <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5"
+                >
+                    <a
+                        href={url}
+                        download={name || 'attachment'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-neutral-900/90 hover:bg-neutral-800 text-white rounded-full border border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-md transition-all hover:scale-105 active:scale-95 text-xs font-medium cursor-pointer"
+                        title="Download file"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Download</span>
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="p-2 sm:p-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-white rounded-full border border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                        title="Close preview (Esc)"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Center Content */}
+                {isImage ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.92 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.92 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="max-w-[95vw] max-h-[85vh] sm:max-w-[90vw] sm:max-h-[90vh] flex items-center justify-center p-2"
+                    >
+                        <img
+                            src={url}
+                            alt={name || 'Attachment Preview'}
+                            className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10"
+                        />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.92 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.92 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-6 sm:p-8 bg-neutral-900/95 border border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col items-center gap-4 text-center max-w-sm w-full backdrop-blur-md"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-inner">
+                            <FileText className="w-8 h-8" />
+                        </div>
+                        <div className="space-y-1 w-full">
+                            <h4 className="text-sm font-semibold text-white truncate px-2">{name || 'Document'}</h4>
+                            {sizeFormatted && <p className="text-xs text-neutral-400">{sizeFormatted}</p>}
+                        </div>
+                        <a
+                            href={url}
+                            download={name || 'attachment'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-xs shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span>Download Document</span>
                         </a>
                     </motion.div>
                 )}
-            </AnimatePresence>,
-            document.body
-        );
-    };
+            </motion.div>
+        </AnimatePresence>,
+        document.body
+    );
+};
 
-    if (isChat) {
+interface MessageAttachmentProps {
+    url: string;
+    name?: string;
+    isImage: boolean;
+    isUser?: boolean;
+    isChat?: boolean;
+    linkClassName?: string;
+}
+
+export const MessageAttachment: React.FC<MessageAttachmentProps> = ({ 
+    url, 
+    name, 
+    isImage, 
+    isUser = false,
+    isChat = false,
+    linkClassName
+}) => {
+    const [realUrl, setRealUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        async function resolveAttachment() {
+            if (!url) return;
+            if (!url.startsWith('tg://')) {
+                setRealUrl(url);
+                return;
+            }
+            setIsLoading(true);
+            try {
+                const resolved = await getFileUrlFromTelegram(url);
+                if (resolved && resolved !== '__NOT_FOUND__' && resolved !== '__TOO_LARGE__' && isMounted) {
+                    setRealUrl(resolved);
+                } else if (isMounted) {
+                    setError(true);
+                }
+            } catch (err) {
+                console.error("Error resolving telegram attachment", err);
+                if (isMounted) setError(true);
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        }
+        
+        resolveAttachment();
+        return () => { isMounted = false; };
+    }, [url]);
+
+    if (isLoading) {
+        if (!isImage) {
+            return (
+                <div className={`inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md animate-pulse w-full ${
+                    isUser ? 'bg-blue-600/40 border border-blue-400/30' : 'bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/80'
+                } !px-2.5 !py-1.5 my-1`}>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <div className="w-3.5 h-3.5 bg-neutral-300 dark:bg-neutral-600 rounded shrink-0"></div>
+                        <div className="h-2.5 w-[80px] bg-neutral-300 dark:bg-neutral-600 rounded"></div>
+                    </div>
+                    <div className="w-3 h-3 bg-neutral-300 dark:bg-neutral-600 rounded shrink-0 ml-1"></div>
+                </div>
+            );
+        }
+        return (
+            <div className={`inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md animate-pulse w-full ${
+                isUser 
+                    ? 'bg-blue-600/40 text-white border border-blue-400/30' 
+                    : 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'
+            } !p-1 !pl-1.5 !pr-2.5 my-1`}>
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div className="w-5 h-5 rounded-[3px] bg-neutral-300 dark:bg-neutral-700/50 shrink-0 border border-neutral-300 dark:border-neutral-700/50"></div>
+                    <div className="h-2.5 w-[70px] bg-neutral-300 dark:bg-neutral-700/50 rounded"></div>
+                </div>
+                <div className="w-3 h-3 bg-neutral-300 dark:bg-neutral-700/50 rounded shrink-0 ml-1"></div>
+            </div>
+        );
+    }
+
+    if (error || !realUrl) {
+        return (
+            <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-lg text-xs font-medium my-1">
+                <span>Failed to load attachment.</span>
+            </div>
+        );
+    }
+
+    if (isImage) {
+        const baseClasses = linkClassName 
+            ? `${linkClassName} cursor-pointer w-full justify-between` 
+            : `inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium w-full cursor-pointer transition-all ${
+                isUser 
+                    ? 'bg-blue-700/50 hover:bg-blue-600/60 border border-blue-500/30 text-white' 
+                    : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200'
+            }`;
         return (
             <>
-            <div 
-                className={`flex items-center gap-2 p-1.5 pr-2.5 rounded-lg border max-w-full transition-all cursor-pointer group shadow-sm ${
-                    isUser 
-                        ? 'bg-blue-700/50 hover:bg-blue-600/60 border-blue-500/30 text-white' 
-                        : 'bg-neutral-50 dark:bg-white/5 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-900 dark:text-white'
-                }`} 
-                onClick={(e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation(); 
-                    if (realUrl) {
-                        if (att.isImage) setIsPreviewOpen(true);
-                        else window.open(realUrl, '_blank');
-                    }
-                }}
-            >
-                <div className={`w-9 h-9 rounded-md overflow-hidden flex items-center justify-center shrink-0 relative ${isUser ? 'bg-blue-500/40 text-white' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
-                    {att.isImage && realUrl ? (
-                         <>
-                         <img src={realUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="thumbnail" />
-                         <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Eye className="w-3.5 h-3.5 text-white drop-shadow" />
-                         </div>
-                         </>
-                    ) : isLoading ? (
-                         <Loader2 className="w-4 h-4 animate-spin opacity-60" />
-                    ) : (
-                         getAttachmentIcon(att.name, att.type, isUser)
-                    )}
+                <div 
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsPreviewOpen(true);
+                    }}
+                    className={`${baseClasses} !p-1 !pl-1.5 !pr-2.5 flex items-center gap-1.5 group my-0.5 max-w-full`}
+                >
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <div className="w-5 h-5 rounded-[3px] bg-neutral-200 dark:bg-neutral-900 shrink-0 relative flex items-center justify-center overflow-hidden border border-neutral-300 dark:border-neutral-700">
+                            <img src={realUrl} alt={name || 'Attachment'} className="w-full h-full object-cover" />
+                        </div>
+                        <span className="truncate text-[11px] font-medium leading-none">{name || 'Image'}</span>
+                    </div>
+                    <Maximize2 className="w-3 h-3 opacity-60 shrink-0 ml-1 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="flex flex-col min-w-0 flex-1 py-0.5 justify-center">
-                    <span className={`text-[12px] font-medium truncate ${isUser ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{att.name || 'File'}</span>
-                </div>
-            </div>
-            {renderPreviewModal()}
+                <FullScreenAttachmentPreview
+                    isOpen={isPreviewOpen}
+                    onClose={() => setIsPreviewOpen(false)}
+                    url={realUrl}
+                    name={name || 'Image'}
+                    isImage={true}
+                />
             </>
         );
     }
 
     return (
         <>
-        <div 
-            className={`flex items-center gap-3 p-2 pr-3.5 rounded-xl border transition-all cursor-pointer group shadow-sm ${
-                isUser 
-                    ? 'bg-neutral-50/90 dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/80' 
-                    : 'bg-neutral-50/90 dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/80'
-            }`} 
-            onClick={(e) => { 
-                e.preventDefault(); 
-                e.stopPropagation(); 
-                if (realUrl) {
-                    if (att.isImage) setIsPreviewOpen(true);
-                    else window.open(realUrl, '_blank');
-                }
-            }}
-        >
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 relative">
-                {att.isImage && realUrl ? (
-                     <>
-                     <img src={realUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="thumbnail" />
-                     <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Eye className="w-4 h-4 text-white drop-shadow" />
-                     </div>
-                     </>
-                ) : isLoading ? (
-                     <Loader2 className="w-4 h-4 animate-spin opacity-60" />
-                ) : (
-                     getAttachmentIcon(att.name, att.type, isUser)
-                )}
+            <div
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsPreviewOpen(true);
+                }}
+                className={`inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium w-full transition-all cursor-pointer group my-0.5 ${
+                    isUser
+                        ? 'bg-blue-700/50 hover:bg-blue-600/60 border border-blue-500/30 text-white'
+                        : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200'
+                }`}
+            >
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{name || 'Download File'}</span>
+                </div>
+                <Download className="w-3 h-3 opacity-70 shrink-0 ml-1 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="flex flex-col flex-1 min-w-0 py-0.5 justify-center">
-                <span className="text-[12.5px] font-semibold truncate text-neutral-900 dark:text-neutral-100">{att.name || 'File Attachment'}</span>
-            </div>
-            <div className="shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors">
-                <Download className="w-3.5 h-3.5" />
-            </div>
-        </div>
-        {renderPreviewModal()}
+            <FullScreenAttachmentPreview
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                url={realUrl}
+                name={name || 'File Attachment'}
+                isImage={false}
+            />
         </>
+    );
+};
+
+const PendingAttachmentsList: React.FC<{
+    attachments: File[];
+    isUploading?: boolean;
+    onRemove: (index: number) => void;
+    onPreview: (file: File) => void;
+}> = ({ attachments, isUploading, onRemove, onPreview }) => {
+    if (!attachments || attachments.length === 0) return null;
+
+    return (
+        <div className="flex items-center gap-1.5 py-1 overflow-x-auto max-w-full pb-1.5 -mb-0.5 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <AnimatePresence>
+                {attachments.map((file, index) => {
+                    const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+                    const previewUrl = isImg ? URL.createObjectURL(file) : undefined;
+
+                    if (isUploading) {
+                        return (
+                            <motion.div
+                                key={`${file.name}-${index}`}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-neutral-100 dark:bg-neutral-800/90 border border-neutral-200 dark:border-neutral-700/60 rounded-xl shadow-xs shrink-0 whitespace-nowrap"
+                            >
+                                <Loader2 size={13} className="animate-spin text-blue-500 shrink-0" />
+                                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Uploading...</span>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemove(index);
+                                    }}
+                                    className="w-4 h-4 flex items-center justify-center rounded-full text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors ml-0.5 shrink-0"
+                                    title="Cancel upload"
+                                >
+                                    <X size={11} />
+                                </button>
+                            </motion.div>
+                        );
+                    }
+
+                    return (
+                        <motion.div
+                            key={`${file.name}-${index}`}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={() => onPreview(file)}
+                            className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-neutral-100/90 hover:bg-neutral-200/80 dark:bg-neutral-800/90 dark:hover:bg-neutral-700/80 border border-neutral-200 dark:border-neutral-700/60 rounded-xl shadow-xs shrink-0 whitespace-nowrap max-w-[260px] sm:max-w-[300px] cursor-pointer transition-colors group"
+                            title="Click to preview attachment"
+                        >
+                            {isImg && previewUrl ? (
+                                <div className="w-7 h-7 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-900 shrink-0 border border-neutral-200 dark:border-neutral-700/60 flex items-center justify-center relative">
+                                    <img src={previewUrl} alt={file.name} className="w-full h-full object-cover" />
+                                </div>
+                            ) : (
+                                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-500/20">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                            )}
+                            <div className="min-w-0 flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 truncate max-w-[110px] sm:max-w-[150px] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {file.name}
+                                </span>
+                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium shrink-0">
+                                    {formatDraftFileSize(file.size)}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemove(index);
+                                }}
+                                className="w-4 h-4 flex items-center justify-center rounded-full text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors ml-0.5 shrink-0"
+                                title="Remove attachment"
+                            >
+                                <X size={11} />
+                            </button>
+                        </motion.div>
+                    );
+                })}
+            </AnimatePresence>
+        </div>
     );
 };
 
@@ -251,129 +489,38 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
 
     if (isChat) {
         return (
-            <div className={`mt-2 ${attachments.length > 1 ? 'grid grid-cols-2 gap-2 min-w-[240px] max-w-md' : 'flex flex-col gap-1.5'}`}>
+            <div className={`mt-2 ${attachments.length > 1 ? 'grid grid-cols-2 gap-2 min-w-[220px] max-w-md w-full' : 'flex flex-col gap-1.5 w-full'}`}>
                 {attachments.map((att, index) => (
-                    <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={true} />
+                    <MessageAttachment 
+                        key={`${att.url}-${index}`} 
+                        url={att.url} 
+                        name={att.name} 
+                        isImage={att.isImage} 
+                        isUser={isUser} 
+                        isChat={true} 
+                    />
                 ))}
             </div>
         );
     }
 
     return (
-        <div className={`mt-3 ${attachments.length > 1 ? 'grid grid-cols-2 gap-2.5 max-w-xl w-full' : 'flex flex-wrap gap-2 w-fit'}`}>
+        <div className={`mt-3 ${attachments.length > 1 ? 'grid grid-cols-2 gap-2.5 max-w-xl w-full' : 'flex flex-col gap-2 w-full max-w-xl'}`}>
             {attachments.map((att, index) => (
-                <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={false} />
+                <MessageAttachment 
+                    key={`${att.url}-${index}`} 
+                    url={att.url} 
+                    name={att.name} 
+                    isImage={att.isImage} 
+                    isUser={isUser} 
+                    isChat={false} 
+                />
             ))}
         </div>
     );
 };
 
 
-const getAttachmentIcon = (name: string, type: string, isUser: boolean) => {
-    const ext = name.split('.').pop()?.toLowerCase() || '';
-    const isPdf = type === 'application/pdf' || ext === 'pdf';
-    const isCode = /\.(js|ts|tsx|jsx|json|html|css|py|sql|xml|yaml|yml|env|sh|c|cpp|cs|java|go|rs|php|rb)$/i.test(name);
-    const isZip = /\.(zip|rar|7z|tar|gz|bz2|xz)$/i.test(name);
-    const isVideo = type.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm)$/i.test(name);
-    const isAudio = type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(name);
-    const isSheet = /\.(csv|xls|xlsx)$/i.test(name);
-
-    if (isPdf) return <div className="text-[10px] font-bold text-red-600 dark:text-red-400">PDF</div>;
-    if (isCode) return <Code className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
-    if (isZip) return <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
-    if (isVideo) return <Film className="w-4 h-4 text-purple-600 dark:text-purple-400" />;
-    if (isAudio) return <Music className="w-4 h-4 text-pink-600 dark:text-pink-400" />;
-    if (isSheet) return <FileSpreadsheet className="w-4 h-4 text-green-600 dark:text-green-400" />;
-
-    return <FileText className="w-4 h-4" />;
-};
-
-const DraftFileThumbnail: React.FC<{ file: File; className?: string }> = ({ file, className = "w-6 h-6" }) => {
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
-
-    useEffect(() => {
-        if (!isImg) {
-            setPreviewUrl(null);
-            return;
-        }
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
-        return () => {
-            URL.revokeObjectURL(url);
-        };
-    }, [file, isImg]);
-
-    if (isImg && previewUrl) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden shrink-0 border border-neutral-200 dark:border-neutral-700/80 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center`}>
-                <img src={previewUrl} alt={file.name} className="w-full h-full object-cover" />
-            </div>
-        );
-    }
-
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const isPdf = file.type === 'application/pdf' || ext === 'pdf';
-    const isCode = /\.(js|ts|tsx|jsx|json|html|css|py|sql|xml|yaml|yml|env|sh|c|cpp|cs|java|go|rs|php|rb)$/i.test(file.name);
-    const isZip = /\.(zip|rar|7z|tar|gz|bz2|xz)$/i.test(file.name);
-    const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm)$/i.test(file.name);
-    const isAudio = file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name);
-    const isSheet = /\.(csv|xls|xlsx)$/i.test(file.name);
-
-    if (isPdf) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold text-[9px]`}>
-                PDF
-            </div>
-        );
-    }
-
-    if (isCode) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400`}>
-                <Code className="w-3.5 h-3.5" />
-            </div>
-        );
-    }
-
-    if (isZip) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400`}>
-                <Archive className="w-3.5 h-3.5" />
-            </div>
-        );
-    }
-
-    if (isVideo) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400`}>
-                <Film className="w-3.5 h-3.5" />
-            </div>
-        );
-    }
-
-    if (isAudio) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400`}>
-                <Music className="w-3.5 h-3.5" />
-            </div>
-        );
-    }
-
-    if (isSheet) {
-        return (
-            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400`}>
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-            </div>
-        );
-    }
-
-    return (
-        <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400`}>
-            <FileText className="w-3.5 h-3.5" />
-        </div>
-    );
-};
 
 const formatDraftFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -385,160 +532,35 @@ const DraftFilePreviewModal: React.FC<{
     file: File | null;
     onClose: () => void;
 }> = ({ file, onClose }) => {
-    const [textContent, setTextContent] = useState<string | null>(null);
-    const [isLoadingText, setIsLoadingText] = useState(false);
     const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
     useEffect(() => {
         if (!file) {
             setObjectUrl(null);
-            setTextContent(null);
             return;
         }
 
         const url = URL.createObjectURL(file);
         setObjectUrl(url);
 
-        const isTextLike = file.type.startsWith('text/') || 
-            /\.(txt|json|csv|md|log|js|ts|tsx|jsx|html|css|py|sql|xml|yaml|yml|env)$/i.test(file.name);
-
-        if (isTextLike && file.size < 2 * 1024 * 1024) {
-            setIsLoadingText(true);
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setTextContent(e.target?.result as string);
-                setIsLoadingText(false);
-            };
-            reader.onerror = () => {
-                setTextContent("Failed to read file contents.");
-                setIsLoadingText(false);
-            };
-            reader.readAsText(file);
-        } else {
-            setTextContent(null);
-            setIsLoadingText(false);
-        }
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-
         return () => {
             URL.revokeObjectURL(url);
-            window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [file, onClose]);
+    }, [file]);
 
-    if (!file) return null;
+    if (!file || !objectUrl) return null;
 
-    const isImage = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
-    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
 
-    return createPortal(
-        <div 
-            className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
-            onClick={onClose}
-        >
-            <div 
-                className="bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                            {isImage ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                        </div>
-                        <div className="min-w-0">
-                            <h3 className="text-sm font-bold text-neutral-900 dark:text-white truncate" title={file.name}>
-                                {file.name}
-                            </h3>
-                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                                {formatDraftFileSize(file.size)} • {file.type || 'File'}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        {objectUrl && (
-                            <a
-                                href={objectUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                download={file.name}
-                                className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors text-xs flex items-center gap-1 font-medium"
-                                title="Open or download file"
-                            >
-                                <Download className="w-4 h-4" />
-                                <span className="hidden sm:inline">Save</span>
-                            </a>
-                        )}
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
-                            title="Close Preview"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-neutral-100/50 dark:bg-black/30 min-h-[220px]">
-                    {isImage && objectUrl ? (
-                        <div className="flex flex-col items-center justify-center max-h-[75vh] w-full">
-                            <img 
-                                src={objectUrl} 
-                                alt={file.name} 
-                                className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-md border border-neutral-200 dark:border-neutral-800"
-                            />
-                        </div>
-                    ) : isPdf && objectUrl ? (
-                        <div className="w-full h-[70vh] flex flex-col">
-                            <iframe
-                                src={objectUrl}
-                                title={file.name}
-                                className="w-full h-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white"
-                            />
-                        </div>
-                    ) : textContent !== null ? (
-                        <div className="w-full max-h-[70vh] overflow-auto">
-                            <pre className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-mono text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap select-text leading-relaxed">
-                                {textContent}
-                            </pre>
-                        </div>
-                    ) : isLoadingText ? (
-                        <div className="flex items-center gap-2 text-neutral-500 py-10">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="text-sm font-medium">Loading file content...</span>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center text-center p-8 space-y-3">
-                            <div className="w-16 h-16 rounded-2xl bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-300">
-                                <FileText className="w-8 h-8" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-neutral-900 dark:text-white">{file.name}</p>
-                                <p className="text-xs text-neutral-500 mt-1">{formatDraftFileSize(file.size)} • Preview not available for this format</p>
-                            </div>
-                            {objectUrl && (
-                                <a
-                                    href={objectUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors shadow-sm"
-                                >
-                                    <Download className="w-3.5 h-3.5" />
-                                    Open File
-                                </a>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>,
-        document.body
+    return (
+        <FullScreenAttachmentPreview
+            isOpen={!!file}
+            onClose={onClose}
+            url={objectUrl}
+            name={file.name}
+            isImage={isImg}
+            sizeFormatted={formatDraftFileSize(file.size)}
+        />
     );
 };
 
@@ -1694,30 +1716,13 @@ Guidelines:
                                      )}
                                     
                                     {attachments.length > 0 && (
-                                        <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
-                                            {attachments.map((file, idx) => (
-                                                <div 
-                                                    key={`${file.name}-${idx}`} 
-                                                    onClick={() => setPreviewFile(file)}
-                                                    className="flex items-center gap-2 p-1.5 pr-2 bg-neutral-100/80 dark:bg-neutral-800/80 hover:bg-neutral-200/80 dark:hover:bg-neutral-700/80 rounded-lg border border-neutral-200/80 dark:border-neutral-700/60 shrink-0 max-w-[240px] cursor-pointer group transition-colors"
-                                                >
-                                                    <DraftFileThumbnail file={file} className="w-6 h-6" />
-                                                    <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[140px] select-none">
-                                                        {file.name} <span className="text-[10px] text-neutral-400 font-normal">({formatDraftFileSize(file.size)})</span>
-                                                    </span>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setAttachments(prev => prev.filter((_, i) => i !== idx));
-                                                        }} 
-                                                        className="p-0.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded ml-auto"
-                                                        title="Remove"
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                        <div className="px-1 py-1">
+                                            <PendingAttachmentsList
+                                                attachments={attachments}
+                                                isUploading={isUploadingAttachment || sending}
+                                                onRemove={(idx) => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                                                onPreview={setPreviewFile}
+                                            />
                                         </div>
                                     )}
                                 </div>
@@ -2203,30 +2208,13 @@ Guidelines:
                                                  )}
 
                                                  {attachments.length > 0 && (
-                                                     <div className="mt-2 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
-                                                         {attachments.map((file, idx) => (
-                                                             <div 
-                                                                 key={`${file.name}-${idx}`} 
-                                                                 onClick={() => setPreviewFile(file)}
-                                                                 className="flex items-center gap-2 p-1.5 pr-2 bg-neutral-100/80 dark:bg-black/40 hover:bg-neutral-200/80 dark:hover:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-white/10 shrink-0 max-w-[240px] cursor-pointer group transition-colors"
-                                                             >
-                                                                 <DraftFileThumbnail file={file} className="w-6 h-6" />
-                                                                 <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[140px] select-none">
-                                                                     {file.name} <span className="text-[10px] text-neutral-400 font-normal">({formatDraftFileSize(file.size)})</span>
-                                                                 </span>
-                                                                 <button 
-                                                                     type="button"
-                                                                     onClick={(e) => {
-                                                                         e.stopPropagation();
-                                                                         setAttachments(prev => prev.filter((_, i) => i !== idx));
-                                                                     }} 
-                                                                     className="p-0.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded ml-auto"
-                                                                     title="Remove"
-                                                                 >
-                                                                     <X className="w-3.5 h-3.5" />
-                                                                 </button>
-                                                             </div>
-                                                         ))}
+                                                     <div className="mt-2">
+                                                         <PendingAttachmentsList
+                                                             attachments={attachments}
+                                                             isUploading={isUploadingAttachment || sending}
+                                                             onRemove={(idx) => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                                                             onPreview={setPreviewFile}
+                                                         />
                                                      </div>
                                                  )}
                                              </div>
@@ -2478,30 +2466,13 @@ Guidelines:
                       <form onSubmit={handleSendMessage} className={`w-full max-w-full mx-auto bg-white dark:bg-black border border-neutral-200 dark:border-neutral-700/60 rounded-[28px] flex flex-col overflow-hidden transition-all focus-within:border-blue-400 dark:focus-within:border-neutral-500 focus-within:ring-4 focus-within:ring-blue-400/10 dark:focus-within:ring-neutral-400/10 mb-2 px-1 py-1`}>
                         
                         {attachments.length > 0 && (
-                            <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:thin] p-1.5 mx-2 mt-2 bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 rounded-xl custom-scrollbar">
-                                {attachments.map((file, idx) => (
-                                    <div 
-                                        key={`${file.name}-${idx}`} 
-                                        onClick={() => setPreviewFile(file)}
-                                        className="flex items-center gap-2 p-1.5 pr-2 bg-white dark:bg-black hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-lg border border-neutral-200 dark:border-neutral-700/80 shrink-0 max-w-[240px] cursor-pointer group transition-colors"
-                                    >
-                                        <DraftFileThumbnail file={file} className="w-6 h-6" />
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[140px] select-none">
-                                            {file.name} <span className="text-[10px] text-neutral-400 font-normal">({formatDraftFileSize(file.size)})</span>
-                                        </span>
-                                        <button 
-                                            type="button" 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setAttachments(prev => prev.filter((_, i) => i !== idx));
-                                            }} 
-                                            className="p-0.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded ml-auto"
-                                            title="Remove"
-                                        >
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="mx-2 mt-2 px-2 pb-1">
+                                <PendingAttachmentsList
+                                    attachments={attachments}
+                                    isUploading={isUploadingAttachment || sending}
+                                    onRemove={(idx) => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                                    onPreview={setPreviewFile}
+                                />
                             </div>
                         )}
 
