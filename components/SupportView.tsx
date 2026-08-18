@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supportService } from '../services/supportService';
 import { SupportConversation, SupportMessage } from '../types';
-import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User, Sparkles, Bot, ChevronDown } from 'lucide-react';
+import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User, Sparkles, Bot, ChevronDown, Archive, Film, Music, FileSpreadsheet } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -190,14 +190,11 @@ const SingleAttachmentItem = ({ att, isUser, isChat }: { att: ParsedAttachment, 
                     ) : isLoading ? (
                          <Loader2 className="w-4 h-4 animate-spin opacity-60" />
                     ) : (
-                         <FileText className="w-4 h-4" />
+                         getAttachmentIcon(att.name, att.type, isUser)
                     )}
                 </div>
-                <div className="flex flex-col min-w-0 flex-1 py-0.5">
-                    <span className={`text-[11.5px] font-medium truncate ${isUser ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{att.name || 'File'}</span>
-                    <span className={`text-[9.5px] truncate font-medium ${isUser ? 'text-blue-100/80' : 'text-neutral-400 dark:text-neutral-500'}`}>
-                        {att.isImage ? 'CLICK TO VIEW' : (att.type?.split('/')[1]?.toUpperCase() || 'FILE')}
-                    </span>
+                <div className="flex flex-col min-w-0 flex-1 py-0.5 justify-center">
+                    <span className={`text-[12px] font-medium truncate ${isUser ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{att.name || 'File'}</span>
                 </div>
             </div>
             {renderPreviewModal()}
@@ -233,14 +230,11 @@ const SingleAttachmentItem = ({ att, isUser, isChat }: { att: ParsedAttachment, 
                 ) : isLoading ? (
                      <Loader2 className="w-4 h-4 animate-spin opacity-60" />
                 ) : (
-                     <FileText className="w-4 h-4" />
+                     getAttachmentIcon(att.name, att.type, isUser)
                 )}
             </div>
-            <div className="flex flex-col flex-1 min-w-0 py-0.5">
+            <div className="flex flex-col flex-1 min-w-0 py-0.5 justify-center">
                 <span className="text-[12.5px] font-semibold truncate text-neutral-900 dark:text-neutral-100">{att.name || 'File Attachment'}</span>
-                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium truncate uppercase mt-0.5">
-                    {att.isImage ? 'CLICK TO VIEW' : (att.type?.split('/')[1] || 'FILE')}
-                </span>
             </div>
             <div className="shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors">
                 <Download className="w-3.5 h-3.5" />
@@ -270,6 +264,113 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
             {attachments.map((att, index) => (
                 <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={false} />
             ))}
+        </div>
+    );
+};
+
+
+const getAttachmentIcon = (name: string, type: string, isUser: boolean) => {
+    const ext = name.split('.').pop()?.toLowerCase() || '';
+    const isPdf = type === 'application/pdf' || ext === 'pdf';
+    const isCode = /\.(js|ts|tsx|jsx|json|html|css|py|sql|xml|yaml|yml|env|sh|c|cpp|cs|java|go|rs|php|rb)$/i.test(name);
+    const isZip = /\.(zip|rar|7z|tar|gz|bz2|xz)$/i.test(name);
+    const isVideo = type.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm)$/i.test(name);
+    const isAudio = type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(name);
+    const isSheet = /\.(csv|xls|xlsx)$/i.test(name);
+
+    if (isPdf) return <div className="text-[10px] font-bold text-red-600 dark:text-red-400">PDF</div>;
+    if (isCode) return <Code className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+    if (isZip) return <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
+    if (isVideo) return <Film className="w-4 h-4 text-purple-600 dark:text-purple-400" />;
+    if (isAudio) return <Music className="w-4 h-4 text-pink-600 dark:text-pink-400" />;
+    if (isSheet) return <FileSpreadsheet className="w-4 h-4 text-green-600 dark:text-green-400" />;
+
+    return <FileText className="w-4 h-4" />;
+};
+
+const DraftFileThumbnail: React.FC<{ file: File; className?: string }> = ({ file, className = "w-6 h-6" }) => {
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+
+    useEffect(() => {
+        if (!isImg) {
+            setPreviewUrl(null);
+            return;
+        }
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        return () => {
+            URL.revokeObjectURL(url);
+        };
+    }, [file, isImg]);
+
+    if (isImg && previewUrl) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden shrink-0 border border-neutral-200 dark:border-neutral-700/80 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center`}>
+                <img src={previewUrl} alt={file.name} className="w-full h-full object-cover" />
+            </div>
+        );
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const isPdf = file.type === 'application/pdf' || ext === 'pdf';
+    const isCode = /\.(js|ts|tsx|jsx|json|html|css|py|sql|xml|yaml|yml|env|sh|c|cpp|cs|java|go|rs|php|rb)$/i.test(file.name);
+    const isZip = /\.(zip|rar|7z|tar|gz|bz2|xz)$/i.test(file.name);
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm)$/i.test(file.name);
+    const isAudio = file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name);
+    const isSheet = /\.(csv|xls|xlsx)$/i.test(file.name);
+
+    if (isPdf) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold text-[9px]`}>
+                PDF
+            </div>
+        );
+    }
+
+    if (isCode) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400`}>
+                <Code className="w-3.5 h-3.5" />
+            </div>
+        );
+    }
+
+    if (isZip) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400`}>
+                <Archive className="w-3.5 h-3.5" />
+            </div>
+        );
+    }
+
+    if (isVideo) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400`}>
+                <Film className="w-3.5 h-3.5" />
+            </div>
+        );
+    }
+
+    if (isAudio) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400`}>
+                <Music className="w-3.5 h-3.5" />
+            </div>
+        );
+    }
+
+    if (isSheet) {
+        return (
+            <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400`}>
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+            </div>
+        );
+    }
+
+    return (
+        <div className={`${className} rounded-md overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400`}>
+            <FileText className="w-3.5 h-3.5" />
         </div>
     );
 };
@@ -378,7 +479,7 @@ const DraftFilePreviewModal: React.FC<{
                             className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
                             title="Close Preview"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -562,6 +663,7 @@ export const SupportView: React.FC<{
   const [newMessage, setNewMessage] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isAttachExpanded, setIsAttachExpanded] = useState<boolean>(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -667,10 +769,10 @@ export const SupportView: React.FC<{
   }, [checkActiveFormats]);
 
   const getFormatBtnClass = (isActive: boolean) =>
-      `p-1.5 rounded transition-all select-none shrink-0 ${
+      `p-1 rounded transition-colors select-none shrink-0 ${
           isActive
-              ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-300 dark:border-indigo-700 shadow-sm'
-              : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 border border-transparent'
+              ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 shadow-sm'
+              : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 bg-transparent border border-transparent'
       }`;
 
   const applyRichFormat = (type: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'h3' | 'unorderedList' | 'orderedList' | 'quote' | 'code' | 'link' | 'clear') => {
@@ -1592,29 +1694,30 @@ Guidelines:
                                      )}
                                     
                                     {attachments.length > 0 && (
-                                        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
-                                            {attachments.map((file, idx) => {
-                                                const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
-                                                return (
-                                                    <div key={`${file.name}-${idx}`} className="flex items-center gap-2 p-2 pr-2.5 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 shrink-0 max-w-[220px]">
-                                                        <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
-                                                            {isImg ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                                                        </div>
-                                                        <div className="flex flex-col min-w-0 flex-1">
-                                                            <span className="text-xs font-medium text-neutral-900 dark:text-white max-w-[120px] truncate">{file.name}</span>
-                                                            <span className="text-[10px] text-neutral-500">{(file.size / 1024).toFixed(1)} KB</span>
-                                                        </div>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} 
-                                                            className="p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                                                            title="Remove"
-                                                        >
-                                                            <X className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })}
+                                        <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
+                                            {attachments.map((file, idx) => (
+                                                <div 
+                                                    key={`${file.name}-${idx}`} 
+                                                    onClick={() => setPreviewFile(file)}
+                                                    className="flex items-center gap-2 p-1.5 pr-2 bg-neutral-100/80 dark:bg-neutral-800/80 hover:bg-neutral-200/80 dark:hover:bg-neutral-700/80 rounded-lg border border-neutral-200/80 dark:border-neutral-700/60 shrink-0 max-w-[240px] cursor-pointer group transition-colors"
+                                                >
+                                                    <DraftFileThumbnail file={file} className="w-6 h-6" />
+                                                    <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[140px] select-none">
+                                                        {file.name} <span className="text-[10px] text-neutral-400 font-normal">({formatDraftFileSize(file.size)})</span>
+                                                    </span>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setAttachments(prev => prev.filter((_, i) => i !== idx));
+                                                        }} 
+                                                        className="p-0.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded ml-auto"
+                                                        title="Remove"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -1635,20 +1738,20 @@ Guidelines:
                                             multiple
                                             onChange={handleAttachmentChange} 
                                         />
-                                        <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('underline')} className={getFormatBtnClass(!!activeFormats.underline)} title="Underline"><Underline className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('strikethrough')} className={getFormatBtnClass(!!activeFormats.strikethrough)} title="Strikethrough"><Strikethrough className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('underline')} className={getFormatBtnClass(!!activeFormats.underline)} title="Underline"><Underline className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('strikethrough')} className={getFormatBtnClass(!!activeFormats.strikethrough)} title="Strikethrough"><Strikethrough className="w-4 h-4 md:w-5 md:h-5" /></button>
                                         
                                         <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
 
-                                        <button type="button" onClick={() => applyRichFormat('h3')} className={getFormatBtnClass(!!activeFormats.h3)} title="Heading"><Heading1 className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('unorderedList')} className={getFormatBtnClass(!!activeFormats.unorderedList)} title="Bullet List"><List className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('orderedList')} className={getFormatBtnClass(!!activeFormats.orderedList)} title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('quote')} className={getFormatBtnClass(!!activeFormats.quote)} title="Quote"><Quote className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('code')} className={getFormatBtnClass(!!activeFormats.code)} title="Code Block"><Code className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('link')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Insert Link"><Link2 className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => applyRichFormat('clear')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Clear Formatting"><RemoveFormatting className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('h3')} className={getFormatBtnClass(!!activeFormats.h3)} title="Heading"><Heading1 className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('unorderedList')} className={getFormatBtnClass(!!activeFormats.unorderedList)} title="Bullet List"><List className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('orderedList')} className={getFormatBtnClass(!!activeFormats.orderedList)} title="Numbered List"><ListOrdered className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('quote')} className={getFormatBtnClass(!!activeFormats.quote)} title="Quote"><Quote className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('code')} className={getFormatBtnClass(!!activeFormats.code)} title="Code Block"><Code className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('link')} className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0" title="Insert Link"><Link2 className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('clear')} className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0" title="Clear Formatting"><RemoveFormatting className="w-4 h-4 md:w-5 md:h-5" /></button>
 
                                         <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
 
@@ -1656,18 +1759,18 @@ Guidelines:
                                             <button 
                                                 type="button" 
                                                 onClick={() => setIsAttachExpanded(true)} 
-                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors" 
                                                 title="Attach (Click to expand options)"
                                             >
                                                 <Paperclip className="w-4 h-4" />
                                             </button>
                                         ) : (
-                                            <div className="flex items-center gap-0.5 transition-all">
+                                            <div className="flex items-center gap-1 transition-all">
                                                 <button 
                                                     type="button" 
                                                     onClick={() => fileInputRef.current?.click()} 
                                                     onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
-                                                    className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                    className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors" 
                                                     title="Attach File (Click to select, Double click to collapse)"
                                                 >
                                                     <Paperclip className="w-4 h-4" />
@@ -1676,7 +1779,7 @@ Guidelines:
                                                     type="button" 
                                                     onClick={() => imageInputRef.current?.click()} 
                                                     onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
-                                                    className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-blue-600 dark:text-blue-400 transition-colors" 
+                                                    className="p-1 bg-transparent text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors" 
                                                     title="Attach Image (Click to select, Double click to collapse)"
                                                 >
                                                     <ImageIcon className="w-4 h-4" />
@@ -1695,10 +1798,10 @@ Guidelines:
                                                 }
                                                 setShowTemplatesList(!showTemplatesList);
                                             }}
-                                            className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center justify-center shrink-0" 
+                                            className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors flex items-center justify-center shrink-0" 
                                             title="Insert Template"
                                         >
-                                            <Braces className="w-4 h-4" />
+                                            <Braces className="w-4 h-4 md:w-5 md:h-5" />
                                         </button>
 
                                         <div className="relative min-w-0 max-w-[130px] sm:max-w-[170px]">
@@ -1996,20 +2099,20 @@ Guidelines:
                                         <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-900/80 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
                                              <div className="flex items-center justify-between w-full min-w-0 px-2 sm:px-2.5 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50">
                                                 <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0">
-                                                    <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('underline')} className={getFormatBtnClass(!!activeFormats.underline)} title="Underline"><Underline className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('strikethrough')} className={getFormatBtnClass(!!activeFormats.strikethrough)} title="Strikethrough"><Strikethrough className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('underline')} className={getFormatBtnClass(!!activeFormats.underline)} title="Underline"><Underline className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('strikethrough')} className={getFormatBtnClass(!!activeFormats.strikethrough)} title="Strikethrough"><Strikethrough className="w-4 h-4 md:w-5 md:h-5" /></button>
                                                     
                                                     <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
 
-                                                    <button type="button" onClick={() => applyRichFormat('h3')} className={getFormatBtnClass(!!activeFormats.h3)} title="Heading"><Heading1 className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('unorderedList')} className={getFormatBtnClass(!!activeFormats.unorderedList)} title="Bullet List"><List className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('orderedList')} className={getFormatBtnClass(!!activeFormats.orderedList)} title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('quote')} className={getFormatBtnClass(!!activeFormats.quote)} title="Quote"><Quote className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('code')} className={getFormatBtnClass(!!activeFormats.code)} title="Code Block"><Code className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('link')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Insert Link"><Link2 className="w-4 h-4" /></button>
-                                                    <button type="button" onClick={() => applyRichFormat('clear')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Clear Formatting"><RemoveFormatting className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('h3')} className={getFormatBtnClass(!!activeFormats.h3)} title="Heading"><Heading1 className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('unorderedList')} className={getFormatBtnClass(!!activeFormats.unorderedList)} title="Bullet List"><List className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('orderedList')} className={getFormatBtnClass(!!activeFormats.orderedList)} title="Numbered List"><ListOrdered className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('quote')} className={getFormatBtnClass(!!activeFormats.quote)} title="Quote"><Quote className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('code')} className={getFormatBtnClass(!!activeFormats.code)} title="Code Block"><Code className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('link')} className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0" title="Insert Link"><Link2 className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('clear')} className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0" title="Clear Formatting"><RemoveFormatting className="w-4 h-4 md:w-5 md:h-5" /></button>
                                                 </div>
 
                                                 <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 border-l border-neutral-200 dark:border-neutral-800 pl-1.5 sm:pl-2 ml-1">
@@ -2032,18 +2135,18 @@ Guidelines:
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setIsAttachExpanded(true)} 
-                                                            className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                            className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors" 
                                                             title="Attach (Click to expand options)"
                                                         >
                                                             <Paperclip className="w-4 h-4" />
                                                         </button>
                                                     ) : (
-                                                        <div className="flex items-center gap-0.5 transition-all">
+                                                        <div className="flex items-center gap-1 transition-all">
                                                             <button 
                                                                 type="button" 
                                                                 onClick={() => fileInputRef.current?.click()} 
                                                                 onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
-                                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                                className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors" 
                                                                 title="Attach File (Click to select, Double click to collapse)"
                                                             >
                                                                 <Paperclip className="w-4 h-4" />
@@ -2052,7 +2155,7 @@ Guidelines:
                                                                 type="button" 
                                                                 onClick={() => imageInputRef.current?.click()} 
                                                                 onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
-                                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-blue-600 dark:text-blue-400 transition-colors" 
+                                                                className="p-1 bg-transparent text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors" 
                                                                 title="Attach Image (Click to select, Double click to collapse)"
                                                             >
                                                                 <ImageIcon className="w-4 h-4" />
@@ -2060,8 +2163,8 @@ Guidelines:
                                                         </div>
                                                     )}
                                                     <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 sm:mx-1 shrink-0"></div>
-                                                    <button type="button" onClick={() => setIsReplying(false)} className="p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors shrink-0" title="Close">
-                                                        <X className="w-4 h-4" />
+                                                    <button type="button" onClick={() => setIsReplying(false)} className="p-1 bg-transparent text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors shrink-0" title="Close">
+                                                        <X className="w-4 h-4 md:w-5 md:h-5" />
                                                     </button>
                                                 </div>
                                              </div>
@@ -2100,29 +2203,30 @@ Guidelines:
                                                  )}
 
                                                  {attachments.length > 0 && (
-                                                     <div className="mt-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
-                                                         {attachments.map((file, idx) => {
-                                                             const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
-                                                             return (
-                                                                 <div key={`${file.name}-${idx}`} className="flex items-center gap-2 p-2 pr-2.5 bg-neutral-100 dark:bg-black/40 rounded-xl border border-neutral-200 dark:border-white/10 shrink-0 max-w-[220px]">
-                                                                     <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
-                                                                         {isImg ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                                                                     </div>
-                                                                     <div className="flex flex-col min-w-0 flex-1">
-                                                                         <span className="text-xs font-medium text-neutral-900 dark:text-white max-w-[120px] truncate">{file.name}</span>
-                                                                         <span className="text-[10px] text-neutral-500">{(file.size / 1024).toFixed(1)} KB</span>
-                                                                     </div>
-                                                                     <button 
-                                                                         type="button"
-                                                                         onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} 
-                                                                         className="p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                                                                         title="Remove"
-                                                                     >
-                                                                         <X className="w-3.5 h-3.5" />
-                                                                     </button>
-                                                                 </div>
-                                                             );
-                                                         })}
+                                                     <div className="mt-2 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
+                                                         {attachments.map((file, idx) => (
+                                                             <div 
+                                                                 key={`${file.name}-${idx}`} 
+                                                                 onClick={() => setPreviewFile(file)}
+                                                                 className="flex items-center gap-2 p-1.5 pr-2 bg-neutral-100/80 dark:bg-black/40 hover:bg-neutral-200/80 dark:hover:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-white/10 shrink-0 max-w-[240px] cursor-pointer group transition-colors"
+                                                             >
+                                                                 <DraftFileThumbnail file={file} className="w-6 h-6" />
+                                                                 <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[140px] select-none">
+                                                                     {file.name} <span className="text-[10px] text-neutral-400 font-normal">({formatDraftFileSize(file.size)})</span>
+                                                                 </span>
+                                                                 <button 
+                                                                     type="button"
+                                                                     onClick={(e) => {
+                                                                         e.stopPropagation();
+                                                                         setAttachments(prev => prev.filter((_, i) => i !== idx));
+                                                                     }} 
+                                                                     className="p-0.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded ml-auto"
+                                                                     title="Remove"
+                                                                 >
+                                                                     <X className="w-3.5 h-3.5" />
+                                                                 </button>
+                                                             </div>
+                                                         ))}
                                                      </div>
                                                  )}
                                              </div>
@@ -2374,26 +2478,30 @@ Guidelines:
                       <form onSubmit={handleSendMessage} className={`w-full max-w-full mx-auto bg-white dark:bg-black border border-neutral-200 dark:border-neutral-700/60 rounded-[28px] flex flex-col overflow-hidden transition-all focus-within:border-blue-400 dark:focus-within:border-neutral-500 focus-within:ring-4 focus-within:ring-blue-400/10 dark:focus-within:ring-neutral-400/10 mb-2 px-1 py-1`}>
                         
                         {attachments.length > 0 && (
-                            <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:thin] p-2 mx-2 mt-2 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl custom-scrollbar">
-                                {attachments.map((file, idx) => {
-                                    const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
-                                    return (
-                                        <div key={`${file.name}-${idx}`} className="flex items-center gap-2 p-1.5 pr-2 bg-white dark:bg-black rounded-lg border border-neutral-200 dark:border-neutral-700 shrink-0 max-w-[200px]">
-                                            <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 text-blue-500">
-                                                {isImg ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                                            </div>
-                                            <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate max-w-[110px]">{file.name}</span>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} 
-                                                className="p-0.5 rounded text-neutral-400 hover:text-red-500 transition-colors"
-                                                title="Remove"
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
+                            <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:thin] p-1.5 mx-2 mt-2 bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 rounded-xl custom-scrollbar">
+                                {attachments.map((file, idx) => (
+                                    <div 
+                                        key={`${file.name}-${idx}`} 
+                                        onClick={() => setPreviewFile(file)}
+                                        className="flex items-center gap-2 p-1.5 pr-2 bg-white dark:bg-black hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-lg border border-neutral-200 dark:border-neutral-700/80 shrink-0 max-w-[240px] cursor-pointer group transition-colors"
+                                    >
+                                        <DraftFileThumbnail file={file} className="w-6 h-6" />
+                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[140px] select-none">
+                                            {file.name} <span className="text-[10px] text-neutral-400 font-normal">({formatDraftFileSize(file.size)})</span>
+                                        </span>
+                                        <button 
+                                            type="button" 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setAttachments(prev => prev.filter((_, i) => i !== idx));
+                                            }} 
+                                            className="p-0.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded ml-auto"
+                                            title="Remove"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
@@ -2537,6 +2645,11 @@ Guidelines:
           confirmButtonText="Delete"
           confirmButtonVariant="danger"
           isLoading={isDeletingConvo}
+      />
+
+      <DraftFilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
       />
 
       <ConfirmationModal
