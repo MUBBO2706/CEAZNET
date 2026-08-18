@@ -216,18 +216,22 @@ export const supportService = {
 
   subscribeToMessages(conversationId: string, callback: (payload: { eventType: 'INSERT' | 'UPDATE' | 'DELETE', new: SupportMessage, old?: any }) => void) {
     const channel = supabase
-      .channel(`support_messages_${conversationId}`)
+      .channel(`support_messages_${conversationId}_${Math.random().toString(36).substring(7)}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'support_messages',
-          filter: `conversation_id=eq.${conversationId}`
+          table: 'support_messages'
         },
         (payload) => {
           console.log('[supportService] Realtime message event:', payload);
-          callback(payload as any);
+          // For DELETE, payload.old contains the deleted record ID
+          if (payload.eventType === 'DELETE') {
+            callback(payload as any);
+          } else if (payload.new && (payload.new as any).conversation_id === conversationId) {
+            callback(payload as any);
+          }
         }
       )
       .subscribe((status) => {
@@ -239,24 +243,19 @@ export const supportService = {
     };
   },
 
-  subscribeToConversations(userId: string, callback: (conversation: SupportConversation) => void) {
+  subscribeToConversations(userId: string, callback: (payload: any) => void) {
       const channel = supabase
-          .channel(`support_conversations_${userId}`)
+          .channel(`support_conversations_${userId}_${Math.random().toString(36).substring(7)}`)
           .on(
               'postgres_changes',
               {
-                  event: '*', // Listen to INSERT, UPDATE on support_conversations
+                  event: '*', // Listen to INSERT, UPDATE, DELETE on support_conversations
                   schema: 'public',
-                  table: 'support_conversations',
-                  filter: `user_id=eq.${userId}`
+                  table: 'support_conversations'
               },
               (payload) => {
                   console.log('[supportService] Realtime conversation event:', payload);
-                  if (payload.new && Object.keys(payload.new).length > 0) {
-                      callback(payload.new as SupportConversation);
-                  } else {
-                      callback({} as any);
-                  }
+                  callback(payload);
               }
           )
           .on(
@@ -268,7 +267,7 @@ export const supportService = {
               },
               (payload) => {
                   console.log('[supportService] Realtime message event for conversations:', payload);
-                  callback({} as any);
+                  callback(payload);
               }
           )
           .subscribe((status) => {

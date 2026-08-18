@@ -239,6 +239,15 @@
         --profile-modal-bg: #ffffff;
         --profile-modal-border: #e5e7eb;
         --profile-modal-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1), 0px 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+        /* Custom Dropdown Variables */
+        --dropdown-bg: #ffffff;
+        --dropdown-border: #e5e7eb;
+        --dropdown-hover-bg: #f3f4f6;
+        --dropdown-active-bg: #eef2ff;
+        --dropdown-active-text: #4f46e5;
+        --dropdown-text: #374151;
+        --dropdown-text-muted: #6b7280;
       }
       html {
 
@@ -350,6 +359,15 @@
         --profile-modal-bg: #0a0a0a;
         --profile-modal-border: #262626;
         --profile-modal-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.7);
+
+        /* Custom Dropdown Variables */
+        --dropdown-bg: #18181b;
+        --dropdown-border: #27272a;
+        --dropdown-hover-bg: #27272a;
+        --dropdown-active-bg: rgba(99, 102, 241, 0.15);
+        --dropdown-active-text: #818cf8;
+        --dropdown-text: #f4f4f5;
+        --dropdown-text-muted: #a1a1aa;
       }
       
       /* --- Dynamic Border Radius Overrides --- */
@@ -902,6 +920,114 @@
       .active-search-mark {
         background-color: #f59e0b !important;
         color: #ffffff !important;
+      }
+
+      /* --- Markdown Body & Support Message Preview Styling --- */
+      .markdown-body {
+        font-family: inherit;
+        line-height: 1.7;
+        word-break: break-word;
+      }
+      .markdown-body p {
+        margin-bottom: 0.85em;
+        line-height: 1.7;
+      }
+      .markdown-body p:last-child {
+        margin-bottom: 0;
+      }
+      .markdown-body ul {
+        list-style-type: disc !important;
+        padding-left: 1.6em !important;
+        margin-top: 0.5em !important;
+        margin-bottom: 0.85em !important;
+      }
+      .markdown-body ol {
+        list-style-type: decimal !important;
+        padding-left: 1.6em !important;
+        margin-top: 0.5em !important;
+        margin-bottom: 0.85em !important;
+      }
+      .markdown-body li {
+        margin-bottom: 0.35em !important;
+        line-height: 1.7 !important;
+        display: list-item !important;
+      }
+      .markdown-body li > ul {
+        list-style-type: circle !important;
+        margin-top: 0.25em !important;
+        margin-bottom: 0.25em !important;
+      }
+      .markdown-body li > ol {
+        list-style-type: lower-alpha !important;
+        margin-top: 0.25em !important;
+        margin-bottom: 0.25em !important;
+      }
+      .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+        font-weight: 700;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        line-height: 1.4;
+      }
+      .markdown-body h1 { font-size: 1.4em; }
+      .markdown-body h2 { font-size: 1.25em; }
+      .markdown-body h3 { font-size: 1.1em; }
+      .markdown-body h4 { font-size: 1em; }
+      .markdown-body a {
+        color: #4f46e5;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      html.dark .markdown-body a {
+        color: #818cf8;
+      }
+      .markdown-body strong, .markdown-body b {
+        font-weight: 700;
+      }
+      .markdown-body em, .markdown-body i {
+        font-style: italic;
+      }
+      .markdown-body u {
+        text-decoration: underline;
+      }
+      .markdown-body s, .markdown-body strike, .markdown-body del {
+        text-decoration: line-through;
+      }
+      .markdown-body blockquote {
+        border-left: 3px solid #6366f1;
+        padding-left: 1em;
+        font-style: italic;
+        margin-top: 0.5em;
+        margin-bottom: 0.85em;
+        opacity: 0.9;
+      }
+      .markdown-body pre {
+        background: rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 0.75em 1em;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin-top: 0.5em;
+        margin-bottom: 0.85em;
+        font-size: 0.875em;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      html.dark .markdown-body pre {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .markdown-body code {
+        background: rgba(0, 0, 0, 0.06);
+        padding: 0.15em 0.35em;
+        border-radius: 0.25em;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9em;
+      }
+      html.dark .markdown-body code {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .markdown-body pre code {
+        background: transparent;
+        padding: 0;
       }
     </style>
     <script>

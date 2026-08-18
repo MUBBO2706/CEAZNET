@@ -4,39 +4,136 @@ import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supportService } from '../services/supportService';
 import { SupportConversation, SupportMessage } from '../types';
-import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User } from 'lucide-react';
+import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User, Sparkles, Bot, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { getFileUrlFromTelegram, uploadFileToTelegram, UploadMetadata } from '../services/telegramStorage';
 import { supabase } from '../services/supabaseClient';
+import { getAiClient } from '../services/aiClient';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import ConfirmationModal from './ConfirmationModal';
 import { useToast } from './ToastSystem';
 import { useGlobalModal } from './core/GlobalModalProvider';
+import { CustomDropdown } from './CustomDropdown';
 
-const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUser: boolean, isChat: boolean }) => {
-    const [realUrl, setRealUrl] = useState('');
-    useEffect(() => {
-        if (!msg.attachment_url) return;
-        if (msg.attachment_url.startsWith('tg://')) {
-            getFileUrlFromTelegram(msg.attachment_url).then(url => {
-                if (url && url !== '__NOT_FOUND__' && url !== '__TOO_LARGE__') setRealUrl(url);
-            });
-        } else {
-            setRealUrl(msg.attachment_url);
+export const KNOWN_MODELS = [
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3-flash-preview',
+    'gemini-3-pro-preview',
+    'gemini-3-flash',
+    'gemini-3-pro'
+];
+
+export const SUPPORT_AI_MODELS = KNOWN_MODELS.map(model => ({
+    id: model,
+    name: model,
+    description: model
+}));
+
+export const SparkleStarIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" className={className || "w-5 h-5"}>
+        <defs>
+            <linearGradient id="blueGlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#93c5fd" />
+                <stop offset="40%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#1d4ed8" />
+            </linearGradient>
+        </defs>
+        <path fill="url(#blueGlowGradient)" d="M12 0C12 8 16 12 24 12C16 12 12 16 12 24C12 16 8 12 0 12C8 12 12 8 12 0Z" />
+    </svg>
+);
+
+export const CustomAiSparkleIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" className={className || "w-5 h-5"} xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C12 7.52 16.48 12 22 12C16.48 12 12 16.48 12 22C12 16.48 7.52 12 2 12C7.52 12 12 7.52 12 2Z" fill="#3b82f6" />
+    </svg>
+);
+
+interface ParsedAttachment {
+    url: string;
+    name: string;
+    type: string;
+    isImage: boolean;
+}
+
+function parseSupportAttachments(rawUrl?: string | null, rawName?: string | null, rawType?: string | null): ParsedAttachment[] {
+    if (!rawUrl || !rawUrl.trim()) return [];
+    let urls: string[] = [];
+    if (rawUrl.trim().startsWith('[') && rawUrl.trim().endsWith(']')) {
+        try {
+            urls = JSON.parse(rawUrl);
+        } catch {
+            urls = rawUrl.split(',').map(s => s.trim());
         }
-    }, [msg.attachment_url]);
-
-    const isImage = msg.attachment_type?.startsWith('image/') || msg.attachment_name?.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg|heic)$/i);
-
-    const formatSize = (bytes?: number) => {
-        if (!bytes) return '';
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    } else {
+        urls = rawUrl.split(',').map(s => s.trim());
     }
 
+    let names: string[] = [];
+    if (rawName && rawName.trim()) {
+        if (rawName.trim().startsWith('[') && rawName.trim().endsWith(']')) {
+            try {
+                names = JSON.parse(rawName);
+            } catch {
+                names = rawName.split(',').map(s => s.trim());
+            }
+        } else {
+            names = rawName.split(',').map(s => s.trim());
+        }
+    }
+
+    let types: string[] = [];
+    if (rawType && rawType.trim()) {
+        if (rawType.trim().startsWith('[') && rawType.trim().endsWith(']')) {
+            try {
+                types = JSON.parse(rawType);
+            } catch {
+                types = rawType.split(',').map(s => s.trim());
+            }
+        } else {
+            types = rawType.split(',').map(s => s.trim());
+        }
+    }
+
+    return urls.filter(Boolean).map((u, idx) => {
+        const itemType = types[idx] || (types.length === 1 ? types[0] : '') || '';
+        const itemName = names[idx] || (names.length === 1 && urls.length === 1 ? names[0] : '') || (u.startsWith('tg://') ? `attachment_${idx + 1}` : u.split('/').pop() || `file_${idx + 1}`);
+        const isImg = itemType.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp|heic)$/i.test(itemName) || /\.(jpeg|jpg|png|gif|webp|svg|bmp|heic)$/i.test(u);
+        return {
+            url: u,
+            name: itemName,
+            type: itemType,
+            isImage: isImg
+        };
+    });
+}
+
+const SingleAttachmentItem = ({ att, isUser, isChat }: { att: ParsedAttachment, isUser: boolean, isChat: boolean }) => {
+    const [realUrl, setRealUrl] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+    useEffect(() => {
+        if (!att.url) return;
+        if (att.url.startsWith('tg://')) {
+            setIsLoading(true);
+            getFileUrlFromTelegram(att.url).then(url => {
+                if (url && url !== '__NOT_FOUND__' && url !== '__TOO_LARGE__') {
+                    setRealUrl(url);
+                }
+            }).finally(() => {
+                setIsLoading(false);
+            });
+        } else {
+            setRealUrl(att.url);
+        }
+    }, [att.url]);
 
     const renderPreviewModal = () => {
         return createPortal(
@@ -52,8 +149,8 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
                         <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsPreviewOpen(false); }} className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[100000]">
                             <X className="w-6 h-6" />
                         </button>
-                        <img src={realUrl} alt={msg.attachment_name || 'Preview'} className="max-w-full max-h-full object-contain pointer-events-auto" onClick={(e) => e.stopPropagation()} />
-                        <a href={realUrl} download={msg.attachment_name || 'attachment'} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 p-3 bg-blue-600/90 text-white rounded-full hover:bg-blue-600 shadow-lg flex items-center gap-2 transition-all hover:scale-105 z-[100000]" onClick={(e) => e.stopPropagation()}>
+                        <img src={realUrl} alt={att.name || 'Preview'} className="max-w-full max-h-full object-contain pointer-events-auto rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+                        <a href={realUrl} download={att.name || 'attachment'} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 p-3 bg-blue-600/90 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center gap-2 transition-all hover:scale-105 z-[100000]" onClick={(e) => e.stopPropagation()}>
                             <Download className="w-5 h-5" />
                             <span className="hidden sm:inline font-medium pr-1">Download</span>
                         </a>
@@ -67,25 +164,39 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
     if (isChat) {
         return (
             <>
-            <div className={`flex items-center gap-2 mt-2 p-1.5 pr-3 rounded-lg border w-fit ${isUser ? 'bg-blue-700/50 border-blue-500/30 hover:bg-blue-600/60' : 'bg-neutral-50 dark:bg-white/5 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/10'} transition-colors cursor-pointer group`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); realUrl && (isImage ? setIsPreviewOpen(true) : window.open(realUrl, '_blank')); }}>
-                <div className={`w-10 h-10 rounded overflow-hidden flex items-center justify-center shrink-0 relative ${isUser ? 'bg-blue-500/50 text-white' : 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'}`}>
-                    {isImage && realUrl ? (
+            <div 
+                className={`flex items-center gap-2 p-1.5 pr-2.5 rounded-lg border max-w-full transition-all cursor-pointer group shadow-sm ${
+                    isUser 
+                        ? 'bg-blue-700/50 hover:bg-blue-600/60 border-blue-500/30 text-white' 
+                        : 'bg-neutral-50 dark:bg-white/5 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-900 dark:text-white'
+                }`} 
+                onClick={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    if (realUrl) {
+                        if (att.isImage) setIsPreviewOpen(true);
+                        else window.open(realUrl, '_blank');
+                    }
+                }}
+            >
+                <div className={`w-9 h-9 rounded-md overflow-hidden flex items-center justify-center shrink-0 relative ${isUser ? 'bg-blue-500/40 text-white' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
+                    {att.isImage && realUrl ? (
                          <>
-                         <img src={realUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="thumbnail" />
-                         <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Eye className="w-4 h-4 text-white" />
+                         <img src={realUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="thumbnail" />
+                         <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Eye className="w-3.5 h-3.5 text-white drop-shadow" />
                          </div>
                          </>
-                    ) : isImage ? (
-                         <Loader2 className="w-4 h-4 animate-spin opacity-50" />
+                    ) : isLoading ? (
+                         <Loader2 className="w-4 h-4 animate-spin opacity-60" />
                     ) : (
                          <FileText className="w-4 h-4" />
                     )}
                 </div>
-                <div className="flex flex-col max-w-[120px]">
-                    <span className={`text-xs font-medium truncate ${isUser ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{msg.attachment_name || 'File'}</span>
-                    <span className={`text-[10px] truncate opacity-70 ${isUser ? 'text-blue-100' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                        {msg.attachment_type?.split('/')[1]?.toUpperCase() || 'FILE'}
+                <div className="flex flex-col min-w-0 flex-1 py-0.5">
+                    <span className={`text-[11.5px] font-medium truncate ${isUser ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{att.name || 'File'}</span>
+                    <span className={`text-[9.5px] truncate font-medium ${isUser ? 'text-blue-100/80' : 'text-neutral-400 dark:text-neutral-500'}`}>
+                        {att.isImage ? 'CLICK TO VIEW' : (att.type?.split('/')[1]?.toUpperCase() || 'FILE')}
                     </span>
                 </div>
             </div>
@@ -95,33 +206,73 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
     }
 
     return (
-         <>
-         <div className={`flex items-center gap-3 p-2 pr-4 rounded-xl border w-fit mt-3 transition-colors cursor-pointer group ${isUser ? 'bg-neutral-50 dark:bg-black/20 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-black/40' : 'bg-neutral-50 dark:bg-white/5 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/10'}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); realUrl && (isImage ? setIsPreviewOpen(true) : window.open(realUrl, '_blank')); }}>
-             <div className={`w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 relative`}>
-                 {isImage && realUrl ? (
-                      <>
-                      <img src={realUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="thumbnail" />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Eye className="w-5 h-5 text-white" />
-                      </div>
-                      </>
-                 ) : isImage ? (
-                      <Loader2 className="w-5 h-5 animate-spin opacity-50" />
-                 ) : (
-                      <FileText className="w-5 h-5" />
-                 )}
-             </div>
-             <div className="flex flex-col flex-1 min-w-[120px]">
-                 <span className={`text-sm font-medium max-w-[150px] md:max-w-[200px] truncate text-neutral-900 dark:text-white`}>{msg.attachment_name || 'File Attachment'}</span>
-                 <span className={`text-[11px] text-neutral-500 truncate`}>
-                     {msg.attachment_type?.split('/')[1]?.toUpperCase() || 'FILE'}
-                 </span>
-             </div>
-         </div>
-         {renderPreviewModal()}
-         </>
+        <>
+        <div 
+            className={`flex items-center gap-3 p-2 pr-3.5 rounded-xl border transition-all cursor-pointer group shadow-sm ${
+                isUser 
+                    ? 'bg-neutral-50/90 dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/80' 
+                    : 'bg-neutral-50/90 dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/80'
+            }`} 
+            onClick={(e) => { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                if (realUrl) {
+                    if (att.isImage) setIsPreviewOpen(true);
+                    else window.open(realUrl, '_blank');
+                }
+            }}
+        >
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 relative">
+                {att.isImage && realUrl ? (
+                     <>
+                     <img src={realUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="thumbnail" />
+                     <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Eye className="w-4 h-4 text-white drop-shadow" />
+                     </div>
+                     </>
+                ) : isLoading ? (
+                     <Loader2 className="w-4 h-4 animate-spin opacity-60" />
+                ) : (
+                     <FileText className="w-4 h-4" />
+                )}
+            </div>
+            <div className="flex flex-col flex-1 min-w-0 py-0.5">
+                <span className="text-[12.5px] font-semibold truncate text-neutral-900 dark:text-neutral-100">{att.name || 'File Attachment'}</span>
+                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium truncate uppercase mt-0.5">
+                    {att.isImage ? 'CLICK TO VIEW' : (att.type?.split('/')[1] || 'FILE')}
+                </span>
+            </div>
+            <div className="shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors">
+                <Download className="w-3.5 h-3.5" />
+            </div>
+        </div>
+        {renderPreviewModal()}
+        </>
     );
-}
+};
+
+const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUser: boolean, isChat: boolean }) => {
+    const attachments = parseSupportAttachments(msg.attachment_url, msg.attachment_name, msg.attachment_type);
+    if (attachments.length === 0) return null;
+
+    if (isChat) {
+        return (
+            <div className={`mt-2 ${attachments.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-1.5 min-w-[200px]' : 'flex flex-col gap-1.5'}`}>
+                {attachments.map((att, index) => (
+                    <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={true} />
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className={`mt-3 ${attachments.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl w-full' : 'flex flex-wrap gap-2 w-fit'}`}>
+            {attachments.map((att, index) => (
+                <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={false} />
+            ))}
+        </div>
+    );
+};
 
 export const EMAIL_TEMPLATES = [
     {
@@ -163,34 +314,69 @@ export const EMAIL_TEMPLATES = [
 function htmlToMarkdown(html: string): string {
     if (!html) return '';
     if (!/<[a-z][\s\S]*>/i.test(html)) return html.trim();
-    let text = html;
-    text = text.replace(/<div><br><\/div>/gi, '\n');
-    text = text.replace(/<div>/gi, '\n');
-    text = text.replace(/<\/div>/gi, '');
-    text = text.replace(/<p>/gi, '');
-    text = text.replace(/<\/p>/gi, '\n\n');
-    text = text.replace(/<b>(.*?)<\/b>/gi, '**$1**');
-    text = text.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
-    text = text.replace(/<i>(.*?)<\/i>/gi, '*$1*');
-    text = text.replace(/<em>(.*?)<\/em>/gi, '*$1*');
-    text = text.replace(/<u>(.*?)<\/u>/gi, '_$1_');
-    text = text.replace(/<s>(.*?)<\/s>/gi, '~$1~');
-    text = text.replace(/<strike>(.*?)<\/strike>/gi, '~$1~');
-    text = text.replace(/<h3>(.*?)<\/h3>/gi, '### $1\n');
-    text = text.replace(/<h2>(.*?)<\/h2>/gi, '## $1\n');
-    text = text.replace(/<h1>(.*?)<\/h1>/gi, '# $1\n');
-    text = text.replace(/<blockquote>(.*?)<\/blockquote>/gi, '> $1\n');
-    text = text.replace(/<pre>(.*?)<\/pre>/gi, '```\n$1\n```');
-    text = text.replace(/<ul>(.*?)<\/ul>/gi, '$1');
-    text = text.replace(/<ol>(.*?)<\/ol>/gi, '$1');
-    text = text.replace(/<li>(.*?)<\/li>/gi, '- $1\n');
-    text = text.replace(/<br\s*\/?>/gi, '\n');
-    text = text.replace(/<a [^>]*href="(.*?)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
-    text = text.replace(/&nbsp;/g, ' ');
-    text = text.replace(/&lt;/g, '<');
-    text = text.replace(/&gt;/g, '>');
-    text = text.replace(/&amp;/g, '&');
-    return text.trim();
+    try {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // Process code blocks
+        temp.querySelectorAll('pre').forEach(pre => {
+            pre.innerHTML = '\n```\n' + (pre.textContent || '') + '\n```\n';
+        });
+
+        // Process blockquotes
+        temp.querySelectorAll('blockquote').forEach(bq => {
+            bq.innerHTML = '\n> ' + (bq.textContent || '').replace(/\n/g, '\n> ') + '\n';
+        });
+
+        // Process ordered lists
+        temp.querySelectorAll('ol').forEach(ol => {
+            const items = ol.querySelectorAll(':scope > li');
+            items.forEach((li, idx) => {
+                li.innerHTML = `\n${idx + 1}. ${li.innerHTML.trim()}\n`;
+            });
+        });
+
+        // Process unordered lists
+        temp.querySelectorAll('ul').forEach(ul => {
+            const items = ul.querySelectorAll(':scope > li');
+            items.forEach(li => {
+                li.innerHTML = `\n- ${li.innerHTML.trim()}\n`;
+            });
+        });
+
+        let text = temp.innerHTML;
+        text = text.replace(/<div><br><\/div>/gi, '\n');
+        text = text.replace(/<div>/gi, '\n');
+        text = text.replace(/<\/div>/gi, '');
+        text = text.replace(/<p>/gi, '');
+        text = text.replace(/<\/p>/gi, '\n\n');
+        text = text.replace(/<b>(.*?)<\/b>/gi, '**$1**');
+        text = text.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+        text = text.replace(/<i>(.*?)<\/i>/gi, '*$1*');
+        text = text.replace(/<em>(.*?)<\/em>/gi, '*$1*');
+        text = text.replace(/<u>(.*?)<\/u>/gi, '_$1_');
+        text = text.replace(/<s>(.*?)<\/s>/gi, '~$1~');
+        text = text.replace(/<strike>(.*?)<\/strike>/gi, '~$1~');
+        text = text.replace(/<del>(.*?)<\/del>/gi, '~$1~');
+        text = text.replace(/<h3>(.*?)<\/h3>/gi, '\n### $1\n');
+        text = text.replace(/<h2>(.*?)<\/h2>/gi, '\n## $1\n');
+        text = text.replace(/<h1>(.*?)<\/h1>/gi, '\n# $1\n');
+        text = text.replace(/<ul>/gi, '\n');
+        text = text.replace(/<\/ul>/gi, '\n');
+        text = text.replace(/<ol>/gi, '\n');
+        text = text.replace(/<\/ol>/gi, '\n');
+        text = text.replace(/<li>/gi, '- ');
+        text = text.replace(/<\/li>/gi, '\n');
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<a [^>]*href="(.*?)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+        text = text.replace(/&nbsp;/g, ' ');
+        text = text.replace(/&lt;/g, '<');
+        text = text.replace(/&gt;/g, '>');
+        text = text.replace(/&amp;/g, '&');
+        return text.trim();
+    } catch {
+        return html.trim();
+    }
 }
 
 export const SupportView: React.FC<{ 
@@ -232,8 +418,17 @@ export const SupportView: React.FC<{
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [isDeletingMsg, setIsDeletingMsg] = useState(false);
 
+  // AI Refinement & Portals State
+  const [selectedAiModel, setSelectedAiModel] = useState<string>(() => {
+      return localStorage.getItem('support-ai-model') || KNOWN_MODELS[0];
+  });
+  const [isRefining, setIsRefining] = useState<boolean>(false);
+  const [templateBtnRect, setTemplateBtnRect] = useState<DOMRect | null>(null);
+
   const richEditorRef = useRef<HTMLDivElement>(null);
   const createTicketEditorRef = useRef<HTMLDivElement>(null);
+  const createTemplateBtnRef = useRef<HTMLButtonElement>(null);
+  const replyTemplateBtnRef = useRef<HTMLButtonElement>(null);
 
   const [activeFormats, setActiveFormats] = useState<{
       bold?: boolean;
@@ -346,6 +541,51 @@ export const SupportView: React.FC<{
           setNewMessage(activeRef.current.innerHTML);
       }
       setTimeout(checkActiveFormats, 10);
+  };
+
+  const handleRefineWithAI = async () => {
+      const activeRef = isComposing ? createTicketEditorRef : richEditorRef;
+      const rawContent = activeRef.current?.innerText || (activeRef.current?.innerHTML ? htmlToMarkdown(activeRef.current.innerHTML) : '') || newMessage || '';
+      if (!rawContent.trim()) {
+          addToast("Please write a draft message first to refine with AI.", "info");
+          return;
+      }
+
+      setIsRefining(true);
+      try {
+          const ai = getAiClient();
+          const systemInstruction = `You are a professional writing and customer support assistant.
+Your task is to refine, polish, and structure the user's draft message for a support ticket or reply.
+Guidelines:
+1. Accurately preserve all issue details, questions, error codes, and user intent.
+2. Elevate tone to be clear, polite, structured, and professional.
+3. Structure with clean formatting, short paragraphs, and markdown bullet points (- list item) or numbered lists (1. list item) if there are multiple steps or details.
+4. Correct all grammar, spelling, and sentence structure.
+5. Return ONLY the refined message content. Do NOT include conversational commentary, meta text, or introductory notes like "Here is your refined draft:".`;
+
+          const response = await ai.models.generateContent({
+              model: selectedAiModel,
+              contents: rawContent.trim(),
+              config: {
+                  systemInstruction,
+                  temperature: 0.3
+              }
+          });
+
+          const refinedText = response.text?.trim();
+          if (refinedText) {
+              setNewMessage(refinedText);
+              if (activeRef.current) {
+                  activeRef.current.innerText = refinedText;
+              }
+              addToast("Draft refined successfully with AI!", "success");
+          }
+      } catch (err: any) {
+          console.error("Failed to refine with AI:", err);
+          addToast(err?.message || "Failed to refine with AI. Please check your API key.", "error");
+      } finally {
+          setIsRefining(false);
+      }
   };
 
   const insertFormatting = (type: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'h3' | 'list' | 'orderedList' | 'quote' | 'code' | 'link' | 'clear') => {
@@ -525,7 +765,14 @@ export const SupportView: React.FC<{
   useEffect(() => {
     if (user?.id) {
       loadConversations();
-      const unsub = supportService.subscribeToConversations(user.id, (updatedConvo) => {
+      const unsub = supportService.subscribeToConversations(user.id, (payload) => {
+          if (payload?.eventType === 'DELETE' && payload?.table === 'support_conversations') {
+              const deletedId = payload.old?.id;
+              if (deletedId) {
+                  setConversations(prev => prev.filter(c => c.id !== deletedId));
+                  setActiveConversation(prev => prev?.id === deletedId ? null : prev);
+              }
+          }
           // Simply reload to get updated unread counts safely without closure staleness
           loadConversations(true);
       });
@@ -810,9 +1057,15 @@ export const SupportView: React.FC<{
 
         await supportService.sendMessage(convoId, user.id, newMessage, attachmentData);
         setNewMessage('');
+        if (richEditorRef.current) {
+            richEditorRef.current.innerHTML = '';
+        }
+        if (createTicketEditorRef.current) {
+            createTicketEditorRef.current.innerHTML = '';
+        }
         setAttachment(null);
         setIsUploadingAttachment(false);
-        setIsComposing(false);
+        setIsReplying(true);
         setTimeout(() => scrollToBottom(true), 50);
       }
     } catch (e) {
@@ -1103,7 +1356,7 @@ export const SupportView: React.FC<{
             {/* Chat/Form Area */}
             {activeTab === 'mail' ? (
                 <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-white dark:bg-black relative">
-                    <div ref={messagesContainerRef} className={`flex-1 w-full p-4 md:p-6 pt-[76px] md:pt-[56px] pb-2 ${!activeConversation ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+                    <div ref={messagesContainerRef} className={`flex-1 w-full ${!activeConversation ? 'p-4 md:p-6 pt-[76px] md:pt-[56px] pb-2 overflow-hidden flex flex-col' : 'px-2.5 sm:px-4 md:px-5 py-4 pt-[76px] md:pt-[56px] pb-2 overflow-y-auto'}`}>
                         {!activeConversation ? (
                             <div className="w-full max-w-full mx-auto flex flex-col h-full bg-white dark:bg-black overflow-hidden py-2 md:py-0">
                                 {/* Compose Header */}
@@ -1198,60 +1451,138 @@ export const SupportView: React.FC<{
 
                                         <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Attach file"><Paperclip className="w-4 h-4" /></button>
                                         
-                                        <div className="relative">
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setShowTemplatesList(!showTemplatesList)}
-                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors flex items-center justify-center" 
-                                                title="Insert Template"
-                                            >
-                                                <Braces className="w-4 h-4" />
-                                            </button>
-                                            <AnimatePresence>
-                                                {showTemplatesList && (
+                                        <button 
+                                            type="button" 
+                                            ref={createTemplateBtnRef}
+                                            onClick={() => {
+                                                if (createTemplateBtnRef.current) {
+                                                    setTemplateBtnRect(createTemplateBtnRef.current.getBoundingClientRect());
+                                                }
+                                                setShowTemplatesList(!showTemplatesList);
+                                            }}
+                                            className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors flex items-center justify-center" 
+                                            title="Insert Template"
+                                        >
+                                            <Braces className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                        <div className="relative min-w-0 max-w-[140px] sm:max-w-[170px]">
+                                            <CustomDropdown
+                                                options={KNOWN_MODELS}
+                                                value={selectedAiModel}
+                                                onChange={(val) => {
+                                                    setSelectedAiModel(val);
+                                                    localStorage.setItem('support-ai-model', val);
+                                                }}
+                                                triggerClassName="!h-[28px] !p-1 !px-2 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg !text-[10.5px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow shadow-sm truncate"
+                                            />
+                                        </div>
+
+                                        <motion.button 
+                                            layout
+                                            type="button"
+                                            whileHover={!isRefining && (newMessage.trim() || createTicketEditorRef.current?.innerText?.trim()) ? { scale: 1.05 } : {}}
+                                            whileTap={!isRefining && (newMessage.trim() || createTicketEditorRef.current?.innerText?.trim()) ? { scale: 0.95 } : {}}
+                                            onClick={handleRefineWithAI}
+                                            disabled={isRefining}
+                                            title="Refine draft with AI"
+                                            className={`relative overflow-hidden flex items-center justify-center transition-all rounded-full font-medium text-[12px] h-[32px] w-[32px] p-0 shrink-0 border ${
+                                                isRefining 
+                                                    ? 'bg-neutral-900 border-transparent text-white cursor-wait shadow-sm scale-[0.98]' 
+                                                    : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 shadow-sm'
+                                            }`}
+                                        >
+                                            <AnimatePresence mode="wait">
+                                                {isRefining ? (
                                                     <motion.div 
-                                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                        className="absolute bottom-full left-0 mb-2 w-64 md:w-80 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                                                        key="generating"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="flex flex-row items-center justify-center z-10 w-full"
                                                     >
-                                                        <div className="max-h-[320px] overflow-y-auto custom-scrollbar py-2">
-                                                            {EMAIL_TEMPLATES.map((cat, i) => (
-                                                                <div key={i} className="mb-2 last:mb-0">
-                                                                    <div className="px-4 py-1.5 text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{cat.category}</div>
-                                                                    {cat.items.map((item, j) => (
-                                                                        <button
-                                                                            key={j}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setNewSubject(item.subject);
-                                                                                setNewMessage(item.content);
-                                                                                setShowTemplatesList(false);
-                                                                            }}
-                                                                            className="w-full text-left px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors group flex items-start gap-3"
-                                                                        >
-                                                                            <div className="flex-1 flex flex-col pt-0.5">
-                                                                                <span className="text-[13px] font-semibold text-neutral-900 dark:text-white leading-snug mb-0.5">{item.name}</span>
-                                                                                <span className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">{item.subject}</span>
-                                                                            </div>
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            ))}
+                                                        <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full" />
+                                                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full" />
+                                                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.4 }} className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full" />
                                                         </div>
+                                                    </motion.div>
+                                                ) : (
+                                                    <motion.div 
+                                                        key="idle"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="flex flex-row items-center justify-center z-10"
+                                                    >
+                                                        <CustomAiSparkleIcon className="w-5 h-5" />
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
-                                        </div>
+                                            
+                                            {isRefining && (
+                                                <div className="absolute inset-0 z-0 bg-slate-950 overflow-hidden pointer-events-none rounded-full">
+                                                    <motion.div 
+                                                        className="absolute mix-blend-screen filter blur-[8px] opacity-90 rounded-full"
+                                                        style={{ width: '140%', height: '200%', background: '#38bdf8', left: '-25%', top: '-50%' }}
+                                                        animate={{ 
+                                                            x: ['0%', '15%', '-5%', '0%'], 
+                                                            y: ['0%', '25%', '-10%', '0%'],
+                                                            scale: [1, 1.25, 0.9, 1],
+                                                            rotate: [0, 90, 180, 360]
+                                                        }}
+                                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                                    />
+                                                    <motion.div 
+                                                        className="absolute mix-blend-screen filter blur-[10px] opacity-80 rounded-full"
+                                                        style={{ width: '120%', height: '160%', background: '#818cf8', right: '-20%', bottom: '-40%' }}
+                                                        animate={{ 
+                                                            x: ['0%', '-15%', '5%', '0%'], 
+                                                            y: ['0%', '-20%', '10%', '0%'],
+                                                            scale: [1, 1.15, 0.95, 1],
+                                                            rotate: [0, -90, -180, -360]
+                                                        }}
+                                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </motion.button>
+
+                                        <button 
+                                            type="button"
+                                            onClick={handleSendMessage}
+                                            disabled={sending || (!newMessage.trim() && !attachment) || !newSubject.trim()}
+                                            className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border shadow-sm bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <AnimatePresence mode="wait">
+                                                {sending ? (
+                                                    <motion.div 
+                                                        key="sending"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="flex flex-row items-center justify-center z-10 w-full"
+                                                    >
+                                                        <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full" />
+                                                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full" />
+                                                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.4 }} className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full" />
+                                                        </div>
+                                                    </motion.div>
+                                                ) : (
+                                                    <motion.div key="send" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex items-center gap-1.5">
+                                                        <Send className="w-3.5 h-3.5" />
+                                                        <span>{isUploadingAttachment ? 'Uploading...' : 'Send'}</span>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </button>
                                     </div>
-                                    <button 
-                                        onClick={handleSendMessage}
-                                        disabled={sending || (!newMessage.trim() && !attachment) || !newSubject.trim()}
-                                        className="px-6 py-2 bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm shrink-0"
-                                    >
-                                        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                        {sending && isUploadingAttachment ? 'Uploading...' : 'Send Ticket'}
-                                    </button>
                                 </div>
                             </div>
                         ) : (
@@ -1281,8 +1612,8 @@ export const SupportView: React.FC<{
                                    return (
                                        <div 
                                            key={msg.id} 
-                                           className={`w-full pb-4 mb-4 border-b border-neutral-100 dark:border-neutral-800/60 last:border-0 last:mb-0 last:pb-0 ${
-                                               !isUser ? 'pl-2 border-l border-l-indigo-500' : 'pl-2 border-l border-l-neutral-200 dark:border-l-neutral-700'
+                                           className={`w-full pb-3.5 mb-3.5 border-b border-neutral-100 dark:border-neutral-800/60 last:border-0 last:mb-0 last:pb-0 ${
+                                               !isUser ? 'pl-2.5 sm:pl-3 border-l-2 border-l-indigo-500' : 'pl-2.5 sm:pl-3 border-l-2 border-l-neutral-300 dark:border-l-neutral-700'
                                            }`}
                                        >
                                            <div className="flex items-start gap-3 p-0 mb-2">
@@ -1392,8 +1723,8 @@ export const SupportView: React.FC<{
                                                    </div>
                                                </div>
                                            ) : (
-                                               <div className="mt-3 text-[13px] sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed markdown-body [&_p]:whitespace-pre-wrap [&_li]:whitespace-pre-wrap [&_blockquote]:whitespace-pre-wrap [&_pre]:whitespace-pre-wrap">
-                                                   <ReactMarkdown>{msg.message}</ReactMarkdown>
+                                               <div className="mt-3 text-[14px] sm:text-[15px] text-neutral-800 dark:text-neutral-200 leading-[1.7] markdown-body">
+                                                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{msg.message}</ReactMarkdown>
                                                </div>
                                            )}
 
@@ -1461,7 +1792,18 @@ export const SupportView: React.FC<{
                                                     <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Insert Image">
                                                         <ImageIcon className="w-4 h-4" /> <span className="hidden md:inline">Image</span>
                                                     </button>
-                                                    <button type="button" onClick={() => setShowTemplatesList(!showTemplatesList)} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Use Template">
+                                                    <button 
+                                                        type="button" 
+                                                        ref={replyTemplateBtnRef}
+                                                        onClick={() => {
+                                                            if (replyTemplateBtnRef.current) {
+                                                                setTemplateBtnRect(replyTemplateBtnRef.current.getBoundingClientRect());
+                                                            }
+                                                            setShowTemplatesList(!showTemplatesList);
+                                                        }} 
+                                                        className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" 
+                                                        title="Use Template"
+                                                    >
                                                         <Braces className="w-4 h-4" /> <span className="hidden md:inline">Template</span>
                                                     </button>
                                                     <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 sm:mx-1 shrink-0"></div>
@@ -1517,59 +1859,123 @@ export const SupportView: React.FC<{
                                                      </div>
                                                   )}
                                              </div>
-                                             <div className="py-2 flex items-center justify-between px-3">
-                                                <div className="relative">
-                                                    <button type="button" onClick={() => setShowTemplatesList(!showTemplatesList)} className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-800 dark:text-neutral-200 text-sm font-medium rounded-lg transition-colors">Use Template</button>
-                                                    <AnimatePresence>
-                                                        {showTemplatesList && (
-                                                            <motion.div
-                                                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                className="absolute bottom-full left-0 mb-2 w-64 md:w-80 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-[100]"
-                                                            >
-                                                                <div className="max-h-[320px] overflow-y-auto custom-scrollbar py-2">
-                                                                    {EMAIL_TEMPLATES.map((cat, i) => (
-                                                                        <div key={i} className="mb-2 last:mb-0">
-                                                                            <div className="px-4 py-1.5 text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{cat.category}</div>
-                                                                            {cat.items.map((item, j) => (
-                                                                                <button
-                                                                                    key={j}
-                                                                                    type="button"
-                                                                                    onClick={() => {
-                                                                                        setNewSubject(item.subject);
-                                                                                        setNewMessage(item.content);
-                                                                                        if (createTicketEditorRef.current) {
-                                                                                            createTicketEditorRef.current.innerHTML = item.content;
-                                                                                        }
-                                                                                        if (richEditorRef.current) {
-                                                                                            richEditorRef.current.innerHTML = item.content;
-                                                                                        }
-                                                                                        setShowTemplatesList(false);
-                                                                                    }}
-                                                                                    className="w-full text-left px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors group flex items-start gap-3"
-                                                                                >
-                                                                                    <div className="flex-1 flex flex-col pt-0.5">
-                                                                                        <span className="text-[13px] font-semibold text-neutral-900 dark:text-white leading-snug mb-0.5">{item.name}</span>
-                                                                                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">{item.subject}</span>
-                                                                                    </div>
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                                <button 
-                                                    onClick={e => { handleSendMessage(e); setIsReplying(false); }}
-                                                    disabled={sending || (!newMessage.trim() && !attachment)}
-                                                    className="px-8 py-2.5 bg-[#4c5add] hover:bg-[#3a45b8] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
-                                                >
-                                                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                                    {sending && isUploadingAttachment ? 'Uploading...' : 'Send Reply'}
-                                                </button>
+                                             <div className="py-2.5 flex items-center justify-between px-3 border-t border-neutral-100 dark:border-neutral-800/60 bg-neutral-50/50 dark:bg-neutral-950/30">
+                                                 <div className="relative min-w-0 max-w-[140px] sm:max-w-[170px]">
+                                                     <CustomDropdown
+                                                         options={KNOWN_MODELS}
+                                                         value={selectedAiModel}
+                                                         onChange={(val) => {
+                                                             setSelectedAiModel(val);
+                                                             localStorage.setItem('support-ai-model', val);
+                                                         }}
+                                                         triggerClassName="!h-[28px] !p-1 !px-2 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg !text-[10.5px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow shadow-sm truncate"
+                                                     />
+                                                 </div>
+
+                                                 <div className="flex items-center gap-2 shrink-0">
+                                                     <motion.button 
+                                                         layout
+                                                         type="button"
+                                                         whileHover={!isRefining && (newMessage.trim() || richEditorRef.current?.innerText?.trim()) ? { scale: 1.05 } : {}}
+                                                         whileTap={!isRefining && (newMessage.trim() || richEditorRef.current?.innerText?.trim()) ? { scale: 0.95 } : {}}
+                                                         onClick={handleRefineWithAI}
+                                                         disabled={isRefining}
+                                                         title="Refine draft with AI"
+                                                         className={`relative overflow-hidden flex items-center justify-center transition-all rounded-full font-medium text-[12px] h-[32px] w-[32px] p-0 shrink-0 border ${
+                                                             isRefining 
+                                                                 ? 'bg-neutral-900 border-transparent text-white cursor-wait shadow-sm scale-[0.98]' 
+                                                                 : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 shadow-sm'
+                                                         }`}
+                                                     >
+                                                         <AnimatePresence mode="wait">
+                                                             {isRefining ? (
+                                                                 <motion.div 
+                                                                     key="generating"
+                                                                     initial={{ opacity: 0 }}
+                                                                     animate={{ opacity: 1 }}
+                                                                     exit={{ opacity: 0 }}
+                                                                     transition={{ duration: 0.15 }}
+                                                                     className="flex flex-row items-center justify-center z-10 w-full"
+                                                                 >
+                                                                     <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                                                         <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full" />
+                                                                         <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full" />
+                                                                         <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.4 }} className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full" />
+                                                                     </div>
+                                                                 </motion.div>
+                                                             ) : (
+                                                                 <motion.div 
+                                                                     key="idle"
+                                                                     initial={{ opacity: 0 }}
+                                                                     animate={{ opacity: 1 }}
+                                                                     exit={{ opacity: 0 }}
+                                                                     transition={{ duration: 0.15 }}
+                                                                     className="flex flex-row items-center justify-center z-10"
+                                                                 >
+                                                                     <CustomAiSparkleIcon className="w-5 h-5" />
+                                                                 </motion.div>
+                                                             )}
+                                                         </AnimatePresence>
+                                                         
+                                                         {isRefining && (
+                                                             <div className="absolute inset-0 z-0 bg-slate-950 overflow-hidden pointer-events-none rounded-full">
+                                                                 <motion.div 
+                                                                     className="absolute mix-blend-screen filter blur-[8px] opacity-90 rounded-full"
+                                                                     style={{ width: '140%', height: '200%', background: '#38bdf8', left: '-25%', top: '-50%' }}
+                                                                     animate={{ 
+                                                                         x: ['0%', '15%', '-5%', '0%'], 
+                                                                         y: ['0%', '25%', '-10%', '0%'],
+                                                                         scale: [1, 1.25, 0.9, 1],
+                                                                         rotate: [0, 90, 180, 360]
+                                                                     }}
+                                                                     transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                                                 />
+                                                                 <motion.div 
+                                                                     className="absolute mix-blend-screen filter blur-[10px] opacity-80 rounded-full"
+                                                                     style={{ width: '120%', height: '160%', background: '#818cf8', right: '-20%', bottom: '-40%' }}
+                                                                     animate={{ 
+                                                                         x: ['0%', '-15%', '5%', '0%'], 
+                                                                         y: ['0%', '-20%', '10%', '0%'],
+                                                                         scale: [1, 1.15, 0.95, 1],
+                                                                         rotate: [0, -90, -180, -360]
+                                                                     }}
+                                                                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                                                 />
+                                                             </div>
+                                                         )}
+                                                     </motion.button>
+
+                                                    <button 
+                                                        type="button"
+                                                        onClick={handleSendMessage}
+                                                        disabled={sending || (!newMessage.trim() && !attachment)}
+                                                        className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border shadow-sm bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                         <AnimatePresence mode="wait">
+                                                             {sending ? (
+                                                                 <motion.div 
+                                                                     key="sending"
+                                                                     initial={{ opacity: 0 }}
+                                                                     animate={{ opacity: 1 }}
+                                                                     exit={{ opacity: 0 }}
+                                                                     transition={{ duration: 0.15 }}
+                                                                     className="flex flex-row items-center justify-center z-10 w-full"
+                                                                 >
+                                                                     <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                                                         <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full" />
+                                                                         <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full" />
+                                                                         <motion.div animate={{ y: [0, -2, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.4 }} className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full" />
+                                                                     </div>
+                                                                 </motion.div>
+                                                             ) : (
+                                                                 <motion.div key="send" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex items-center gap-1.5">
+                                                                     <Send className="w-3.5 h-3.5" />
+                                                                     <span>{isUploadingAttachment ? 'Uploading...' : 'Send'}</span>
+                                                                 </motion.div>
+                                                             )}
+                                                         </AnimatePresence>
+                                                     </button>
+                                                 </div>
                                              </div>
                                         </div>
                                     )}
@@ -1766,6 +2172,61 @@ export const SupportView: React.FC<{
           >
               <Plus className="w-6 h-6" />
           </button>
+      )}
+
+      {/* Portaled Template Picker to prevent clipping */}
+      {showTemplatesList && templateBtnRect && createPortal(
+          <div className="fixed inset-0 z-[9999] overflow-hidden" onClick={() => setShowTemplatesList(false)}>
+              <div 
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                      position: 'fixed',
+                      bottom: Math.max(16, window.innerHeight - templateBtnRect.top + 8),
+                      left: Math.max(16, Math.min(templateBtnRect.left, window.innerWidth - 340)),
+                      maxWidth: 'calc(100vw - 32px)',
+                      width: 320,
+                  }}
+                  className="bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+              >
+                  <div className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                      <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 tracking-wide">Select Response Template</span>
+                      <button type="button" onClick={() => setShowTemplatesList(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
+                          <X className="w-3.5 h-3.5" />
+                      </button>
+                  </div>
+                  <div className="max-h-[280px] overflow-y-auto custom-scrollbar p-1.5 space-y-2">
+                      {EMAIL_TEMPLATES.map((cat, i) => (
+                          <div key={i} className="space-y-0.5">
+                              <div className="px-2.5 py-1 text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{cat.category}</div>
+                              {cat.items.map((item, j) => (
+                                  <button
+                                      key={j}
+                                      type="button"
+                                      onClick={() => {
+                                          if (isComposing) {
+                                              setNewSubject(item.subject);
+                                          }
+                                          setNewMessage(item.content);
+                                          if (createTicketEditorRef.current) {
+                                              createTicketEditorRef.current.innerText = item.content;
+                                          }
+                                          if (richEditorRef.current) {
+                                              richEditorRef.current.innerText = item.content;
+                                          }
+                                          setShowTemplatesList(false);
+                                      }}
+                                      className="w-full text-left px-2.5 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-lg transition-colors group flex flex-col"
+                                  >
+                                      <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{item.name}</span>
+                                      <span className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1 mt-0.5">{item.subject}</span>
+                                  </button>
+                              ))}
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </div>,
+          document.body
       )}
 
       <ConfirmationModal

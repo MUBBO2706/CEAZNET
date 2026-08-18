@@ -27,79 +27,79 @@
     }
   },
   "_summary": {
-    "totalDevices": 1,
-    "activeSessions": 1,
-    "totalSessions": 1,
-    "activeUsers": 1,
+    "totalDevices": 2,
+    "activeSessions": 2,
+    "totalSessions": 2,
+    "activeUsers": 2,
     "avgSessionTime": 3818,
     "avgSessionsPerDevice": 1,
     "privateSessions": 0,
     "locations": 1,
     "trends": {
       "totalDevices": {
-        "diff": 0,
-        "percent": 0,
+        "diff": 1,
+        "percent": 100,
         "previous": 1,
-        "isIncrease": false,
+        "isIncrease": true,
         "historicalAverage": 1,
-        "historicalDiff": 0,
-        "historicalPercent": 0,
-        "isHistIncrease": false,
+        "historicalDiff": 1,
+        "historicalPercent": 100,
+        "isHistIncrease": true,
         "min": 1,
-        "max": 1,
-        "historyCount": 3
+        "max": 2,
+        "historyCount": 4
       },
       "activeSessions": {
         "diff": 1,
-        "percent": 0,
-        "previous": 0,
+        "percent": 100,
+        "previous": 1,
         "isIncrease": true,
-        "historicalAverage": 0.5,
-        "historicalDiff": 0.5,
-        "historicalPercent": 100,
+        "historicalAverage": 0.7,
+        "historicalDiff": 1.3,
+        "historicalPercent": 200,
         "isHistIncrease": true,
         "min": 0,
-        "max": 1,
-        "historyCount": 3
+        "max": 2,
+        "historyCount": 4
       },
       "totalSessions": {
-        "diff": 0,
-        "percent": 0,
+        "diff": 1,
+        "percent": 100,
         "previous": 1,
-        "isIncrease": false,
+        "isIncrease": true,
         "historicalAverage": 1,
-        "historicalDiff": 0,
-        "historicalPercent": 0,
-        "isHistIncrease": false,
+        "historicalDiff": 1,
+        "historicalPercent": 100,
+        "isHistIncrease": true,
         "min": 1,
-        "max": 1,
-        "historyCount": 3
+        "max": 2,
+        "historyCount": 4
       },
       "activeUsers": {
-        "diff": 0,
-        "percent": 0,
+        "diff": 1,
+        "percent": 100,
         "previous": 1,
-        "isIncrease": false,
+        "isIncrease": true,
         "historicalAverage": 1,
-        "historicalDiff": 0,
-        "historicalPercent": 0,
-        "isHistIncrease": false,
+        "historicalDiff": 1,
+        "historicalPercent": 100,
+        "isHistIncrease": true,
         "min": 1,
-        "max": 1,
-        "historyCount": 3
+        "max": 2,
+        "historyCount": 4
       },
       "avgSessionTime": {
         "diff": 0,
         "percent": 0,
         "previous": 3818,
         "isIncrease": false,
-        "historicalAverage": 1909,
-        "historicalDiff": 1909,
-        "historicalPercent": 100,
+        "historicalAverage": 2545.3,
+        "historicalDiff": 1272.7,
+        "historicalPercent": 50,
         "isHistIncrease": true,
         "min": 0,
         "max": 3818,
-        "historyCount": 3
+        "historyCount": 4
       },
       "privateSessions": {
         "diff": 0,
@@ -112,7 +112,7 @@
         "isHistIncrease": false,
         "min": 0,
         "max": 0,
-        "historyCount": 3
+        "historyCount": 4
       }
     },
     "history": [
@@ -148,7 +148,45 @@
         "avgSessionsPerDevice": 1,
         "privateSessions": 0,
         "locations": 1
+      },
+      {
+        "timestamp": "2026-08-18T01:09:55.234Z",
+        "totalDevices": 2,
+        "activeSessions": 2,
+        "totalSessions": 2,
+        "activeUsers": 2,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
       }
     ]
+  },
+  "fp_54da28ad45480e067178217624170555": {
+    "deviceModel": "POCO X4 PRO 5G",
+    "accounts": {
+      "mubasshir.shaikh@outlook.in": {
+        "sessions": [
+          {
+            "sessionId": "44956da4-4dfa-49e3-bd99-1ace772f840d",
+            "username": "mubasshir.shaikh@outlook.in",
+            "startTime": "2026-08-18T01:09:55.233Z",
+            "endTime": null,
+            "location": "Jeevan Baug, Mumbra, Maharashtra, India",
+            "ip": "2402:3a80:4192:af4f:ac56:4ff:feaf:3dab",
+            "is_incognito": false,
+            "browser_name": "Mobile Chrome",
+            "browser_version": "151.0.0.0",
+            "os_name": "Android",
+            "os_version": "10",
+            "duration": 0,
+            "status": "active",
+            "lastHeartbeat": "2026-08-18T01:34:27.164Z",
+            "provider": "email"
+          }
+        ],
+        "fullName": null
+      }
+    }
   }
 }
