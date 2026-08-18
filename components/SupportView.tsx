@@ -257,7 +257,7 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
 
     if (isChat) {
         return (
-            <div className={`mt-2 ${attachments.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-1.5 min-w-[200px]' : 'flex flex-col gap-1.5'}`}>
+            <div className={`mt-2 ${attachments.length > 1 ? 'grid grid-cols-2 gap-2 min-w-[240px] max-w-md' : 'flex flex-col gap-1.5'}`}>
                 {attachments.map((att, index) => (
                     <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={true} />
                 ))}
@@ -266,11 +266,178 @@ const ResolvedAttachment = ({ msg, isUser, isChat }: { msg: SupportMessage, isUs
     }
 
     return (
-        <div className={`mt-3 ${attachments.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl w-full' : 'flex flex-wrap gap-2 w-fit'}`}>
+        <div className={`mt-3 ${attachments.length > 1 ? 'grid grid-cols-2 gap-2.5 max-w-xl w-full' : 'flex flex-wrap gap-2 w-fit'}`}>
             {attachments.map((att, index) => (
                 <SingleAttachmentItem key={`${att.url}-${index}`} att={att} isUser={isUser} isChat={false} />
             ))}
         </div>
+    );
+};
+
+const formatDraftFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const DraftFilePreviewModal: React.FC<{
+    file: File | null;
+    onClose: () => void;
+}> = ({ file, onClose }) => {
+    const [textContent, setTextContent] = useState<string | null>(null);
+    const [isLoadingText, setIsLoadingText] = useState(false);
+    const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!file) {
+            setObjectUrl(null);
+            setTextContent(null);
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        setObjectUrl(url);
+
+        const isTextLike = file.type.startsWith('text/') || 
+            /\.(txt|json|csv|md|log|js|ts|tsx|jsx|html|css|py|sql|xml|yaml|yml|env)$/i.test(file.name);
+
+        if (isTextLike && file.size < 2 * 1024 * 1024) {
+            setIsLoadingText(true);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setTextContent(e.target?.result as string);
+                setIsLoadingText(false);
+            };
+            reader.onerror = () => {
+                setTextContent("Failed to read file contents.");
+                setIsLoadingText(false);
+            };
+            reader.readAsText(file);
+        } else {
+            setTextContent(null);
+            setIsLoadingText(false);
+        }
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            URL.revokeObjectURL(url);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [file, onClose]);
+
+    if (!file) return null;
+
+    const isImage = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+
+    return createPortal(
+        <div 
+            className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            {isImage ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                        </div>
+                        <div className="min-w-0">
+                            <h3 className="text-sm font-bold text-neutral-900 dark:text-white truncate" title={file.name}>
+                                {file.name}
+                            </h3>
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                {formatDraftFileSize(file.size)} • {file.type || 'File'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {objectUrl && (
+                            <a
+                                href={objectUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={file.name}
+                                className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors text-xs flex items-center gap-1 font-medium"
+                                title="Open or download file"
+                            >
+                                <Download className="w-4 h-4" />
+                                <span className="hidden sm:inline">Save</span>
+                            </a>
+                        )}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                            title="Close Preview"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-neutral-100/50 dark:bg-black/30 min-h-[220px]">
+                    {isImage && objectUrl ? (
+                        <div className="flex flex-col items-center justify-center max-h-[75vh] w-full">
+                            <img 
+                                src={objectUrl} 
+                                alt={file.name} 
+                                className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-md border border-neutral-200 dark:border-neutral-800"
+                            />
+                        </div>
+                    ) : isPdf && objectUrl ? (
+                        <div className="w-full h-[70vh] flex flex-col">
+                            <iframe
+                                src={objectUrl}
+                                title={file.name}
+                                className="w-full h-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white"
+                            />
+                        </div>
+                    ) : textContent !== null ? (
+                        <div className="w-full max-h-[70vh] overflow-auto">
+                            <pre className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-mono text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap select-text leading-relaxed">
+                                {textContent}
+                            </pre>
+                        </div>
+                    ) : isLoadingText ? (
+                        <div className="flex items-center gap-2 text-neutral-500 py-10">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span className="text-sm font-medium">Loading file content...</span>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center text-center p-8 space-y-3">
+                            <div className="w-16 h-16 rounded-2xl bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-300">
+                                <FileText className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-neutral-900 dark:text-white">{file.name}</p>
+                                <p className="text-xs text-neutral-500 mt-1">{formatDraftFileSize(file.size)} • Preview not available for this format</p>
+                            </div>
+                            {objectUrl && (
+                                <a
+                                    href={objectUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors shadow-sm"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Open File
+                                </a>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 };
 
@@ -394,7 +561,8 @@ export const SupportView: React.FC<{
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [newSubject, setNewSubject] = useState('');
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isAttachExpanded, setIsAttachExpanded] = useState<boolean>(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -741,6 +909,7 @@ Guidelines:
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -1008,7 +1177,7 @@ Guidelines:
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !attachment) || !user) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !user) return;
 
     try {
       setSending(true);
@@ -1036,23 +1205,32 @@ Guidelines:
 
       if (convoId) {
         let attachmentData;
-        if (attachment) {
+        if (attachments.length > 0) {
             setIsUploadingAttachment(true);
-             const metadata: UploadMetadata = {
-                 userId: user?.id || 'N/A',
-                 userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'Support User',
-                 userEmail: user?.email || 'N/A',
-                 uploadedAt: new Date().toISOString(),
-                 fileType: 'SUPPORT ATTACHMENT',
-                 mimeType: attachment.type || 'N/A',
-                 fileSize: `${(attachment.size / (1024 * 1024)).toFixed(2)} MB (${attachment.size.toLocaleString()} bytes)`
-             };
-             const url = await uploadFileToTelegram(attachment, attachment.name, metadata);
-             attachmentData = {
-                 url,
-                 name: attachment.name,
-                 type: attachment.type
-             };
+            const uploadPromises = attachments.map(async (attFile) => {
+                const metadata: UploadMetadata = {
+                    userId: user?.id || 'N/A',
+                    userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'Support User',
+                    userEmail: user?.email || 'N/A',
+                    uploadedAt: new Date().toISOString(),
+                    fileType: 'SUPPORT ATTACHMENT',
+                    mimeType: attFile.type || 'N/A',
+                    fileSize: `${(attFile.size / (1024 * 1024)).toFixed(2)} MB (${attFile.size.toLocaleString()} bytes)`
+                };
+                const url = await uploadFileToTelegram(attFile, attFile.name, metadata);
+                return {
+                    url,
+                    name: attFile.name,
+                    type: attFile.type
+                };
+            });
+
+            const uploaded = await Promise.all(uploadPromises);
+            attachmentData = {
+                url: uploaded.map(u => u.url).join(','),
+                name: uploaded.map(u => u.name).join(','),
+                type: uploaded.map(u => u.type).join(',')
+            };
         }
 
         await supportService.sendMessage(convoId, user.id, newMessage, attachmentData);
@@ -1063,7 +1241,7 @@ Guidelines:
         if (createTicketEditorRef.current) {
             createTicketEditorRef.current.innerHTML = '';
         }
-        setAttachment(null);
+        setAttachments([]);
         setIsUploadingAttachment(false);
         setIsReplying(true);
         setTimeout(() => scrollToBottom(true), 50);
@@ -1079,8 +1257,10 @@ Guidelines:
 
   const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
-          setAttachment(e.target.files[0]);
+          const newFiles = Array.from(e.target.files);
+          setAttachments(prev => [...prev, ...newFiles]);
       }
+      e.target.value = '';
   };
 
   const filteredConversations = conversations.filter(c => c.type === activeTab);
@@ -1358,17 +1538,17 @@ Guidelines:
                 <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-white dark:bg-black relative">
                     <div ref={messagesContainerRef} className={`flex-1 w-full ${!activeConversation ? 'p-4 md:p-6 pt-[76px] md:pt-[56px] pb-2 overflow-hidden flex flex-col' : 'px-2.5 sm:px-4 md:px-5 py-4 pt-[76px] md:pt-[56px] pb-2 overflow-y-auto'}`}>
                         {!activeConversation ? (
-                            <div className="w-full max-w-full mx-auto flex flex-col h-full bg-white dark:bg-black overflow-hidden py-2 md:py-0">
+                            <div className="w-full max-w-full mx-auto flex flex-col h-full bg-white dark:bg-black overflow-hidden py-1 md:py-0 px-2 sm:px-3 md:px-4">
                                 {/* Compose Header */}
-                                <div className="pb-6 border-b border-neutral-200 dark:border-white/10 px-4 md:px-0 flex-shrink-0">
+                                <div className="pb-4 sm:pb-6 border-b border-neutral-200 dark:border-white/10 px-2 md:px-0 flex-shrink-0">
                                     <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Create Ticket</h2>
                                     <p className="text-neutral-500 mt-1">Submit a new support request</p>
                                 </div>
-                                <div className="py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm px-4 md:px-0 flex-shrink-0">
+                                <div className="py-3 sm:py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm px-2 md:px-0 flex-shrink-0">
                                     <span className="text-neutral-400 w-16">To</span>
                                     <span className="bg-neutral-100 dark:bg-white/10 px-2 py-1 rounded-md text-neutral-700 dark:text-neutral-200 font-medium">Support Team</span>
                                 </div>
-                                <div className="py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm px-4 md:px-0 flex-shrink-0">
+                                <div className="py-3 sm:py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm px-2 md:px-0 flex-shrink-0">
                                     <span className="text-neutral-400 w-16">Subject</span>
                                     <input 
                                         type="text" 
@@ -1378,7 +1558,7 @@ Guidelines:
                                         onChange={(e) => setNewSubject(e.target.value)}
                                     />
                                 </div>
-                                 <div className="py-4 flex flex-col gap-4 flex-1 px-4 md:px-0 overflow-y-auto custom-scrollbar relative">
+                                 <div className="py-3 sm:py-4 flex flex-col gap-3 flex-1 px-2 md:px-0 overflow-y-auto custom-scrollbar relative">
                                      <div
                                          ref={createTicketEditorRef}
                                          contentEditable
@@ -1405,31 +1585,54 @@ Guidelines:
                                      {(!newMessage || !newMessage.trim()) && (
                                          <div
                                              onClick={() => createTicketEditorRef.current?.focus()}
-                                             className="absolute top-4 left-0 text-neutral-400 dark:text-neutral-500 pointer-events-none text-sm select-none"
+                                             className="absolute top-3 sm:top-4 left-2 md:left-0 text-neutral-400 dark:text-neutral-500 pointer-events-none text-sm select-none"
                                          >
                                              Write your message here. You can attach details like screenshots below.
                                          </div>
                                      )}
                                     
-                                    {attachment && (
-                                        <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/5 w-fit shrink-0">
-                                            <FileText className="w-5 h-5 text-blue-500" />
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-neutral-900 dark:text-white max-w-[200px] truncate">{attachment.name}</span>
-                                                <span className="text-[11px] text-neutral-500">{(attachment.size / 1024).toFixed(1)} KB</span>
-                                            </div>
-                                            <button onClick={() => setAttachment(null)} className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors">
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                    {attachments.length > 0 && (
+                                        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
+                                            {attachments.map((file, idx) => {
+                                                const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+                                                return (
+                                                    <div key={`${file.name}-${idx}`} className="flex items-center gap-2 p-2 pr-2.5 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 shrink-0 max-w-[220px]">
+                                                        <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                                                            {isImg ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                            <span className="text-xs font-medium text-neutral-900 dark:text-white max-w-[120px] truncate">{file.name}</span>
+                                                            <span className="text-[10px] text-neutral-500">{(file.size / 1024).toFixed(1)} KB</span>
+                                                        </div>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} 
+                                                            className="p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                                                            title="Remove"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
-                                <div className="py-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between px-4 md:px-0 flex-shrink-0">
-                                    <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0 mr-2">
+                                <div className="py-3 sm:py-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between px-2 md:px-0 flex-shrink-0 gap-2">
+                                    <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0">
                                         <input 
                                             type="file" 
                                             ref={fileInputRef} 
                                             className="hidden" 
+                                            multiple
+                                            onChange={handleAttachmentChange} 
+                                        />
+                                        <input 
+                                            type="file" 
+                                            ref={imageInputRef} 
+                                            accept="image/*"
+                                            className="hidden" 
+                                            multiple
                                             onChange={handleAttachmentChange} 
                                         />
                                         <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4" /></button>
@@ -1449,8 +1652,40 @@ Guidelines:
 
                                         <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
 
-                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Attach file"><Paperclip className="w-4 h-4" /></button>
-                                        
+                                        {!isAttachExpanded ? (
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setIsAttachExpanded(true)} 
+                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                title="Attach (Click to expand options)"
+                                            >
+                                                <Paperclip className="w-4 h-4" />
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-0.5 transition-all">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => fileInputRef.current?.click()} 
+                                                    onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
+                                                    className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                    title="Attach File (Click to select, Double click to collapse)"
+                                                >
+                                                    <Paperclip className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => imageInputRef.current?.click()} 
+                                                    onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
+                                                    className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-blue-600 dark:text-blue-400 transition-colors" 
+                                                    title="Attach Image (Click to select, Double click to collapse)"
+                                                >
+                                                    <ImageIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                         <button 
                                             type="button" 
                                             ref={createTemplateBtnRef}
@@ -1460,15 +1695,13 @@ Guidelines:
                                                 }
                                                 setShowTemplatesList(!showTemplatesList);
                                             }}
-                                            className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors flex items-center justify-center" 
+                                            className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center justify-center shrink-0" 
                                             title="Insert Template"
                                         >
                                             <Braces className="w-4 h-4" />
                                         </button>
-                                    </div>
 
-                                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                                        <div className="relative min-w-0 max-w-[140px] sm:max-w-[170px]">
+                                        <div className="relative min-w-0 max-w-[130px] sm:max-w-[170px]">
                                             <CustomDropdown
                                                 options={KNOWN_MODELS}
                                                 value={selectedAiModel}
@@ -1555,7 +1788,7 @@ Guidelines:
                                         <button 
                                             type="button"
                                             onClick={handleSendMessage}
-                                            disabled={sending || (!newMessage.trim() && !attachment) || !newSubject.trim()}
+                                            disabled={sending || (!newMessage.trim() && attachments.length === 0) || !newSubject.trim()}
                                             className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border shadow-sm bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <AnimatePresence mode="wait">
@@ -1746,22 +1979,22 @@ Guidelines:
                     {/* Fixed Composer Wrapper */}
                     {activeConversation && activeConversation.status !== 'closed' ? (
                         <div 
-                            className="w-full border-t border-neutral-200 dark:border-white/10 p-4 md:p-6 bg-white dark:bg-black shrink-0 relative z-20"
+                            className="w-full border-t border-neutral-200 dark:border-white/10 px-2 sm:px-3 md:px-4 py-2.5 sm:py-3 bg-white dark:bg-black shrink-0 relative z-20"
                             style={{ paddingBottom: 'calc(var(--dev-console-padding, 0px) + 0.5rem)' }}
                         >
                             <div className="w-full max-w-full mx-auto">
                                     {!isReplying ? (
-                                        <div className="flex gap-4">
-                                             <button onClick={() => setIsReplying(true)} className="flex-1 md:flex-none py-3 px-6 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-black">
+                                        <div className="flex gap-3 sm:gap-4">
+                                             <button onClick={() => setIsReplying(true)} className="flex-1 md:flex-none py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-black">
                                                  <Reply className="w-4 h-4" /> Reply
                                              </button>
-                                             <button onClick={() => setIsReplying(true)} className="flex-1 md:flex-none py-3 px-6 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-black">
+                                             <button onClick={() => setIsReplying(true)} className="flex-1 md:flex-none py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-black">
                                                  <Forward className="w-4 h-4" /> Forward
                                              </button>
                                         </div>
                                     ) : (
                                         <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-900/80 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
-                                             <div className="flex items-center justify-between w-full min-w-0 px-2.5 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50">
+                                             <div className="flex items-center justify-between w-full min-w-0 px-2 sm:px-2.5 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50">
                                                 <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0">
                                                     <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4" /></button>
                                                     <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4" /></button>
@@ -1784,28 +2017,48 @@ Guidelines:
                                                         type="file" 
                                                         ref={fileInputRef} 
                                                         className="hidden" 
+                                                        multiple
                                                         onChange={handleAttachmentChange} 
                                                     />
-                                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Attach file">
-                                                        <Paperclip className="w-4 h-4" /> <span className="hidden md:inline">Attach</span>
-                                                    </button>
-                                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Insert Image">
-                                                        <ImageIcon className="w-4 h-4" /> <span className="hidden md:inline">Image</span>
-                                                    </button>
-                                                    <button 
-                                                        type="button" 
-                                                        ref={replyTemplateBtnRef}
-                                                        onClick={() => {
-                                                            if (replyTemplateBtnRef.current) {
-                                                                setTemplateBtnRect(replyTemplateBtnRef.current.getBoundingClientRect());
-                                                            }
-                                                            setShowTemplatesList(!showTemplatesList);
-                                                        }} 
-                                                        className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" 
-                                                        title="Use Template"
-                                                    >
-                                                        <Braces className="w-4 h-4" /> <span className="hidden md:inline">Template</span>
-                                                    </button>
+                                                    <input 
+                                                        type="file" 
+                                                        ref={imageInputRef} 
+                                                        accept="image/*"
+                                                        className="hidden" 
+                                                        multiple
+                                                        onChange={handleAttachmentChange} 
+                                                    />
+                                                    {!isAttachExpanded ? (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => setIsAttachExpanded(true)} 
+                                                            className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                            title="Attach (Click to expand options)"
+                                                        >
+                                                            <Paperclip className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <div className="flex items-center gap-0.5 transition-all">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => fileInputRef.current?.click()} 
+                                                                onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
+                                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" 
+                                                                title="Attach File (Click to select, Double click to collapse)"
+                                                            >
+                                                                <Paperclip className="w-4 h-4" />
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => imageInputRef.current?.click()} 
+                                                                onDoubleClick={(e) => { e.stopPropagation(); setIsAttachExpanded(false); }}
+                                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-blue-600 dark:text-blue-400 transition-colors" 
+                                                                title="Attach Image (Click to select, Double click to collapse)"
+                                                            >
+                                                                <ImageIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                     <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 sm:mx-1 shrink-0"></div>
                                                     <button type="button" onClick={() => setIsReplying(false)} className="p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors shrink-0" title="Close">
                                                         <X className="w-4 h-4" />
@@ -1846,30 +2099,61 @@ Guidelines:
                                                      </div>
                                                  )}
 
-                                                 {attachment && (
-                                                      <div className="mt-2 flex items-center gap-3 p-2.5 bg-neutral-50 dark:bg-black/40 rounded-xl border border-neutral-200 dark:border-white/5 w-fit">
-                                                          <FileText className="w-5 h-5 text-blue-500" />
-                                                          <div className="flex flex-col">
-                                                             <span className="text-sm font-medium text-neutral-900 dark:text-white max-w-[200px] truncate">{attachment.name}</span>
-                                                             <span className="text-[11px] text-neutral-500">{(attachment.size / 1024).toFixed(1)} KB</span>
-                                                         </div>
-                                                         <button onClick={() => setAttachment(null)} className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors">
-                                                             <X className="w-4 h-4" />
-                                                         </button>
+                                                 {attachments.length > 0 && (
+                                                     <div className="mt-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:thin] py-1 px-0.5 max-w-full custom-scrollbar shrink-0">
+                                                         {attachments.map((file, idx) => {
+                                                             const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+                                                             return (
+                                                                 <div key={`${file.name}-${idx}`} className="flex items-center gap-2 p-2 pr-2.5 bg-neutral-100 dark:bg-black/40 rounded-xl border border-neutral-200 dark:border-white/10 shrink-0 max-w-[220px]">
+                                                                     <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                                                                         {isImg ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                                                     </div>
+                                                                     <div className="flex flex-col min-w-0 flex-1">
+                                                                         <span className="text-xs font-medium text-neutral-900 dark:text-white max-w-[120px] truncate">{file.name}</span>
+                                                                         <span className="text-[10px] text-neutral-500">{(file.size / 1024).toFixed(1)} KB</span>
+                                                                     </div>
+                                                                     <button 
+                                                                         type="button"
+                                                                         onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} 
+                                                                         className="p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                                                                         title="Remove"
+                                                                     >
+                                                                         <X className="w-3.5 h-3.5" />
+                                                                     </button>
+                                                                 </div>
+                                                             );
+                                                         })}
                                                      </div>
-                                                  )}
+                                                 )}
                                              </div>
-                                             <div className="py-2.5 flex items-center justify-between px-3 border-t border-neutral-100 dark:border-neutral-800/60 bg-neutral-50/50 dark:bg-neutral-950/30">
-                                                 <div className="relative min-w-0 max-w-[140px] sm:max-w-[170px]">
-                                                     <CustomDropdown
-                                                         options={KNOWN_MODELS}
-                                                         value={selectedAiModel}
-                                                         onChange={(val) => {
-                                                             setSelectedAiModel(val);
-                                                             localStorage.setItem('support-ai-model', val);
-                                                         }}
-                                                         triggerClassName="!h-[28px] !p-1 !px-2 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg !text-[10.5px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow shadow-sm truncate"
-                                                     />
+                                             <div className="py-2.5 flex items-center justify-between px-3 border-t border-neutral-100 dark:border-neutral-800/60 bg-neutral-50/50 dark:bg-neutral-950/30 gap-2">
+                                                 <div className="flex items-center gap-1.5 sm:gap-2">
+                                                     <button 
+                                                         type="button" 
+                                                         ref={replyTemplateBtnRef}
+                                                         onClick={() => {
+                                                             if (replyTemplateBtnRef.current) {
+                                                                 setTemplateBtnRect(replyTemplateBtnRef.current.getBoundingClientRect());
+                                                             }
+                                                             setShowTemplatesList(!showTemplatesList);
+                                                         }} 
+                                                         className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center justify-center shrink-0" 
+                                                         title="Use Template"
+                                                     >
+                                                         <Braces className="w-4 h-4" />
+                                                     </button>
+
+                                                     <div className="relative min-w-0 max-w-[130px] sm:max-w-[170px]">
+                                                         <CustomDropdown
+                                                             options={KNOWN_MODELS}
+                                                             value={selectedAiModel}
+                                                             onChange={(val) => {
+                                                                 setSelectedAiModel(val);
+                                                                 localStorage.setItem('support-ai-model', val);
+                                                             }}
+                                                             triggerClassName="!h-[28px] !p-1 !px-2 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg !text-[10.5px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow shadow-sm truncate"
+                                                         />
+                                                     </div>
                                                  </div>
 
                                                  <div className="flex items-center gap-2 shrink-0">
@@ -1945,12 +2229,12 @@ Guidelines:
                                                          )}
                                                      </motion.button>
 
-                                                    <button 
-                                                        type="button"
-                                                        onClick={handleSendMessage}
-                                                        disabled={sending || (!newMessage.trim() && !attachment)}
-                                                        className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border shadow-sm bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
+                                                     <button 
+                                                         type="button"
+                                                         onClick={handleSendMessage}
+                                                         disabled={sending || (!newMessage.trim() && attachments.length === 0)}
+                                                         className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border shadow-sm bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                                                     >
                                                          <AnimatePresence mode="wait">
                                                              {sending ? (
                                                                  <motion.div 
@@ -1977,8 +2261,8 @@ Guidelines:
                                                      </button>
                                                  </div>
                                              </div>
-                                        </div>
-                                    )}
+                                         </div>
+                                     )}
                             </div>
                         </div>
                     ) : activeConversation ? (
@@ -2089,15 +2373,27 @@ Guidelines:
                     >
                       <form onSubmit={handleSendMessage} className={`w-full max-w-full mx-auto bg-white dark:bg-black border border-neutral-200 dark:border-neutral-700/60 rounded-[28px] flex flex-col overflow-hidden transition-all focus-within:border-blue-400 dark:focus-within:border-neutral-500 focus-within:ring-4 focus-within:ring-blue-400/10 dark:focus-within:ring-neutral-400/10 mb-2 px-1 py-1`}>
                         
-                        {attachment && (
-                            <div className="flex items-center justify-between p-3 mx-2 mt-2 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-                                <div className="flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-blue-500" />
-                                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 truncate max-w-[200px]">{attachment.name}</span>
-                                </div>
-                                <button type="button" onClick={() => setAttachment(null)} className="p-1 rounded-md text-neutral-400 hover:text-red-500 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-                                    <X className="w-4 h-4" />
-                                </button>
+                        {attachments.length > 0 && (
+                            <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:thin] p-2 mx-2 mt-2 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl custom-scrollbar">
+                                {attachments.map((file, idx) => {
+                                    const isImg = file.type.startsWith('image/') || /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+                                    return (
+                                        <div key={`${file.name}-${idx}`} className="flex items-center gap-2 p-1.5 pr-2 bg-white dark:bg-black rounded-lg border border-neutral-200 dark:border-neutral-700 shrink-0 max-w-[200px]">
+                                            <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 text-blue-500">
+                                                {isImg ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                            </div>
+                                            <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate max-w-[110px]">{file.name}</span>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} 
+                                                className="p-0.5 rounded text-neutral-400 hover:text-red-500 transition-colors"
+                                                title="Remove"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -2127,8 +2423,8 @@ Guidelines:
                           <div className="pl-1 pr-1 mb-[2px] shrink-0">
                              <button
                                type="submit"
-                               disabled={sending || (!newMessage.trim() && !attachment)}
-                               className={`p-1.5 rounded-full transition-all flex items-center justify-center h-[36px] w-[36px] ${(!newMessage.trim() && !attachment) ? 'bg-neutral-100 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-600' : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 active:scale-95 shadow-sm'} disabled:opacity-50`}
+                               disabled={sending || (!newMessage.trim() && attachments.length === 0)}
+                               className={`p-1.5 rounded-full transition-all flex items-center justify-center h-[36px] w-[36px] ${(!newMessage.trim() && attachments.length === 0) ? 'bg-neutral-100 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-600' : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 active:scale-95 shadow-sm'} disabled:opacity-50`}
                              >
                                {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
                              </button>

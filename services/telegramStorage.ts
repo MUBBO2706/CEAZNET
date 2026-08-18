@@ -1,16 +1,73 @@
 /// <reference types="vite/client" />
 // services/telegramStorage.ts
 
-// We use import.meta.env for the keys. 
-// In a real production app, you might want to move this to a Supabase Edge Function to hide the bot token.
-// But for this "jugaad", running it client-side works perfectly and is easy to set up.
-const isDev = import.meta.env.DEV;
-export const TELEGRAM_BOT_TOKEN = isDev 
-  ? "8403959177:AAFJrkcRCeTHTyS5uVBwlLKTE79dwq_HYzU"
-  : (import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8651559829:AAE8dajbB7yB9Nc8WYxV-b4lBp8z0CBTLC8");
-export const TELEGRAM_CHAT_ID = isDev 
-  ? "-1003984567697"
-  : (import.meta.env.VITE_TELEGRAM_CHAT_ID || "5965153830");
+import { supabase } from './supabaseClient';
+
+const isDev = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.DEV : false;
+
+export let TELEGRAM_BOT_TOKEN = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_BOT_TOKEN)
+  || (typeof process !== 'undefined' && process.env?.TELEGRAM_BOT_TOKEN)
+  || (isDev ? "8403959177:AAFJrkcRCeTHTyS5uVBwlLKTE79dwq_HYzU" : "8651559829:AAE8dajbB7yB9Nc8WYxV-b4lBp8z0CBTLC8");
+
+export let TELEGRAM_CHAT_ID = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_CHAT_ID)
+  || (typeof process !== 'undefined' && process.env?.TELEGRAM_CHAT_ID)
+  || (isDev ? "-1003984567697" : "5965153830");
+
+// Track invalid tokens to avoid continuous 401 Unauthorized hammering
+const invalidTokens = new Set<string>();
+let lastDbTokenFetch = 0;
+const DB_TOKEN_FETCH_INTERVAL = 60 * 1000; // 1 minute
+
+async function getCandidateBotTokens(): Promise<string[]> {
+    const tokens: string[] = [];
+    
+    // 1. Env tokens
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_BOT_TOKEN) {
+        tokens.push(import.meta.env.VITE_TELEGRAM_BOT_TOKEN);
+    }
+    if (typeof process !== 'undefined' && process.env?.TELEGRAM_BOT_TOKEN) {
+        tokens.push(process.env.TELEGRAM_BOT_TOKEN);
+    }
+    if (TELEGRAM_BOT_TOKEN) {
+        tokens.push(TELEGRAM_BOT_TOKEN);
+    }
+
+    // 2. Fetch from Supabase platform_settings dynamically
+    const now = Date.now();
+    if (now - lastDbTokenFetch > DB_TOKEN_FETCH_INTERVAL) {
+        lastDbTokenFetch = now;
+        try {
+            const { data } = await supabase
+                .from('platform_settings')
+                .select('setting_key, setting_value')
+                .in('setting_key', ['telegram_bot_token', 'telegram_chat_id']);
+            
+            if (data && Array.isArray(data)) {
+                const tokenRow = data.find(r => r.setting_key === 'telegram_bot_token');
+                const chatRow = data.find(r => r.setting_key === 'telegram_chat_id');
+                if (tokenRow?.setting_value && typeof tokenRow.setting_value === 'string' && tokenRow.setting_value.trim()) {
+                    const dbToken = tokenRow.setting_value.trim();
+                    TELEGRAM_BOT_TOKEN = dbToken;
+                    tokens.unshift(dbToken);
+                }
+                if (chatRow?.setting_value && typeof chatRow.setting_value === 'string' && chatRow.setting_value.trim()) {
+                    TELEGRAM_CHAT_ID = chatRow.setting_value.trim();
+                }
+            }
+        } catch (e) {
+            // Silently ignore db fetch errors
+        }
+    }
+
+    // 3. Fallback tokens
+    tokens.push("8651559829:AAE8dajbB7yB9Nc8WYxV-b4lBp8z0CBTLC8");
+    tokens.push("8403959177:AAFJrkcRCeTHTyS5uVBwlLKTE79dwq_HYzU");
+
+    // Filter out duplicates and known invalid tokens (unless no valid tokens remain)
+    const unique = Array.from(new Set(tokens)).filter(Boolean);
+    const valid = unique.filter(t => !invalidTokens.has(t));
+    return valid.length > 0 ? valid : unique;
+}
 
 export const sendTelegramAlert = async (text: string): Promise<boolean> => {
     try {
@@ -137,10 +194,13 @@ export const uploadFileToTelegram = async (
     }
 
     try {
+        const candidateTokens = await getCandidateBotTokens();
+        const activeToken = candidateTokens[0] || TELEGRAM_BOT_TOKEN;
+
         // Use XMLHttpRequest as it's more reliable than fetch for large FormData uploads across browsers
         return await new Promise<string>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${endpoint}`, true);
+            xhr.open('POST', `https://api.telegram.org/bot${activeToken}/${endpoint}`, true);
             
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
@@ -148,6 +208,11 @@ export const uploadFileToTelegram = async (
                         const data = JSON.parse(xhr.responseText);
                         if (!data.ok) {
                             console.warn('[Telegram Storage] Telegram API Error:', data.description);
+                            if (data.error_code === 401 || data.description?.toLowerCase().includes('unauthorized')) {
+                                invalidTokens.add(activeToken);
+                                reject(new Error('Telegram Bot Token is unauthorized or expired. Please update it in platform settings.'));
+                                return;
+                            }
                             reject(new Error(data.description || 'Telegram API Error'));
                             return;
                         }
@@ -355,16 +420,17 @@ export const getFileUrlFromTelegram = async (
         }
 
         try {
-            // Try resolving with candidate bot tokens in order (primary bot -> fallback bots)
+            const candidateTokens = await getCandidateBotTokens();
             let lastErrorDesc = '';
-            for (const botToken of CANDIDATE_BOT_TOKENS) {
+            
+            for (const botToken of candidateTokens) {
                 try {
                     const response = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`);
-                    let data;
-                    if (!response.ok) {
-                        data = await response.json().catch(() => ({}));
-                    } else {
+                    let data: any = {};
+                    try {
                         data = await response.json();
+                    } catch {
+                        data = {};
                     }
                     
                     if (data && data.ok && data.result?.file_path) {
@@ -376,7 +442,10 @@ export const getFileUrlFromTelegram = async (
                         return finalUrl;
                     }
                     
-                    if (data?.description) {
+                    if (data?.error_code === 401 || data?.description?.toLowerCase().includes('unauthorized')) {
+                        invalidTokens.add(botToken);
+                        lastErrorDesc = 'Unauthorized';
+                    } else if (data?.description) {
                         lastErrorDesc = data.description;
                         if (data.description.toLowerCase().includes('too big')) {
                             return '__TOO_LARGE__';
@@ -388,18 +457,26 @@ export const getFileUrlFromTelegram = async (
             }
 
             if (lastErrorDesc) {
-                logError('[Telegram Storage] Telegram API error across all bot tokens:', lastErrorDesc);
+                if (lastErrorDesc.toLowerCase().includes('unauthorized')) {
+                    console.warn('[Telegram Storage] Telegram bot token is unauthorized or expired. Please update it in platform settings.');
+                    // Cache the empty result for 5 minutes so we don't spam network requests
+                    urlCache.set(cacheKey, { url: '', timestamp: Date.now() - CACHE_TTL + 5 * 60 * 1000 });
+                    return '';
+                }
+
+                logError('[Telegram Storage] Telegram file resolution:', lastErrorDesc);
                 if (lastErrorDesc.toLowerCase().includes('invalid file id') || 
                     lastErrorDesc.toLowerCase().includes('wrong file identifier') ||
                     lastErrorDesc.toLowerCase().includes('not found') || 
                     lastErrorDesc.toLowerCase().includes('file is unavailable')) {
+                    urlCache.set(cacheKey, { url: '__NOT_FOUND__', timestamp: Date.now() });
                     return '__NOT_FOUND__';
                 }
             }
 
             return '';
         } catch (err) {
-            logError('[Telegram Storage] Error fetching Telegram file URL:', err);
+            console.warn('[Telegram Storage] Error fetching Telegram file URL:', err);
             return '';
         } finally {
             // Remove from the pending map once resolution is complete
