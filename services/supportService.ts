@@ -215,7 +215,7 @@ export const supportService = {
   },
 
   subscribeToMessages(conversationId: string, callback: (payload: { eventType: 'INSERT' | 'UPDATE' | 'DELETE', new: SupportMessage, old?: any }) => void) {
-    const subscription = supabase
+    const channel = supabase
       .channel(`support_messages_${conversationId}`)
       .on(
         'postgres_changes',
@@ -226,37 +226,57 @@ export const supportService = {
           filter: `conversation_id=eq.${conversationId}`
         },
         (payload) => {
+          console.log('[supportService] Realtime message event:', payload);
           callback(payload as any);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[supportService] Channel support_messages_${conversationId} status: ${status}`);
+      });
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channel);
     };
   },
 
   subscribeToConversations(userId: string, callback: (conversation: SupportConversation) => void) {
-      const subscription = supabase
+      const channel = supabase
           .channel(`support_conversations_${userId}`)
           .on(
               'postgres_changes',
               {
-                  event: '*', // Listen to INSERT, UPDATE
+                  event: '*', // Listen to INSERT, UPDATE on support_conversations
                   schema: 'public',
                   table: 'support_conversations',
                   filter: `user_id=eq.${userId}`
               },
               (payload) => {
+                  console.log('[supportService] Realtime conversation event:', payload);
                   if (payload.new && Object.keys(payload.new).length > 0) {
                       callback(payload.new as SupportConversation);
+                  } else {
+                      callback({} as any);
                   }
               }
           )
-          .subscribe();
+          .on(
+              'postgres_changes',
+              {
+                  event: '*', // Listen to message events to trigger conversation list updates
+                  schema: 'public',
+                  table: 'support_messages'
+              },
+              (payload) => {
+                  console.log('[supportService] Realtime message event for conversations:', payload);
+                  callback({} as any);
+              }
+          )
+          .subscribe((status) => {
+              console.log(`[supportService] Channel support_conversations_${userId} status: ${status}`);
+          });
 
       return () => {
-          supabase.removeChannel(subscription);
+          supabase.removeChannel(channel);
       }
   }
 };

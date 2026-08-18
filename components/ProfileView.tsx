@@ -160,12 +160,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   }, []);
 
+  const sessionRef = useRef(session);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
   // Fetch all user sessions from backend
   const fetchSessions = async (forceRefresh = false) => {
     if (!user) return;
     setIsLoadingSessions(true);
     try {
-      const token = session?.access_token;
+      const token = sessionRef.current?.access_token || session?.access_token;
       if (!token) {
         setIsLoadingSessions(false);
         return;
@@ -289,7 +294,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         supabase.removeChannel(channel);
       };
     }
-  }, [user, session?.access_token]);
+  }, [user?.id]);
 
   // Handle Avatar file selection
   const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

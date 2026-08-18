@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supportService } from '../services/supportService';
 import { SupportConversation, SupportMessage } from '../types';
-import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil } from 'lucide-react';
+import { MessageCircle, Mail, Send, ArrowLeft, Loader2, Info, Plus, Clock, Ticket, HeadphonesIcon, Paperclip, Bold, Italic, Underline, Link2, List, ImageIcon, Check, CheckCheck, FileText, Download, X, Reply, Forward, MoreVertical, Braces, Trash2, Eye, ArrowUp, Pencil, Strikethrough, Heading1, ListOrdered, Quote, Code, RemoveFormatting, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { getFileUrlFromTelegram, uploadFileToTelegram, UploadMetadata } from '../services/telegramStorage';
 import { supabase } from '../services/supabaseClient';
@@ -160,6 +160,39 @@ export const EMAIL_TEMPLATES = [
     }
 ];
 
+function htmlToMarkdown(html: string): string {
+    if (!html) return '';
+    if (!/<[a-z][\s\S]*>/i.test(html)) return html.trim();
+    let text = html;
+    text = text.replace(/<div><br><\/div>/gi, '\n');
+    text = text.replace(/<div>/gi, '\n');
+    text = text.replace(/<\/div>/gi, '');
+    text = text.replace(/<p>/gi, '');
+    text = text.replace(/<\/p>/gi, '\n\n');
+    text = text.replace(/<b>(.*?)<\/b>/gi, '**$1**');
+    text = text.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+    text = text.replace(/<i>(.*?)<\/i>/gi, '*$1*');
+    text = text.replace(/<em>(.*?)<\/em>/gi, '*$1*');
+    text = text.replace(/<u>(.*?)<\/u>/gi, '_$1_');
+    text = text.replace(/<s>(.*?)<\/s>/gi, '~$1~');
+    text = text.replace(/<strike>(.*?)<\/strike>/gi, '~$1~');
+    text = text.replace(/<h3>(.*?)<\/h3>/gi, '### $1\n');
+    text = text.replace(/<h2>(.*?)<\/h2>/gi, '## $1\n');
+    text = text.replace(/<h1>(.*?)<\/h1>/gi, '# $1\n');
+    text = text.replace(/<blockquote>(.*?)<\/blockquote>/gi, '> $1\n');
+    text = text.replace(/<pre>(.*?)<\/pre>/gi, '```\n$1\n```');
+    text = text.replace(/<ul>(.*?)<\/ul>/gi, '$1');
+    text = text.replace(/<ol>(.*?)<\/ol>/gi, '$1');
+    text = text.replace(/<li>(.*?)<\/li>/gi, '- $1\n');
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<a [^>]*href="(.*?)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+    text = text.replace(/&nbsp;/g, ' ');
+    text = text.replace(/&lt;/g, '<');
+    text = text.replace(/&gt;/g, '>');
+    text = text.replace(/&amp;/g, '&');
+    return text.trim();
+}
+
 export const SupportView: React.FC<{ 
     setSupportHeaderState?: (state: { title: string | null; onBack?: () => void }) => void;
     userProfile?: any;
@@ -199,7 +232,123 @@ export const SupportView: React.FC<{
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [isDeletingMsg, setIsDeletingMsg] = useState(false);
 
-  const insertFormatting = (type: 'bold' | 'italic' | 'underline' | 'list' | 'link') => {
+  const richEditorRef = useRef<HTMLDivElement>(null);
+  const createTicketEditorRef = useRef<HTMLDivElement>(null);
+
+  const [activeFormats, setActiveFormats] = useState<{
+      bold?: boolean;
+      italic?: boolean;
+      underline?: boolean;
+      strikethrough?: boolean;
+      h3?: boolean;
+      unorderedList?: boolean;
+      orderedList?: boolean;
+      quote?: boolean;
+      code?: boolean;
+  }>({});
+
+  const checkActiveFormats = useCallback(() => {
+      const activeRef = isComposing ? createTicketEditorRef : richEditorRef;
+      if (!activeRef.current) return;
+      try {
+          const isBold = document.queryCommandState('bold');
+          const isItalic = document.queryCommandState('italic');
+          const isUnderline = document.queryCommandState('underline');
+          const isStrikethrough = document.queryCommandState('strikeThrough');
+          const isUnorderedList = document.queryCommandState('insertUnorderedList');
+          const isOrderedList = document.queryCommandState('insertOrderedList');
+          const sel = window.getSelection();
+          let isH3 = false;
+          let isQuote = false;
+          let isCode = false;
+          if (sel && sel.rangeCount > 0) {
+              let node: Node | null = sel.getRangeAt(0).startContainer;
+              while (node && node !== activeRef.current) {
+                  if (node.nodeName === 'H3') isH3 = true;
+                  if (node.nodeName === 'BLOCKQUOTE') isQuote = true;
+                  if (node.nodeName === 'PRE') isCode = true;
+                  node = node.parentNode;
+              }
+          }
+          setActiveFormats({
+              bold: isBold,
+              italic: isItalic,
+              underline: isUnderline,
+              strikethrough: isStrikethrough,
+              unorderedList: isUnorderedList,
+              orderedList: isOrderedList,
+              h3: isH3,
+              quote: isQuote,
+              code: isCode,
+          });
+      } catch (e) {
+          // ignore selection state errors
+      }
+  }, [isComposing]);
+
+  useEffect(() => {
+      const handleSelectionChange = () => {
+          if (
+              document.activeElement === richEditorRef.current || richEditorRef.current?.contains(document.activeElement) ||
+              document.activeElement === createTicketEditorRef.current || createTicketEditorRef.current?.contains(document.activeElement)
+          ) {
+              checkActiveFormats();
+          } else {
+              setActiveFormats({});
+          }
+      };
+      document.addEventListener('selectionchange', handleSelectionChange);
+      return () => {
+          document.removeEventListener('selectionchange', handleSelectionChange);
+      };
+  }, [checkActiveFormats]);
+
+  const getFormatBtnClass = (isActive: boolean) =>
+      `p-1.5 rounded transition-all select-none shrink-0 ${
+          isActive
+              ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-300 dark:border-indigo-700 shadow-sm'
+              : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 border border-transparent'
+      }`;
+
+  const applyRichFormat = (type: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'h3' | 'unorderedList' | 'orderedList' | 'quote' | 'code' | 'link' | 'clear') => {
+      const activeRef = isComposing ? createTicketEditorRef : richEditorRef;
+      if (activeRef.current) {
+          activeRef.current.focus();
+      }
+      if (type === 'h3') {
+          document.execCommand('formatBlock', false, '<h3>');
+      } else if (type === 'quote') {
+          document.execCommand('formatBlock', false, '<blockquote>');
+      } else if (type === 'code') {
+          document.execCommand('formatBlock', false, '<pre>');
+      } else if (type === 'unorderedList') {
+          document.execCommand('insertUnorderedList', false);
+      } else if (type === 'orderedList') {
+          document.execCommand('insertOrderedList', false);
+      } else if (type === 'link') {
+          const url = prompt('Enter website URL:', 'https://');
+          if (url) {
+              document.execCommand('createLink', false, url);
+          }
+      } else if (type === 'clear') {
+          document.execCommand('removeFormat', false);
+      } else if (type === 'bold') {
+          document.execCommand('bold', false);
+      } else if (type === 'italic') {
+          document.execCommand('italic', false);
+      } else if (type === 'underline') {
+          document.execCommand('underline', false);
+      } else if (type === 'strikethrough') {
+          document.execCommand('strikeThrough', false);
+      }
+      
+      if (activeRef.current) {
+          setNewMessage(activeRef.current.innerHTML);
+      }
+      setTimeout(checkActiveFormats, 10);
+  };
+
+  const insertFormatting = (type: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'h3' | 'list' | 'orderedList' | 'quote' | 'code' | 'link' | 'clear') => {
       let textarea = document.activeElement as HTMLTextAreaElement | null;
       if (!textarea || !textarea.classList.contains('support-composer-textarea')) {
           textarea = document.querySelector('.support-composer-textarea') as HTMLTextAreaElement | null;
@@ -227,6 +376,14 @@ export const SupportView: React.FC<{
               replacement = `<u>${selectedText || 'underlined text'}</u>`;
               cursorOffset = selectedText ? replacement.length : 3;
               break;
+          case 'strikethrough':
+              replacement = `~~${selectedText || 'strikethrough text'}~~`;
+              cursorOffset = selectedText ? replacement.length : 2;
+              break;
+          case 'h3':
+              replacement = `\n### ${selectedText || 'Heading'}\n`;
+              cursorOffset = replacement.length;
+              break;
           case 'list':
               if (selectedText) {
                   replacement = selectedText.split('\n').map(line => `- ${line}`).join('\n');
@@ -235,9 +392,33 @@ export const SupportView: React.FC<{
               }
               cursorOffset = replacement.length;
               break;
+          case 'orderedList':
+              if (selectedText) {
+                  replacement = selectedText.split('\n').map((line, idx) => `${idx + 1}. ${line}`).join('\n');
+              } else {
+                  replacement = '\n1. item';
+              }
+              cursorOffset = replacement.length;
+              break;
+          case 'quote':
+              if (selectedText) {
+                  replacement = selectedText.split('\n').map(line => `> ${line}`).join('\n');
+              } else {
+                  replacement = '\n> quote';
+              }
+              cursorOffset = replacement.length;
+              break;
+          case 'code':
+              replacement = `\`\`\`\n${selectedText || 'code here'}\n\`\`\``;
+              cursorOffset = selectedText ? replacement.length : 4;
+              break;
           case 'link':
               replacement = `[${selectedText || 'link text'}](https://example.com)`;
               cursorOffset = selectedText ? replacement.length : 1;
+              break;
+          case 'clear':
+              replacement = selectedText.replace(/[*_~`>#]/g, '').replace(/<\/?u>/g, '');
+              cursorOffset = replacement.length;
               break;
           default:
               break;
@@ -342,7 +523,7 @@ export const SupportView: React.FC<{
   }, [activeConversation]);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadConversations();
       const unsub = supportService.subscribeToConversations(user.id, (updatedConvo) => {
           // Simply reload to get updated unread counts safely without closure staleness
@@ -350,11 +531,12 @@ export const SupportView: React.FC<{
       });
       return () => unsub();
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
-     if (activeConversation) {
-         const channel = supabase.channel(`support_typing_${activeConversation.id}`);
+     const convoId = activeConversation?.id;
+     if (convoId) {
+         const channel = supabase.channel(`support_typing_${convoId}`);
          typingChannelRef.current = channel;
          channel.on('broadcast', { event: 'typing' }, (payload) => {
              if (payload.payload?.user_type === 'admin') {
@@ -369,7 +551,7 @@ export const SupportView: React.FC<{
              typingChannelRef.current = null;
          }
      }
-  }, [activeConversation]);
+  }, [activeConversation?.id]);
 
   const handleUserTyping = () => {
       if (typingChannelRef.current) {
@@ -386,28 +568,32 @@ export const SupportView: React.FC<{
   };
 
   useEffect(() => {
-    if (activeConversation) {
-      loadMessages(activeConversation.id);
-      const unsub = supportService.subscribeToMessages(activeConversation.id, (payload) => {
+    const convoId = activeConversation?.id;
+    if (convoId) {
+      loadMessages(convoId);
+      const unsub = supportService.subscribeToMessages(convoId, (payload) => {
         if (payload.eventType === 'INSERT') {
           setMessages(prev => {
             if (prev.find(m => m.id === payload.new.id)) return prev;
             return [...prev, payload.new];
           });
+          loadConversations(true);
         } else if (payload.eventType === 'UPDATE') {
           setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+          loadConversations(true);
         } else if (payload.eventType === 'DELETE') {
           const deletedId = payload.old?.id || payload.new?.id;
           if (deletedId) {
             setMessages(prev => prev.filter(m => m.id !== deletedId));
           }
+          loadConversations(true);
         }
       });
       return () => unsub();
     } else {
       setMessages([]);
     }
-  }, [activeConversation]);
+  }, [activeConversation?.id]);
 
   useEffect(() => {
     if (activeConversation) {
@@ -939,13 +1125,38 @@ export const SupportView: React.FC<{
                                         onChange={(e) => setNewSubject(e.target.value)}
                                     />
                                 </div>
-                                <div className="py-4 flex flex-col gap-4 flex-1 px-4 md:px-0 overflow-y-auto custom-scrollbar">
-                                    <textarea 
-                                        className="support-composer-textarea w-full h-full bg-transparent outline-none resize-none text-[15px] text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 leading-relaxed custom-scrollbar min-h-[150px]" 
-                                        placeholder="Write your message here. You can attach details like screenshots below."
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                    ></textarea>
+                                 <div className="py-4 flex flex-col gap-4 flex-1 px-4 md:px-0 overflow-y-auto custom-scrollbar relative">
+                                     <div
+                                         ref={createTicketEditorRef}
+                                         contentEditable
+                                         onInput={() => {
+                                             if (createTicketEditorRef.current) {
+                                                 setNewMessage(createTicketEditorRef.current.innerHTML);
+                                             }
+                                             checkActiveFormats();
+                                         }}
+                                         onKeyUp={checkActiveFormats}
+                                         onMouseUp={checkActiveFormats}
+                                         onClick={checkActiveFormats}
+                                         onFocus={checkActiveFormats}
+                                         onBlur={() => {
+                                             setTimeout(() => {
+                                                 if (!createTicketEditorRef.current?.contains(document.activeElement)) {
+                                                     setActiveFormats({});
+                                                 }
+                                             }, 150);
+                                         }}
+                                         className="support-composer-textarea w-full bg-transparent border-none focus:outline-none min-h-[150px] overflow-y-auto text-[15px] text-neutral-800 dark:text-neutral-200 leading-relaxed custom-scrollbar
+                                         [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_s]:line-through [&_strike]:line-through [&_h3]:text-base [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-zinc-600 [&_pre]:bg-neutral-100 [&_pre]:dark:bg-neutral-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_a]:text-indigo-600 [&_a]:underline"
+                                     />
+                                     {(!newMessage || !newMessage.trim()) && (
+                                         <div
+                                             onClick={() => createTicketEditorRef.current?.focus()}
+                                             className="absolute top-4 left-0 text-neutral-400 dark:text-neutral-500 pointer-events-none text-sm select-none"
+                                         >
+                                             Write your message here. You can attach details like screenshots below.
+                                         </div>
+                                     )}
                                     
                                     {attachment && (
                                         <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/5 w-fit shrink-0">
@@ -961,32 +1172,37 @@ export const SupportView: React.FC<{
                                     )}
                                 </div>
                                 <div className="py-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between px-4 md:px-0 flex-shrink-0">
-                                    <div className="flex items-center gap-1 text-neutral-400 relative">
+                                    <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0 mr-2">
                                         <input 
                                             type="file" 
                                             ref={fileInputRef} 
                                             className="hidden" 
                                             onChange={handleAttachmentChange} 
                                         />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors" 
-                                            title="Attach file"
-                                        >
-                                            <Paperclip className="w-4 h-4" />
-                                        </button>
-                                        <button type="button" onClick={() => insertFormatting('bold')} className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors" title="Bold"><Bold className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => insertFormatting('italic')} className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors" title="Italic"><Italic className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => insertFormatting('underline')} className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors" title="Underline"><Underline className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => insertFormatting('list')} className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors" title="Insert List"><List className="w-4 h-4" /></button>
-                                        <button type="button" onClick={() => insertFormatting('link')} className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors" title="Insert Link"><Link2 className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('underline')} className={getFormatBtnClass(!!activeFormats.underline)} title="Underline"><Underline className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('strikethrough')} className={getFormatBtnClass(!!activeFormats.strikethrough)} title="Strikethrough"><Strikethrough className="w-4 h-4" /></button>
+                                        
+                                        <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
+
+                                        <button type="button" onClick={() => applyRichFormat('h3')} className={getFormatBtnClass(!!activeFormats.h3)} title="Heading"><Heading1 className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('unorderedList')} className={getFormatBtnClass(!!activeFormats.unorderedList)} title="Bullet List"><List className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('orderedList')} className={getFormatBtnClass(!!activeFormats.orderedList)} title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('quote')} className={getFormatBtnClass(!!activeFormats.quote)} title="Quote"><Quote className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('code')} className={getFormatBtnClass(!!activeFormats.code)} title="Code Block"><Code className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('link')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Insert Link"><Link2 className="w-4 h-4" /></button>
+                                        <button type="button" onClick={() => applyRichFormat('clear')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Clear Formatting"><RemoveFormatting className="w-4 h-4" /></button>
+
+                                        <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
+
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Attach file"><Paperclip className="w-4 h-4" /></button>
                                         
                                         <div className="relative">
                                             <button 
                                                 type="button" 
                                                 onClick={() => setShowTemplatesList(!showTemplatesList)}
-                                                className="p-2 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-lg transition-colors flex items-center justify-center" 
+                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors flex items-center justify-center" 
                                                 title="Insert Template"
                                             >
                                                 <Braces className="w-4 h-4" />
@@ -1031,7 +1247,7 @@ export const SupportView: React.FC<{
                                     <button 
                                         onClick={handleSendMessage}
                                         disabled={sending || (!newMessage.trim() && !attachment) || !newSubject.trim()}
-                                        className="px-6 py-2 bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                                        className="px-6 py-2 bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm shrink-0"
                                     >
                                         {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                         {sending && isUploadingAttachment ? 'Uploading...' : 'Send Ticket'}
@@ -1059,107 +1275,133 @@ export const SupportView: React.FC<{
                                <div className="space-y-4 mb-4">
                                {messages.map((msg) => {
                                    const isUser = msg.sender_type === 'user';
+                                   const userName = isUser ? (user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User') : 'Ceaznet Support';
+                                   const emailStr = isUser ? (user?.email || 'user@example.com') : platformSettings.support_email;
+
                                    return (
-                                       <div key={msg.id} className="flex gap-4">
-                                           <div className={`py-4 md:py-6 px-1 w-full flex ${isUser ? '' : 'border-l-[4px] border-indigo-500 pl-4 md:pl-5 ml-[-4px] md:ml-[-5px]'}`}>
-                                               <div className="flex gap-3 md:gap-4 w-full">
-                                                   <div className="shrink-0 pt-0.5">
-                                                       {isUser ? (
-                                                            <img src={avatarUrl} alt="User" className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover shadow-sm bg-neutral-200 dark:bg-neutral-800 ring-1 ring-neutral-200 dark:ring-neutral-800" />
-                                                        ) : (
-                                                            platformSettings.platform_logo_url ? (
-                                                                <img src={platformSettings.platform_logo_url} alt="Support" className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover shadow-sm bg-white dark:bg-neutral-800 ring-1 ring-neutral-200 dark:ring-neutral-800" />
-                                                            ) : (
-                                                                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold bg-indigo-900 text-indigo-100 dark:bg-indigo-600 text-[13px] tracking-wider shadow-sm">
-                                                                    ST
-                                                                </div>
-                                                            )
-                                                        )}
-                                                   </div>
-                                                   <div className="flex flex-col flex-1 min-w-0">
-                                                       <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex flex-col min-w-0 pr-2 gap-0.5">
-                                                               <span className={`text-[12px] md:text-[13px] font-medium truncate ${isUser ? 'text-neutral-900 dark:text-neutral-100' : 'text-blue-900 dark:text-blue-100'}`}>
-                                                                   {isUser ? user?.email : platformSettings.support_email}
-                                                               </span>
-                                                               <span className="text-[11px] md:text-[12px] text-neutral-500 dark:text-neutral-400 font-mono shrink-0">
-                                                                   {format(new Date(msg.created_at), 'MM/dd/yyyy HH:mm')}
-                                                               </span>
-                                                            </div>
-                                                            <div className="relative shrink-0 z-30">
-                                                                <button 
-                                                                    onClick={() => setActiveMenuMsgId(activeMenuMsgId === msg.id ? null : msg.id)}
-                                                                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors p-1 rounded-md shrink-0"
-                                                                >
-                                                                    <MoreVertical className="w-5 h-5" />
-                                                                </button>
-                                                                {activeMenuMsgId === msg.id && (
-                                                                    <>
-                                                                        <div 
-                                                                            className="fixed inset-0 z-10" 
-                                                                            onClick={() => setActiveMenuMsgId(null)}
-                                                                        />
-                                                                        <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-[#121212] rounded-xl shadow-xl border border-neutral-100 dark:border-neutral-800 py-1.5 z-20 origin-top-right">
-                                                                            {isUser ? (
-                                                                                <>
-                                                                                    <button 
-                                                                                        onClick={() => handleEditMessage(msg.id, msg.message)}
-                                                                                        className="w-full text-left px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors flex items-center gap-2"
-                                                                                    >
-                                                                                        <Pencil className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                                                                                        Edit
-                                                                                    </button>
-                                                                                    <button 
-                                                                                        onClick={() => handleDeleteMessageClick(msg.id)}
-                                                                                        className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors flex items-center gap-2"
-                                                                                    >
-                                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                                        Delete
-                                                                                    </button>
-                                                                                </>
-                                                                            ) : (
-                                                                                <div className="px-3 py-2 text-[11px] text-neutral-400 dark:text-neutral-500 font-medium whitespace-nowrap">
-                                                                                    Cannot edit replies
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                       </div>
-                                                       {editingMsgId === msg.id ? (
-                                                           <div className="mt-2 flex flex-col gap-2">
-                                                               <textarea
-                                                                   value={editingText}
-                                                                   onChange={(e) => setEditingText(e.target.value)}
-                                                                   className="w-full p-2.5 text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-neutral-900 dark:text-neutral-100 resize-none min-h-[85px]"
-                                                               />
-                                                               <div className="flex items-center gap-2 self-end">
-                                                                   <button
-                                                                       onClick={() => { setEditingMsgId(null); setEditingText(''); }}
-                                                                       className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-                                                                   >
-                                                                       Cancel
-                                                                   </button>
-                                                                   <button
-                                                                       onClick={() => handleSaveEditedMessage(msg.id)}
-                                                                       className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
-                                                                   >
-                                                                       Save
-                                                                   </button>
-                                                               </div>
-                                                           </div>
+                                       <div 
+                                           key={msg.id} 
+                                           className={`w-full pb-4 mb-4 border-b border-neutral-100 dark:border-neutral-800/60 last:border-0 last:mb-0 last:pb-0 ${
+                                               !isUser ? 'pl-2 border-l border-l-indigo-500' : 'pl-2 border-l border-l-neutral-200 dark:border-l-neutral-700'
+                                           }`}
+                                       >
+                                           <div className="flex items-start gap-3 p-0 mb-2">
+                                               <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
+                                                   !isUser 
+                                                       ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' 
+                                                       : 'bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700'
+                                               }`}>
+                                                   {isUser ? (
+                                                       avatarUrl ? (
+                                                           <img src={avatarUrl} alt="User Avatar" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                                        ) : (
-                                                           <div className={`text-[14px] md:text-[15px] leading-relaxed markdown-body max-w-none ${isUser ? 'text-neutral-800 dark:text-neutral-200' : 'text-blue-900/90 dark:text-blue-100/90'}`}>
-                                                               <ReactMarkdown>{msg.message}</ReactMarkdown>
+                                                           <User className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+                                                       )
+                                                   ) : (
+                                                       platformSettings.platform_logo_url ? (
+                                                           <img src={platformSettings.platform_logo_url} alt="Support Team" referrerPolicy="no-referrer" className="w-full h-full object-contain p-1" />
+                                                       ) : (
+                                                           <HeadphonesIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                                       )
+                                                   )}
+                                               </div>
+                                               <div className="flex flex-col flex-1 justify-center min-w-0">
+                                                   <div className="flex justify-between items-start">
+                                                       <div className="flex flex-col min-w-0">
+                                                           <div className="flex items-baseline gap-2 flex-wrap">
+                                                               <span className="text-[13px] font-bold text-neutral-900 dark:text-neutral-100">
+                                                                   {userName}
+                                                               </span>
+                                                               <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
+                                                                   - {format(new Date(msg.created_at), 'MM/dd/yyyy HH:mm')}
+                                                               </span>
                                                            </div>
-                                                       )}
-                                                       {msg.attachment_url && (
-                                                           <ResolvedAttachment msg={msg} isUser={isUser} isChat={false} />
-                                                       )}
+                                                           <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1.5">
+                                                               <span className="text-[9px] uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-bold">
+                                                                   {isUser ? 'From:' : 'To:'}
+                                                               </span>
+                                                               <span>{"<"}{emailStr}{">"}</span>
+                                                           </span>
+                                                       </div>
+                                                       <div className="relative shrink-0 z-30">
+                                                           <button 
+                                                               onClick={() => setActiveMenuMsgId(activeMenuMsgId === msg.id ? null : msg.id)}
+                                                               className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors p-1 rounded-md shrink-0"
+                                                               title="More options"
+                                                           >
+                                                               <MoreVertical className="w-4 h-4" />
+                                                           </button>
+                                                           {activeMenuMsgId === msg.id && (
+                                                               <>
+                                                                   <div 
+                                                                       className="fixed inset-0 z-10" 
+                                                                       onClick={() => setActiveMenuMsgId(null)}
+                                                                   />
+                                                                   <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-[#121212] rounded-xl shadow-xl border border-neutral-100 dark:border-neutral-800 py-1.5 z-20 origin-top-right">
+                                                                       {isUser ? (
+                                                                           <>
+                                                                               <button 
+                                                                                   onClick={() => handleEditMessage(msg.id, msg.message)}
+                                                                                   className="w-full text-left px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors flex items-center gap-2"
+                                                                               >
+                                                                                   <Pencil className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                                                                   Edit
+                                                                               </button>
+                                                                               <button 
+                                                                                   onClick={() => handleDeleteMessageClick(msg.id)}
+                                                                                   className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors flex items-center gap-2"
+                                                                               >
+                                                                                   <Trash2 className="w-3.5 h-3.5" />
+                                                                                   Delete
+                                                                               </button>
+                                                                           </>
+                                                                       ) : (
+                                                                           <div className="px-3 py-2 text-[11px] text-neutral-400 dark:text-neutral-500 font-medium whitespace-nowrap">
+                                                                               Cannot edit replies
+                                                                           </div>
+                                                                       )}
+                                                                   </div>
+                                                               </>
+                                                           )}
+                                                       </div>
                                                    </div>
                                                </div>
                                            </div>
+
+                                           {/* Message Body - Left aligned under header/logo without empty indent */}
+                                           {editingMsgId === msg.id ? (
+                                               <div className="mt-2 flex flex-col gap-2">
+                                                   <textarea
+                                                       value={editingText}
+                                                       onChange={(e) => setEditingText(e.target.value)}
+                                                       className="w-full p-2.5 text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-neutral-900 dark:text-neutral-100 resize-none min-h-[85px]"
+                                                   />
+                                                   <div className="flex items-center gap-2 self-end">
+                                                       <button
+                                                           onClick={() => { setEditingMsgId(null); setEditingText(''); }}
+                                                           className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                                                       >
+                                                           Cancel
+                                                       </button>
+                                                       <button
+                                                           onClick={() => handleSaveEditedMessage(msg.id)}
+                                                           className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                                                       >
+                                                           Save
+                                                       </button>
+                                                   </div>
+                                               </div>
+                                           ) : (
+                                               <div className="mt-3 text-[13px] sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed markdown-body [&_p]:whitespace-pre-wrap [&_li]:whitespace-pre-wrap [&_blockquote]:whitespace-pre-wrap [&_pre]:whitespace-pre-wrap">
+                                                   <ReactMarkdown>{msg.message}</ReactMarkdown>
+                                               </div>
+                                           )}
+
+                                           {msg.attachment_url && (
+                                               <div className="mt-3">
+                                                   <ResolvedAttachment msg={msg} isUser={isUser} isChat={false} />
+                                               </div>
+                                           )}
                                        </div>
                                    )
                                })}
@@ -1187,60 +1429,148 @@ export const SupportView: React.FC<{
                                              </button>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col bg-transparent pt-2">
-                                             <div className="py-2 flex items-center gap-4 text-neutral-500">
-                                               <button type="button" onClick={() => insertFormatting('bold')} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Bold"><Bold className="w-4 h-4" /></button>
-                                               <button type="button" onClick={() => insertFormatting('italic')} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Italic"><Italic className="w-4 h-4" /></button>
-                                               <button type="button" onClick={() => insertFormatting('underline')} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Underline"><Underline className="w-4 h-4" /></button>
-                                               <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700"></div>
-                                               <button type="button" onClick={() => insertFormatting('list')} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Insert List"><List className="w-4 h-4" /></button>
-                                               <button type="button" onClick={() => insertFormatting('link')} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Insert Link"><Link2 className="w-4 h-4" /></button>
-                                               <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700"></div>
-                                               <input 
-                                                    type="file" 
-                                                    ref={fileInputRef} 
-                                                    className="hidden" 
-                                                    onChange={handleAttachmentChange} 
-                                                />
-                                               <button type="button" onClick={() => fileInputRef.current?.click()} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Attach File"><Paperclip className="w-4 h-4" /></button>
-                                               <button type="button" onClick={() => fileInputRef.current?.click()} className="hover:text-neutral-900 dark:hover:text-white transition-colors" title="Insert Image"><ImageIcon className="w-4 h-4" /></button>
-                                               <button type="button" onClick={() => setIsReplying(false)} className="ml-auto hover:text-neutral-900 dark:hover:text-white transition-colors"><X className="w-4 h-4" /></button>
-                                            </div>
-                                            <div className="py-3 flex flex-col gap-4">
-                                               <textarea 
-                                                   className="support-composer-textarea w-full h-32 bg-transparent outline-none resize-none text-[15px] text-neutral-800 dark:text-neutral-200 placeholder-neutral-500 leading-relaxed custom-scrollbar" 
-                                                   placeholder="Write your response... You can drag & drop files here too."
-                                                   value={newMessage}
-                                                   onChange={(e) => {
-                                                       setNewMessage(e.target.value);
-                                                       handleUserTyping();
-                                                   }}
-                                               ></textarea>
+                                        <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-900/80 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+                                             <div className="flex items-center justify-between w-full min-w-0 px-2.5 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50">
+                                                <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0">
+                                                    <button type="button" onClick={() => applyRichFormat('bold')} className={getFormatBtnClass(!!activeFormats.bold)} title="Bold"><Bold className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('italic')} className={getFormatBtnClass(!!activeFormats.italic)} title="Italic"><Italic className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('underline')} className={getFormatBtnClass(!!activeFormats.underline)} title="Underline"><Underline className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('strikethrough')} className={getFormatBtnClass(!!activeFormats.strikethrough)} title="Strikethrough"><Strikethrough className="w-4 h-4" /></button>
+                                                    
+                                                    <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
 
-                                               {attachment && (
-                                                    <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-black rounded-xl border border-neutral-200 dark:border-white/5 w-fit">
-                                                        <FileText className="w-5 h-5 text-blue-500" />
-                                                        <div className="flex flex-col">
-                                                            <span className="text-sm font-medium text-neutral-900 dark:text-white max-w-[200px] truncate">{attachment.name}</span>
-                                                            <span className="text-[11px] text-neutral-500">{(attachment.size / 1024).toFixed(1)} KB</span>
-                                                        </div>
-                                                        <button onClick={() => setAttachment(null)} className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors">
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
+                                                    <button type="button" onClick={() => applyRichFormat('h3')} className={getFormatBtnClass(!!activeFormats.h3)} title="Heading"><Heading1 className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('unorderedList')} className={getFormatBtnClass(!!activeFormats.unorderedList)} title="Bullet List"><List className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('orderedList')} className={getFormatBtnClass(!!activeFormats.orderedList)} title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('quote')} className={getFormatBtnClass(!!activeFormats.quote)} title="Quote"><Quote className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('code')} className={getFormatBtnClass(!!activeFormats.code)} title="Code Block"><Code className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('link')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Insert Link"><Link2 className="w-4 h-4" /></button>
+                                                    <button type="button" onClick={() => applyRichFormat('clear')} className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-600 dark:text-neutral-300 transition-colors" title="Clear Formatting"><RemoveFormatting className="w-4 h-4" /></button>
+                                                </div>
+
+                                                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 border-l border-neutral-200 dark:border-neutral-800 pl-1.5 sm:pl-2 ml-1">
+                                                    <input 
+                                                        type="file" 
+                                                        ref={fileInputRef} 
+                                                        className="hidden" 
+                                                        onChange={handleAttachmentChange} 
+                                                    />
+                                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Attach file">
+                                                        <Paperclip className="w-4 h-4" /> <span className="hidden md:inline">Attach</span>
+                                                    </button>
+                                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Insert Image">
+                                                        <ImageIcon className="w-4 h-4" /> <span className="hidden md:inline">Image</span>
+                                                    </button>
+                                                    <button type="button" onClick={() => setShowTemplatesList(!showTemplatesList)} className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1 text-xs font-medium shrink-0" title="Use Template">
+                                                        <Braces className="w-4 h-4" /> <span className="hidden md:inline">Template</span>
+                                                    </button>
+                                                    <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 sm:mx-1 shrink-0"></div>
+                                                    <button type="button" onClick={() => setIsReplying(false)} className="p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors shrink-0" title="Close">
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                             </div>
+
+                                             <div className="p-3 relative">
+                                                 <div
+                                                     ref={richEditorRef}
+                                                     contentEditable
+                                                     onInput={() => {
+                                                         if (richEditorRef.current) {
+                                                             setNewMessage(richEditorRef.current.innerHTML);
+                                                         }
+                                                         checkActiveFormats();
+                                                     }}
+                                                     onKeyUp={checkActiveFormats}
+                                                     onMouseUp={checkActiveFormats}
+                                                     onClick={checkActiveFormats}
+                                                     onFocus={checkActiveFormats}
+                                                     onBlur={() => {
+                                                         setTimeout(() => {
+                                                             if (!richEditorRef.current?.contains(document.activeElement)) {
+                                                                 setActiveFormats({});
+                                                             }
+                                                         }, 150);
+                                                     }}
+                                                     className="support-composer-textarea w-full min-h-[128px] max-h-[250px] overflow-y-auto bg-transparent border-none focus:outline-none text-[14px] sm:text-[15px] text-neutral-800 dark:text-neutral-200 leading-relaxed custom-scrollbar
+                                                     [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_s]:line-through [&_strike]:line-through [&_h3]:text-base [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-zinc-600 [&_pre]:bg-neutral-100 [&_pre]:dark:bg-neutral-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_a]:text-indigo-600 [&_a]:underline"
+                                                 />
+                                                 {(!newMessage || !newMessage.trim()) && (
+                                                     <div
+                                                         onClick={() => richEditorRef.current?.focus()}
+                                                         className="absolute top-3 left-3 text-neutral-400 dark:text-neutral-500 pointer-events-none text-sm select-none"
+                                                     >
+                                                         Write your response... You can attach details or files below.
+                                                     </div>
                                                  )}
-                                            </div>
-                                            <div className="py-2 flex items-center justify-between">
-                                               <button type="button" onClick={() => setShowTemplatesList(!showTemplatesList)} className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-800 dark:text-neutral-200 text-sm font-medium rounded-lg transition-colors">Use Template</button>
-                                               <button 
-                                                   onClick={e => { handleSendMessage(e); setIsReplying(false); }}
-                                                   disabled={sending || (!newMessage.trim() && !attachment)}
-                                                   className="px-8 py-2.5 bg-[#4c5add] hover:bg-[#3a45b8] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
-                                               >
-                                                   {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                                   {sending && isUploadingAttachment ? 'Uploading...' : 'Send Reply'}
-                                               </button>
-                                            </div>
+
+                                                 {attachment && (
+                                                      <div className="mt-2 flex items-center gap-3 p-2.5 bg-neutral-50 dark:bg-black/40 rounded-xl border border-neutral-200 dark:border-white/5 w-fit">
+                                                          <FileText className="w-5 h-5 text-blue-500" />
+                                                          <div className="flex flex-col">
+                                                             <span className="text-sm font-medium text-neutral-900 dark:text-white max-w-[200px] truncate">{attachment.name}</span>
+                                                             <span className="text-[11px] text-neutral-500">{(attachment.size / 1024).toFixed(1)} KB</span>
+                                                         </div>
+                                                         <button onClick={() => setAttachment(null)} className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors">
+                                                             <X className="w-4 h-4" />
+                                                         </button>
+                                                     </div>
+                                                  )}
+                                             </div>
+                                             <div className="py-2 flex items-center justify-between px-3">
+                                                <div className="relative">
+                                                    <button type="button" onClick={() => setShowTemplatesList(!showTemplatesList)} className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-800 dark:text-neutral-200 text-sm font-medium rounded-lg transition-colors">Use Template</button>
+                                                    <AnimatePresence>
+                                                        {showTemplatesList && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                className="absolute bottom-full left-0 mb-2 w-64 md:w-80 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-[100]"
+                                                            >
+                                                                <div className="max-h-[320px] overflow-y-auto custom-scrollbar py-2">
+                                                                    {EMAIL_TEMPLATES.map((cat, i) => (
+                                                                        <div key={i} className="mb-2 last:mb-0">
+                                                                            <div className="px-4 py-1.5 text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{cat.category}</div>
+                                                                            {cat.items.map((item, j) => (
+                                                                                <button
+                                                                                    key={j}
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setNewSubject(item.subject);
+                                                                                        setNewMessage(item.content);
+                                                                                        if (createTicketEditorRef.current) {
+                                                                                            createTicketEditorRef.current.innerHTML = item.content;
+                                                                                        }
+                                                                                        if (richEditorRef.current) {
+                                                                                            richEditorRef.current.innerHTML = item.content;
+                                                                                        }
+                                                                                        setShowTemplatesList(false);
+                                                                                    }}
+                                                                                    className="w-full text-left px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors group flex items-start gap-3"
+                                                                                >
+                                                                                    <div className="flex-1 flex flex-col pt-0.5">
+                                                                                        <span className="text-[13px] font-semibold text-neutral-900 dark:text-white leading-snug mb-0.5">{item.name}</span>
+                                                                                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">{item.subject}</span>
+                                                                                    </div>
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                                <button 
+                                                    onClick={e => { handleSendMessage(e); setIsReplying(false); }}
+                                                    disabled={sending || (!newMessage.trim() && !attachment)}
+                                                    className="px-8 py-2.5 bg-[#4c5add] hover:bg-[#3a45b8] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                                                >
+                                                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                                    {sending && isUploadingAttachment ? 'Uploading...' : 'Send Reply'}
+                                                </button>
+                                             </div>
                                         </div>
                                     )}
                             </div>

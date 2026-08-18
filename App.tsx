@@ -909,34 +909,20 @@ const App: React.FC = () => {
       }
     };
 
-    // Initial start if visible
-    if (document.visibilityState !== 'hidden') {
-      startHeartbeat();
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-         sendHeartbeat('background');
-         stopHeartbeat();
-      } else {
-         sendHeartbeat('active');
-         startHeartbeat();
-      }
-    };
+    // Initial start
+    startHeartbeat();
 
     const handlePageHide = () => {
       sendHeartbeat('tab_closed');
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", handlePageHide);
 
     return () => {
       stopHeartbeat();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [user?.id, session?.access_token]);
+  }, [user?.id]);
 
   // Track Remote Terminations of Active Session via standard polling AND instant Supabase Realtime !
   useEffect(() => {
@@ -947,7 +933,7 @@ const App: React.FC = () => {
         const sessionKey = localStorage.getItem("ceaznet_session_key");
         if (!sessionKey) return;
 
-        const tokenKey = `session_check_${session.access_token.substring(0, 20)}`;
+        const tokenKey = `session_check_${user.id}`;
         if (sessionStorage.getItem(tokenKey)) {
           return;
         }
@@ -1041,7 +1027,7 @@ const App: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, session?.access_token, logout, addToast]);
+  }, [user?.id, logout, addToast]);
 
   useEffect(() => {
     const fetchInteractions = async () => {
