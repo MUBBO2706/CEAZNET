@@ -846,18 +846,61 @@ export const SupportView: React.FC<{
       setIsRefining(true);
       try {
           const ai = getAiClient();
-          const systemInstruction = `You are a professional writing and customer support assistant.
-Your task is to refine, polish, and structure the user's draft message for a support ticket or reply.
+          
+          let systemInstruction = "";
+          let contentsToAnalyze = "";
+
+          if (isComposing) {
+              // New ticket creation
+              systemInstruction = `You are a professional writing and customer support assistant.
+Your task is to refine, polish, and structure a draft for a NEW support ticket.
+You must generate BOTH a highly concise, professional Subject line and a polished, structured Body message.
+Use the following format strictly in your response:
+[SUBJECT]: <your professional subject here>
+[BODY]: <your refined, structured body here>
+
 Guidelines:
-1. Accurately preserve all issue details, questions, error codes, and user intent.
-2. Elevate tone to be clear, polite, structured, and professional.
-3. Structure with clean formatting, short paragraphs, and markdown bullet points (- list item) or numbered lists (1. list item) if there are multiple steps or details.
+1. Accurately preserve all details, error codes, and user intent from the user's input.
+2. Structure the body with clean formatting, short paragraphs, and markdown lists if appropriate.
+3. Keep the subject line under 10 words, clear, and action-oriented. Do not include ticket IDs or tags.
+4. Return ONLY the formatted response containing [SUBJECT] and [BODY]. Do NOT include conversational commentary, meta text, or introductory notes like "Here is your refined ticket:".`;
+
+              contentsToAnalyze = `User's draft subject (might be empty): ${newSubject.trim() || "None yet"}\n\nUser's draft body message:\n${rawContent.trim()}`;
+          } else {
+              // Existing ticket follow-up/reply
+              let chatHistoryContext = "";
+              if (messages && messages.length > 0) {
+                  chatHistoryContext = messages.map(m => {
+                      const sender = m.sender_type === 'user' ? "User (Customer)" : "Ceaznet Support (Agent)";
+                      const msgContent = htmlToMarkdown(m.message || "");
+                      return `[${sender}]: ${msgContent}`;
+                  }).join("\n\n");
+              }
+
+              systemInstruction = `You are a professional writing and customer support assistant.
+Your task is to refine, polish, and structure a reply to an ongoing support ticket.
+This is a follow-up/reply, so do NOT generate a subject line.
+You are provided with the full conversation history for context. Tailor the refined reply so that it is a natural, professional, and clear continuation of this ongoing support thread.
+
+Guidelines:
+1. Accurately preserve all details, questions, and user intent from the user's draft response.
+2. Maintain a helpful, professional, polite, and constructive tone.
+3. Do NOT invent a new ticket or act as if you are starting a new thread. Focus purely on refining the current reply based on the history context.
 4. Correct all grammar, spelling, and sentence structure.
-5. Return ONLY the refined message content. Do NOT include conversational commentary, meta text, or introductory notes like "Here is your refined draft:".`;
+5. Return ONLY the refined message body. Do NOT include conversational commentary, meta text, or introductory/concluding notes.`;
+
+              contentsToAnalyze = `Here is the conversation history so far for context:
+=== CONVERSATION HISTORY ===
+${chatHistoryContext}
+============================
+
+User's draft response/follow-up to be refined:
+${rawContent.trim()}`;
+          }
 
           const response = await ai.models.generateContent({
               model: selectedAiModel,
-              contents: rawContent.trim(),
+              contents: contentsToAnalyze,
               config: {
                   systemInstruction,
                   temperature: 0.3
@@ -866,9 +909,69 @@ Guidelines:
 
           const refinedText = response.text?.trim();
           if (refinedText) {
-              setNewMessage(refinedText);
-              if (activeRef.current) {
-                  activeRef.current.innerText = refinedText;
+              if (isComposing) {
+                  let subject = "";
+                  let body = "";
+                  
+                  // Try matching [SUBJECT]: and [BODY]: tags
+                  const subjectRegex = /(?:\[SUBJECT\]:|SUBJECT:)\s*(.*?)(?=\n|\[BODY\]:|BODY:|$)/i;
+                  const bodyRegex = /(?:\[BODY\]:|BODY:)\s*([\s\S]*)/i;
+                  
+                  const sMatch = refinedText.match(subjectRegex);
+                  const bMatch = refinedText.match(bodyRegex);
+                  
+                  if (sMatch) {
+                      subject = sMatch[1].trim();
+                  }
+                  
+                  if (bMatch) {
+                      body = bMatch[1].trim();
+                  }
+                  
+                  // Fallback: If we couldn't parse both cleanly using markers, try line-by-line splits
+                  if (!subject || !body) {
+                      const lines = refinedText.split('\n');
+                      const firstLine = lines[0] || "";
+                      if (firstLine.toLowerCase().startsWith('subject:')) {
+                          subject = firstLine.replace(/^subject:\s*/i, '').trim();
+                          body = lines.slice(1).join('\n').trim();
+                          if (body.toLowerCase().startsWith('body:')) {
+                              body = body.replace(/^body:\s*/i, '').trim();
+                          }
+                      } else if (firstLine.toLowerCase().startsWith('[subject]:')) {
+                          subject = firstLine.replace(/^\[subject\]:\s*/i, '').trim();
+                          body = lines.slice(1).join('\n').trim();
+                          if (body.toLowerCase().startsWith('[body]:')) {
+                              body = body.replace(/^\[body\]:\s*/i, '').trim();
+                          }
+                      } else {
+                          // Ultimate fallback
+                          subject = newSubject.trim() || (rawContent.slice(0, 40) + "...");
+                          body = refinedText;
+                      }
+                  }
+                  
+                  if (subject) {
+                      setNewSubject(subject);
+                  }
+                  
+                  if (body) {
+                      setNewMessage(body);
+                      if (activeRef.current) {
+                          activeRef.current.innerText = body;
+                      }
+                  } else {
+                      setNewMessage(refinedText);
+                      if (activeRef.current) {
+                          activeRef.current.innerText = refinedText;
+                      }
+                  }
+              } else {
+                  // Follow-up ticket (isComposing is false)
+                  setNewMessage(refinedText);
+                  if (activeRef.current) {
+                      activeRef.current.innerText = refinedText;
+                  }
               }
               addToast("Draft refined successfully with AI!", "success");
           }
