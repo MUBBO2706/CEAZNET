@@ -1,0 +1,214 @@
+{
+  "fp_fea7825fe9829cb602a845433e863dc1": {
+    "deviceModel": "POCO X4 PRO 5G",
+    "accounts": {
+      "mubasshirsunni@gmail.com": {
+        "sessions": [
+          {
+            "sessionId": "cd5702db-f972-420f-8996-01c0c5f7843a",
+            "username": "mubasshirsunni@gmail.com",
+            "startTime": "2026-08-15T04:13:53.298Z",
+            "endTime": "2026-08-15T05:17:31.888Z",
+            "location": "Jeevan Baug, Mumbra, Maharashtra, India",
+            "ip": "42.111.110.15",
+            "is_incognito": false,
+            "browser_name": "Mobile Chrome",
+            "browser_version": "150.0.0.0",
+            "os_name": "Android",
+            "os_version": "10",
+            "duration": 3818,
+            "status": "active",
+            "lastHeartbeat": "2026-08-15T05:20:48.248Z",
+            "provider": "email"
+          }
+        ],
+        "fullName": null
+      }
+    }
+  },
+  "_summary": {
+    "totalDevices": 2,
+    "activeSessions": 2,
+    "totalSessions": 2,
+    "activeUsers": 2,
+    "avgSessionTime": 3818,
+    "avgSessionsPerDevice": 1,
+    "privateSessions": 0,
+    "locations": 1,
+    "trends": {
+      "totalDevices": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 2,
+        "isIncrease": false,
+        "historicalAverage": 1.4,
+        "historicalDiff": 0.6,
+        "historicalPercent": 42.9,
+        "isHistIncrease": true,
+        "min": 1,
+        "max": 2,
+        "historyCount": 6
+      },
+      "activeSessions": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 2,
+        "isIncrease": false,
+        "historicalAverage": 1.2,
+        "historicalDiff": 0.8,
+        "historicalPercent": 66.7,
+        "isHistIncrease": true,
+        "min": 0,
+        "max": 2,
+        "historyCount": 6
+      },
+      "totalSessions": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 2,
+        "isIncrease": false,
+        "historicalAverage": 1.4,
+        "historicalDiff": 0.6,
+        "historicalPercent": 42.9,
+        "isHistIncrease": true,
+        "min": 1,
+        "max": 2,
+        "historyCount": 6
+      },
+      "activeUsers": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 2,
+        "isIncrease": false,
+        "historicalAverage": 1.4,
+        "historicalDiff": 0.6,
+        "historicalPercent": 42.9,
+        "isHistIncrease": true,
+        "min": 1,
+        "max": 2,
+        "historyCount": 6
+      },
+      "avgSessionTime": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 3818,
+        "isIncrease": false,
+        "historicalAverage": 3054.4,
+        "historicalDiff": 763.6,
+        "historicalPercent": 25,
+        "isHistIncrease": true,
+        "min": 0,
+        "max": 3818,
+        "historyCount": 6
+      },
+      "privateSessions": {
+        "diff": 0,
+        "percent": 0,
+        "previous": 0,
+        "isIncrease": false,
+        "historicalAverage": 0,
+        "historicalDiff": 0,
+        "historicalPercent": 0,
+        "isHistIncrease": false,
+        "min": 0,
+        "max": 0,
+        "historyCount": 6
+      }
+    },
+    "history": [
+      {
+        "timestamp": "2026-08-15T04:13:53.299Z",
+        "totalDevices": 1,
+        "activeSessions": 1,
+        "totalSessions": 1,
+        "activeUsers": 1,
+        "avgSessionTime": 0,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      },
+      {
+        "timestamp": "2026-08-15T05:19:38.586Z",
+        "totalDevices": 1,
+        "activeSessions": 0,
+        "totalSessions": 1,
+        "activeUsers": 1,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      },
+      {
+        "timestamp": "2026-08-15T05:20:28.570Z",
+        "totalDevices": 1,
+        "activeSessions": 1,
+        "totalSessions": 1,
+        "activeUsers": 1,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      },
+      {
+        "timestamp": "2026-08-18T01:09:55.234Z",
+        "totalDevices": 2,
+        "activeSessions": 2,
+        "totalSessions": 2,
+        "activeUsers": 2,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      },
+      {
+        "timestamp": "2026-08-29T05:23:42.310Z",
+        "totalDevices": 2,
+        "activeSessions": 2,
+        "totalSessions": 2,
+        "activeUsers": 2,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 2
+      },
+      {
+        "timestamp": "2026-08-29T05:25:26.423Z",
+        "totalDevices": 2,
+        "activeSessions": 2,
+        "totalSessions": 2,
+        "activeUsers": 2,
+        "avgSessionTime": 3818,
+        "avgSessionsPerDevice": 1,
+        "privateSessions": 0,
+        "locations": 1
+      }
+    ]
+  },
+  "fp_54da28ad45480e067178217624170555": {
+    "deviceModel": "POCO X4 PRO 5G",
+    "accounts": {
+      "mubasshir.shaikh@outlook.in": {
+        "sessions": [
+          {
+            "sessionId": "44956da4-4dfa-49e3-bd99-1ace772f840d",
+            "username": "mubasshir.shaikh@outlook.in",
+            "startTime": "2026-08-18T01:09:55.233Z",
+            "endTime": null,
+            "location": "Jeevan Baug, Mumbra, Maharashtra, India",
+            "ip": "2402:3a80:4160:287a:cc2d:d8ff:fed0:3daa",
+            "is_incognito": false,
+            "browser_name": "Mobile Chrome",
+            "browser_version": "151.0.0.0",
+            "os_name": "Android",
+            "os_version": "10",
+            "duration": 0,
+            "status": "active",
+            "lastHeartbeat": "2026-08-29T05:25:26.423Z",
+            "provider": "email"
+          }
+        ],
+        "fullName": null
+      }
+    }
+  }
+}

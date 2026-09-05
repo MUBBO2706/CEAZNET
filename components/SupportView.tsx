@@ -1,0 +1,3988 @@
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import { createPortal } from "react-dom";
+import { useAuth } from "../hooks/useAuth";
+import { useLocation, useNavigate } from "react-router-dom";
+import { supportService } from "../services/supportService";
+import { SupportConversation, SupportMessage } from "../types";
+import {
+  MessageCircle,
+  Mail,
+  Send,
+  ArrowLeft,
+  Loader2,
+  Info,
+  Plus,
+  Clock,
+  Ticket,
+  HeadphonesIcon,
+  Paperclip,
+  Bold,
+  Italic,
+  Underline,
+  Link2,
+  List,
+  ImageIcon,
+  Check,
+  CheckCheck,
+  FileText,
+  Download,
+  X,
+  Reply,
+  Forward,
+  MoreVertical,
+  Braces,
+  Trash2,
+  Eye,
+  ArrowUp,
+  Pencil,
+  Strikethrough,
+  Heading1,
+  ListOrdered,
+  Quote,
+  Code,
+  RemoveFormatting,
+  User,
+  Sparkles,
+  Bot,
+  ChevronDown,
+  Archive,
+  Film,
+  Music,
+  FileSpreadsheet,
+  Maximize2,
+  AlertCircle,
+} from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import {
+  getFileUrlFromTelegram,
+  uploadFileToTelegram,
+  UploadMetadata,
+} from "../services/telegramStorage";
+import { supabase } from "../services/supabaseClient";
+import { getAiClient } from "../services/aiClient";
+import { format } from "date-fns";
+import { motion, AnimatePresence } from "motion/react";
+import ConfirmationModal from "./ConfirmationModal";
+import { useToast } from "./ToastSystem";
+import { useGlobalModal } from "./core/GlobalModalProvider";
+import { CustomDropdown } from "./CustomDropdown";
+
+export const KNOWN_MODELS = [
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3.1-pro-preview",
+  "gemini-3-flash-preview",
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+];
+
+export const SUPPORT_AI_MODELS = KNOWN_MODELS.map((model) => ({
+  id: model,
+  name: model,
+  description: model,
+}));
+
+export const SparkleStarIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className || "w-5 h-5"}>
+    <defs>
+      <linearGradient id="blueGlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#93c5fd" />
+        <stop offset="40%" stopColor="#3b82f6" />
+        <stop offset="100%" stopColor="#1d4ed8" />
+      </linearGradient>
+    </defs>
+    <path
+      fill="url(#blueGlowGradient)"
+      d="M12 0C12 8 16 12 24 12C16 12 12 16 12 24C12 16 8 12 0 12C8 12 12 8 12 0Z"
+    />
+  </svg>
+);
+
+export const CustomAiSparkleIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    className={className || "w-5 h-5"}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 2C12 7.52 16.48 12 22 12C16.48 12 12 16.48 12 22C12 16.48 7.52 12 2 12C7.52 12 12 7.52 12 2Z"
+      fill="#3b82f6"
+    />
+  </svg>
+);
+
+interface ParsedAttachment {
+  url: string;
+  name: string;
+  type: string;
+  isImage: boolean;
+}
+
+function parseSupportAttachments(
+  rawUrl?: string | null,
+  rawName?: string | null,
+  rawType?: string | null,
+): ParsedAttachment[] {
+  if (!rawUrl || !rawUrl.trim()) return [];
+  let urls: string[] = [];
+  if (rawUrl.trim().startsWith("[") && rawUrl.trim().endsWith("]")) {
+    try {
+      urls = JSON.parse(rawUrl);
+    } catch {
+      urls = rawUrl.split(",").map((s) => s.trim());
+    }
+  } else {
+    urls = rawUrl.split(",").map((s) => s.trim());
+  }
+
+  let names: string[] = [];
+  if (rawName && rawName.trim()) {
+    if (rawName.trim().startsWith("[") && rawName.trim().endsWith("]")) {
+      try {
+        names = JSON.parse(rawName);
+      } catch {
+        names = rawName.split(",").map((s) => s.trim());
+      }
+    } else {
+      names = rawName.split(",").map((s) => s.trim());
+    }
+  }
+
+  let types: string[] = [];
+  if (rawType && rawType.trim()) {
+    if (rawType.trim().startsWith("[") && rawType.trim().endsWith("]")) {
+      try {
+        types = JSON.parse(rawType);
+      } catch {
+        types = rawType.split(",").map((s) => s.trim());
+      }
+    } else {
+      types = rawType.split(",").map((s) => s.trim());
+    }
+  }
+
+  return urls.filter(Boolean).map((u, idx) => {
+    const itemType = types[idx] || (types.length === 1 ? types[0] : "") || "";
+    const itemName =
+      names[idx] ||
+      (names.length === 1 && urls.length === 1 ? names[0] : "") ||
+      (u.startsWith("tg://")
+        ? `attachment_${idx + 1}`
+        : u.split("/").pop() || `file_${idx + 1}`);
+    const isImg =
+      itemType.startsWith("image/") ||
+      /\.(jpeg|jpg|png|gif|webp|svg|bmp|heic)$/i.test(itemName) ||
+      /\.(jpeg|jpg|png|gif|webp|svg|bmp|heic)$/i.test(u);
+    return {
+      url: u,
+      name: itemName,
+      type: itemType,
+      isImage: isImg,
+    };
+  });
+}
+
+export interface FullScreenPreviewProps {
+  isOpen: boolean;
+  onClose: () => void;
+  url: string | null;
+  name?: string;
+  isImage?: boolean;
+  sizeFormatted?: string;
+}
+
+export const FullScreenAttachmentPreview: React.FC<FullScreenPreviewProps> = ({
+  isOpen,
+  onClose,
+  url,
+  name,
+  isImage = true,
+  sizeFormatted,
+}) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !url) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        className="fixed inset-0 z-[99999] bg-black/90 sm:bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 select-none overflow-hidden"
+      >
+        {/* Top Left Title info pill with shadow */}
+        {name && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-4 left-4 sm:top-6 sm:left-6 z-50 max-w-[55vw] sm:max-w-[40vw] flex items-center gap-2 px-3.5 py-2 bg-neutral-900/90 rounded-full border border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-md text-white text-xs sm:text-sm font-medium truncate pointer-events-none"
+          >
+            <span className="truncate">{name}</span>
+            {sizeFormatted && (
+              <span className="text-[11px] text-neutral-400 font-normal shrink-0">
+                ({sizeFormatted})
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Top Right Floating Action Controls */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5"
+        >
+          <a
+            href={url}
+            download={name || "attachment"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-neutral-900/90 hover:bg-neutral-800 text-white rounded-full border border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-md transition-all hover:scale-105 active:scale-95 text-xs font-medium cursor-pointer"
+            title="Download file"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Download</span>
+          </a>
+          <button
+            onClick={onClose}
+            className="p-2 sm:p-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-white rounded-full border border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="Close preview (Esc)"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Center Content */}
+        {isImage ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-[95vw] max-h-[85vh] sm:max-w-[90vw] sm:max-h-[90vh] flex items-center justify-center p-2"
+          >
+            <img
+              src={url}
+              alt={name || "Attachment Preview"}
+              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10"
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+            className="p-6 sm:p-8 bg-neutral-900/95 border border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col items-center gap-4 text-center max-w-sm w-full backdrop-blur-md"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-inner">
+              <FileText className="w-8 h-8" />
+            </div>
+            <div className="space-y-1 w-full">
+              <h4 className="text-sm font-semibold text-white truncate px-2">
+                {name || "Document"}
+              </h4>
+              {sizeFormatted && (
+                <p className="text-xs text-neutral-400">{sizeFormatted}</p>
+              )}
+            </div>
+            <a
+              href={url}
+              download={name || "attachment"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-xs shadow-lg transition-all flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Document</span>
+            </a>
+          </motion.div>
+        )}
+      </motion.div>
+    </AnimatePresence>,
+    document.body,
+  );
+};
+
+interface MessageAttachmentProps {
+  url: string;
+  name?: string;
+  isImage: boolean;
+  isUser?: boolean;
+  isChat?: boolean;
+  linkClassName?: string;
+}
+
+export const MessageAttachment: React.FC<MessageAttachmentProps> = ({
+  url,
+  name,
+  isImage,
+  isUser = false,
+  isChat = false,
+  linkClassName,
+}) => {
+  const [realUrl, setRealUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function resolveAttachment() {
+      if (!url) return;
+      if (!url.startsWith("tg://")) {
+        setRealUrl(url);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const resolved = await getFileUrlFromTelegram(url);
+        if (
+          resolved &&
+          resolved !== "__NOT_FOUND__" &&
+          resolved !== "__TOO_LARGE__" &&
+          isMounted
+        ) {
+          setRealUrl(resolved);
+        } else if (isMounted) {
+          setError(true);
+        }
+      } catch (err) {
+        console.error("Error resolving telegram attachment", err);
+        if (isMounted) setError(true);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    resolveAttachment();
+    return () => {
+      isMounted = false;
+    };
+  }, [url]);
+
+  if (isLoading) {
+    if (!isImage) {
+      return (
+        <div
+          className={`inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md animate-pulse w-full ${
+            isUser
+              ? "bg-blue-600/40 border border-blue-400/30"
+              : "bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/80"
+          } !px-2.5 !py-1.5 my-1`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <div className="w-3.5 h-3.5 bg-neutral-300 dark:bg-neutral-600 rounded shrink-0"></div>
+            <div className="h-2.5 w-[80px] bg-neutral-300 dark:bg-neutral-600 rounded"></div>
+          </div>
+          <div className="w-3 h-3 bg-neutral-300 dark:bg-neutral-600 rounded shrink-0 ml-1"></div>
+        </div>
+      );
+    }
+    return (
+      <div
+        className={`inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md animate-pulse w-full ${
+          isUser
+            ? "bg-blue-600/40 text-white border border-blue-400/30"
+            : "bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
+        } !p-1 !pl-1.5 !pr-2.5 my-1`}
+      >
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="w-5 h-5 rounded-[3px] bg-neutral-300 dark:bg-neutral-700/50 shrink-0 border border-neutral-300 dark:border-neutral-700/50"></div>
+          <div className="h-2.5 w-[70px] bg-neutral-300 dark:bg-neutral-700/50 rounded"></div>
+        </div>
+        <div className="w-3 h-3 bg-neutral-300 dark:bg-neutral-700/50 rounded shrink-0 ml-1"></div>
+      </div>
+    );
+  }
+
+  if (error || !realUrl) {
+    return (
+      <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-lg text-xs font-medium my-1">
+        <span>Failed to load attachment.</span>
+      </div>
+    );
+  }
+
+  if (isImage) {
+    const baseClasses = linkClassName
+      ? `${linkClassName} cursor-pointer w-full justify-between`
+      : `inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium w-full cursor-pointer transition-all ${
+          isUser
+            ? "bg-blue-700/50 hover:bg-blue-600/60 border border-blue-500/30 text-white"
+            : "bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200"
+        }`;
+    return (
+      <>
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsPreviewOpen(true);
+          }}
+          className={`${baseClasses} !p-1 !pl-1.5 !pr-2.5 flex items-center gap-1.5 group my-0.5 max-w-full`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <div className="w-5 h-5 rounded-[3px] bg-neutral-200 dark:bg-neutral-900 shrink-0 relative flex items-center justify-center overflow-hidden border border-neutral-300 dark:border-neutral-700">
+              <img
+                src={realUrl}
+                alt={name || "Attachment"}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <span className="truncate text-[11px] font-medium leading-none">
+              {name || "Image"}
+            </span>
+          </div>
+          <Maximize2 className="w-3 h-3 opacity-60 shrink-0 ml-1 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <FullScreenAttachmentPreview
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          url={realUrl}
+          name={name || "Image"}
+          isImage={true}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsPreviewOpen(true);
+        }}
+        className={`inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium w-full transition-all cursor-pointer group my-0.5 ${
+          isUser
+            ? "bg-blue-700/50 hover:bg-blue-600/60 border border-blue-500/30 text-white"
+            : "bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200"
+        }`}
+      >
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <FileText className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">{name || "Download File"}</span>
+        </div>
+        <Download className="w-3 h-3 opacity-70 shrink-0 ml-1 group-hover:opacity-100 transition-opacity" />
+      </div>
+      <FullScreenAttachmentPreview
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        url={realUrl}
+        name={name || "File Attachment"}
+        isImage={false}
+      />
+    </>
+  );
+};
+
+const PendingAttachmentsList: React.FC<{
+  attachments: File[];
+  isUploading?: boolean;
+  onRemove: (index: number) => void;
+  onPreview: (file: File) => void;
+}> = ({ attachments, isUploading, onRemove, onPreview }) => {
+  if (!attachments || attachments.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 py-1 overflow-x-auto max-w-full pb-1.5 -mb-0.5 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <AnimatePresence>
+        {attachments.map((file, index) => {
+          const isImg =
+            file.type.startsWith("image/") ||
+            /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+          const previewUrl = isImg ? URL.createObjectURL(file) : undefined;
+
+          if (isUploading) {
+            return (
+              <motion.div
+                key={`${file.name}-${index}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-neutral-100 dark:bg-neutral-800/90 border border-neutral-200 dark:border-neutral-700/60 rounded-xl shadow-xs shrink-0 whitespace-nowrap"
+              >
+                <Loader2
+                  size={13}
+                  className="animate-spin text-blue-500 shrink-0"
+                />
+                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                  Uploading...
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(index);
+                  }}
+                  className="w-4 h-4 flex items-center justify-center rounded-full text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors ml-0.5 shrink-0"
+                  title="Cancel upload"
+                >
+                  <X size={11} />
+                </button>
+              </motion.div>
+            );
+          }
+
+          return (
+            <motion.div
+              key={`${file.name}-${index}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={() => onPreview(file)}
+              className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-neutral-100/90 hover:bg-neutral-200/80 dark:bg-neutral-800/90 dark:hover:bg-neutral-700/80 border border-neutral-200 dark:border-neutral-700/60 rounded-xl shadow-xs shrink-0 whitespace-nowrap max-w-[260px] sm:max-w-[300px] cursor-pointer transition-colors group"
+              title="Click to preview attachment"
+            >
+              {isImg && previewUrl ? (
+                <div className="w-7 h-7 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-900 shrink-0 border border-neutral-200 dark:border-neutral-700/60 flex items-center justify-center relative">
+                  <img
+                    src={previewUrl}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-500/20">
+                  <FileText className="w-4 h-4" />
+                </div>
+              )}
+              <div className="min-w-0 flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 truncate max-w-[110px] sm:max-w-[150px] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {file.name}
+                </span>
+                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium shrink-0">
+                  {formatDraftFileSize(file.size)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(index);
+                }}
+                className="w-4 h-4 flex items-center justify-center rounded-full text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors ml-0.5 shrink-0"
+                title="Remove attachment"
+              >
+                <X size={11} />
+              </button>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ResolvedAttachment = ({
+  msg,
+  isUser,
+  isChat,
+}: {
+  msg: SupportMessage;
+  isUser: boolean;
+  isChat: boolean;
+}) => {
+  const attachments = parseSupportAttachments(
+    msg.attachment_url,
+    msg.attachment_name,
+    msg.attachment_type,
+  );
+  if (attachments.length === 0) return null;
+
+  if (isChat) {
+    return (
+      <div
+        className={`mt-2 ${attachments.length > 1 ? "grid grid-cols-2 gap-2 min-w-[220px] max-w-md w-full" : "flex flex-col gap-1.5 w-full"}`}
+      >
+        {attachments.map((att, index) => (
+          <MessageAttachment
+            key={`${att.url}-${index}`}
+            url={att.url}
+            name={att.name}
+            isImage={att.isImage}
+            isUser={isUser}
+            isChat={true}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`mt-3 ${attachments.length > 1 ? "grid grid-cols-2 gap-2.5 max-w-xl w-full" : "flex flex-col gap-2 w-full max-w-xl"}`}
+    >
+      {attachments.map((att, index) => (
+        <MessageAttachment
+          key={`${att.url}-${index}`}
+          url={att.url}
+          name={att.name}
+          isImage={att.isImage}
+          isUser={isUser}
+          isChat={false}
+        />
+      ))}
+    </div>
+  );
+};
+
+const formatDraftFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const DraftFilePreviewModal: React.FC<{
+  file: File | null;
+  onClose: () => void;
+}> = ({ file, onClose }) => {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setObjectUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
+  if (!file || !objectUrl) return null;
+
+  const isImg =
+    file.type.startsWith("image/") ||
+    /\.(jpeg|jpg|png|gif|webp|svg|bmp)$/i.test(file.name);
+
+  return (
+    <FullScreenAttachmentPreview
+      isOpen={!!file}
+      onClose={onClose}
+      url={objectUrl}
+      name={file.name}
+      isImage={isImg}
+      sizeFormatted={formatDraftFileSize(file.size)}
+    />
+  );
+};
+
+const ComposerShimmerSkeleton: React.FC<{ compact?: boolean }> = ({
+  compact = false,
+}) => {
+  return (
+    <div className="absolute inset-0 bg-white/95 dark:bg-black/95 rounded-xl z-20 flex flex-col gap-2.5 pointer-events-none select-none py-2 px-1 animate-fade-in-up">
+      <div className="space-y-2.5 w-full">
+        <div className="h-4 w-1/4 shimmer-bg rounded-md"></div>
+        <div className="h-3.5 w-full shimmer-bg rounded-md"></div>
+        <div className="h-3.5 w-11/12 shimmer-bg rounded-md"></div>
+        <div className="h-3.5 w-4/5 shimmer-bg rounded-md"></div>
+      </div>
+      {!compact && (
+        <div className="space-y-2.5 w-full pt-2">
+          <div className="h-3.5 w-full shimmer-bg rounded-md"></div>
+          <div className="h-3.5 w-5/6 shimmer-bg rounded-md"></div>
+          <div className="h-3.5 w-2/3 shimmer-bg rounded-md"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const EMAIL_TEMPLATES = [
+  {
+    category: "AI Assistant & Features",
+    items: [
+      {
+        name: "Inaccurate Response",
+        subject: "Report: Inaccurate AI Response",
+        content:
+          "Hi Ceaznet Support,\n\nThe AI provided an inaccurate or unhelpful response regarding [Topic].\n\nPrompt details:\n\nExpected response:\n\nActual response:\n\nPlease help improve this.",
+      },
+      {
+        name: "Voice Mode Issue",
+        subject: "Issue with Voice Persona Mode",
+        content:
+          "Hi Team,\n\nI am experiencing an issue with Voice Mode.\n\nIssue details (e.g., audio cutting out, wrong language, persona not following instructions):\n\nDevice/Browser:\n\nThanks,",
+      },
+      {
+        name: "Translation Error",
+        subject: "Translation Error in Dictionary",
+        content:
+          "Hi,\n\nI noticed an incorrect translation in the dictionary/translator feature.\n\nOriginal Text:\nLanguage:\nIncorrect Output:\nSuggested Correction (if known):\n\nRegards,",
+      },
+    ],
+  },
+  {
+    category: "Data & Finance",
+    items: [
+      {
+        name: "Finance Sync Issue",
+        subject: "Issue syncing finance data",
+        content:
+          "Hi Support,\n\nI am having trouble syncing or importing my finance transactions.\n\nFormat used (CSV, manual upload):\nError message (if any):\n\nPlease look into this.",
+      },
+      {
+        name: "Export Data Request",
+        subject: "Request to export account data",
+        content:
+          "Hello,\n\nI would like to request an export of all my notes, chats, and finance data associated with my account (Email: [Your Email]).\n\nHow do I proceed?",
+      },
+    ],
+  },
+  {
+    category: "Science & Molecules",
+    items: [
+      {
+        name: "Molecule Rendering Bug",
+        subject: "Bug: Molecule Viewer not rendering",
+        content:
+          "Hi Team,\n\nThe 3D Molecule viewer failed to render a specific compound.\n\nSMILES/Compound name: \n\nBrowser details:\n\nThanks!",
+      },
+    ],
+  },
+  {
+    category: "Account & Billing",
+    items: [
+      {
+        name: "Subscription Issue",
+        subject: "Subscription/Billing Issue",
+        content:
+          "Hi Support,\n\nI have a question/issue regarding my subscription or a recent charge.\n\nDetails:\n\nPlease let me know the process.\n\nThanks,",
+      },
+      {
+        name: "Change Email",
+        subject: "Request to change account email",
+        content:
+          "Hi,\n\nI would like to change the email address associated with my account from [Old Email] to [New Email].\n\nThanks,",
+      },
+    ],
+  },
+  {
+    category: "Feedback & Ideas",
+    items: [
+      {
+        name: "Feature Request",
+        subject: "Feature Request: [Feature Name]",
+        content:
+          "Hi Team,\n\nI would love to see this feature added to Ceaznet:\n\nWhy this would be useful:\n\nThanks!",
+      },
+    ],
+  },
+];
+
+function htmlToMarkdown(html: string): string {
+  if (!html) return "";
+  if (!/<[a-z][\s\S]*>/i.test(html)) return html.trim();
+  try {
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+
+    // Process code blocks
+    temp.querySelectorAll("pre").forEach((pre) => {
+      pre.innerHTML = "\n```\n" + (pre.textContent || "") + "\n```\n";
+    });
+
+    // Process blockquotes
+    temp.querySelectorAll("blockquote").forEach((bq) => {
+      bq.innerHTML =
+        "\n> " + (bq.textContent || "").replace(/\n/g, "\n> ") + "\n";
+    });
+
+    // Process ordered lists
+    temp.querySelectorAll("ol").forEach((ol) => {
+      const items = ol.querySelectorAll(":scope > li");
+      items.forEach((li, idx) => {
+        li.innerHTML = `\n${idx + 1}. ${li.innerHTML.trim()}\n`;
+      });
+    });
+
+    // Process unordered lists
+    temp.querySelectorAll("ul").forEach((ul) => {
+      const items = ul.querySelectorAll(":scope > li");
+      items.forEach((li) => {
+        li.innerHTML = `\n- ${li.innerHTML.trim()}\n`;
+      });
+    });
+
+    let text = temp.innerHTML;
+    text = text.replace(/<div><br><\/div>/gi, "\n");
+    text = text.replace(/<div>/gi, "\n");
+    text = text.replace(/<\/div>/gi, "");
+    text = text.replace(/<p>/gi, "");
+    text = text.replace(/<\/p>/gi, "\n\n");
+    text = text.replace(/<b>(.*?)<\/b>/gi, "**$1**");
+    text = text.replace(/<strong>(.*?)<\/strong>/gi, "**$1**");
+    text = text.replace(/<i>(.*?)<\/i>/gi, "*$1*");
+    text = text.replace(/<em>(.*?)<\/em>/gi, "*$1*");
+    text = text.replace(/<u>(.*?)<\/u>/gi, "_$1_");
+    text = text.replace(/<s>(.*?)<\/s>/gi, "~$1~");
+    text = text.replace(/<strike>(.*?)<\/strike>/gi, "~$1~");
+    text = text.replace(/<del>(.*?)<\/del>/gi, "~$1~");
+    text = text.replace(/<h3>(.*?)<\/h3>/gi, "\n### $1\n");
+    text = text.replace(/<h2>(.*?)<\/h2>/gi, "\n## $1\n");
+    text = text.replace(/<h1>(.*?)<\/h1>/gi, "\n# $1\n");
+    text = text.replace(/<ul>/gi, "\n");
+    text = text.replace(/<\/ul>/gi, "\n");
+    text = text.replace(/<ol>/gi, "\n");
+    text = text.replace(/<\/ol>/gi, "\n");
+    text = text.replace(/<li>/gi, "- ");
+    text = text.replace(/<\/li>/gi, "\n");
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<a [^>]*href="(.*?)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
+    text = text.replace(/&nbsp;/g, " ");
+    text = text.replace(/&lt;/g, "<");
+    text = text.replace(/&gt;/g, ">");
+    text = text.replace(/&amp;/g, "&");
+    return text.trim();
+  } catch {
+    return html.trim();
+  }
+}
+
+export const SupportView: React.FC<{
+  setSupportHeaderState?: (state: {
+    title: string | null;
+    onBack?: () => void;
+  }) => void;
+  userProfile?: any;
+}> = ({ setSupportHeaderState, userProfile }) => {
+  const { user } = useAuth();
+  const { addToast } = useToast();
+  const { alert: globalAlert } = useGlobalModal();
+  const [activeTab, setActiveTab] = useState<"chat" | "mail">(() => {
+    return (
+      (localStorage.getItem("supportActiveTab") as "chat" | "mail") || "chat"
+    );
+  });
+  const [conversations, setConversations] = useState<
+    (SupportConversation & {
+      unread_count?: number;
+      last_message?: string;
+      last_message_time?: string;
+    })[]
+  >([]);
+  const [activeConversation, setActiveConversation] =
+    useState<SupportConversation | null>(null);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [isAttachExpanded, setIsAttachExpanded] = useState<boolean>(false);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
+  const [isReplying, setIsReplying] = useState(false);
+  const [showTemplatesList, setShowTemplatesList] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<
+    string | null
+  >(null);
+  const [isDeletingConvo, setIsDeletingConvo] = useState(false);
+  const [adminTyping, setAdminTyping] = useState(false);
+  const typingTimer = useRef<NodeJS.Timeout | null>(null);
+  const userTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingChannelRef = useRef<any>(null);
+  const lastUserTypingRef = useRef<number>(0);
+  const isFetchingConversationsRef = useRef<boolean>(false);
+  const activeMessageFetchIdRef = useRef<string | null>(null);
+  const lastFetchConversationsTimeRef = useRef<number>(0);
+  const [platformSettings, setPlatformSettings] = useState<{
+    support_email: string;
+    platform_logo_url: string;
+  }>({ support_email: "Support@ceaznet.com", platform_logo_url: "/logo.png" });
+  const [activeMenuMsgId, setActiveMenuMsgId] = useState<string | null>(null);
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState<string>("");
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [isDeletingMsg, setIsDeletingMsg] = useState(false);
+
+  // AI Refinement & Portals State
+  const [selectedAiModel, setSelectedAiModel] = useState<string>(() => {
+    return localStorage.getItem("support-ai-model") || KNOWN_MODELS[0];
+  });
+  const [isRefining, setIsRefining] = useState<boolean>(false);
+  const [templateBtnRect, setTemplateBtnRect] = useState<DOMRect | null>(null);
+
+  const richEditorRef = useRef<HTMLDivElement>(null);
+  const createTicketEditorRef = useRef<HTMLDivElement>(null);
+  const createTemplateBtnRef = useRef<HTMLButtonElement>(null);
+  const replyTemplateBtnRef = useRef<HTMLButtonElement>(null);
+
+  const [activeFormats, setActiveFormats] = useState<{
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
+    h3?: boolean;
+    unorderedList?: boolean;
+    orderedList?: boolean;
+    quote?: boolean;
+    code?: boolean;
+  }>({});
+
+  const checkActiveFormats = useCallback(() => {
+    const activeRef = isComposing ? createTicketEditorRef : richEditorRef;
+    if (!activeRef.current) return;
+    try {
+      const isBold = document.queryCommandState("bold");
+      const isItalic = document.queryCommandState("italic");
+      const isUnderline = document.queryCommandState("underline");
+      const isStrikethrough = document.queryCommandState("strikeThrough");
+      const isUnorderedList = document.queryCommandState("insertUnorderedList");
+      const isOrderedList = document.queryCommandState("insertOrderedList");
+      const sel = window.getSelection();
+      let isH3 = false;
+      let isQuote = false;
+      let isCode = false;
+      if (sel && sel.rangeCount > 0) {
+        let node: Node | null = sel.getRangeAt(0).startContainer;
+        while (node && node !== activeRef.current) {
+          if (node.nodeName === "H3") isH3 = true;
+          if (node.nodeName === "BLOCKQUOTE") isQuote = true;
+          if (node.nodeName === "PRE") isCode = true;
+          node = node.parentNode;
+        }
+      }
+      setActiveFormats({
+        bold: isBold,
+        italic: isItalic,
+        underline: isUnderline,
+        strikethrough: isStrikethrough,
+        unorderedList: isUnorderedList,
+        orderedList: isOrderedList,
+        h3: isH3,
+        quote: isQuote,
+        code: isCode,
+      });
+    } catch (e) {
+      // ignore selection state errors
+    }
+  }, [isComposing]);
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (
+        document.activeElement === richEditorRef.current ||
+        richEditorRef.current?.contains(document.activeElement) ||
+        document.activeElement === createTicketEditorRef.current ||
+        createTicketEditorRef.current?.contains(document.activeElement)
+      ) {
+        checkActiveFormats();
+      } else {
+        setActiveFormats({});
+      }
+    };
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, [checkActiveFormats]);
+
+  const getFormatBtnClass = (isActive: boolean) =>
+    `p-1 rounded transition-colors select-none shrink-0 ${
+      isActive
+        ? "text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 shadow-sm"
+        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 bg-transparent border border-transparent"
+    }`;
+
+  const applyRichFormat = (
+    type:
+      | "bold"
+      | "italic"
+      | "underline"
+      | "strikethrough"
+      | "h3"
+      | "unorderedList"
+      | "orderedList"
+      | "quote"
+      | "code"
+      | "link"
+      | "clear",
+  ) => {
+    const activeRef = isComposing ? createTicketEditorRef : richEditorRef;
+    if (activeRef.current) {
+      activeRef.current.focus();
+    }
+    if (type === "h3") {
+      document.execCommand("formatBlock", false, "<h3>");
+    } else if (type === "quote") {
+      document.execCommand("formatBlock", false, "<blockquote>");
+    } else if (type === "code") {
+      document.execCommand("formatBlock", false, "<pre>");
+    } else if (type === "unorderedList") {
+      document.execCommand("insertUnorderedList", false);
+    } else if (type === "orderedList") {
+      document.execCommand("insertOrderedList", false);
+    } else if (type === "link") {
+      const url = prompt("Enter website URL:", "https://");
+      if (url) {
+        document.execCommand("createLink", false, url);
+      }
+    } else if (type === "clear") {
+      document.execCommand("removeFormat", false);
+    } else if (type === "bold") {
+      document.execCommand("bold", false);
+    } else if (type === "italic") {
+      document.execCommand("italic", false);
+    } else if (type === "underline") {
+      document.execCommand("underline", false);
+    } else if (type === "strikethrough") {
+      document.execCommand("strikeThrough", false);
+    }
+
+    if (activeRef.current) {
+      setNewMessage(activeRef.current.innerHTML);
+    }
+    setTimeout(checkActiveFormats, 10);
+  };
+
+  const handleRefineWithAI = async () => {
+    const activeRef = isComposing ? createTicketEditorRef : richEditorRef;
+    const rawContent =
+      activeRef.current?.innerText ||
+      (activeRef.current?.innerHTML
+        ? htmlToMarkdown(activeRef.current.innerHTML)
+        : "") ||
+      newMessage ||
+      "";
+    if (!rawContent.trim()) {
+      addToast("Please write a draft message first to refine with AI.", "info");
+      return;
+    }
+
+    setIsRefining(true);
+    try {
+      const ai = getAiClient();
+
+      let systemInstruction = "";
+      let contentsToAnalyze = "";
+
+      if (isComposing) {
+        // New ticket creation
+        systemInstruction = `You are an expert communication assistant helping a CUSTOMER (User) write a support ticket to a tech support team.
+Your task is to refine, polish, and structure the CUSTOMER'S draft message for a NEW support ticket.
+Write strictly from the CUSTOMER'S first-person perspective ("I am experiencing...", "Could you please help me with...").
+
+You must generate BOTH a highly concise, professional Subject line and a polished, structured Body message.
+Use the following format strictly in your response:
+[SUBJECT]: <your professional subject here>
+[BODY]: <your refined, structured body here>
+
+Strict Guidelines:
+1. PERSPECTIVE: The author is the CUSTOMER submitting an issue, NOT the support agent. NEVER use agent phrases such as "Thank you for contacting us", "We apologize for the inconvenience", "Thank you for your patience", or "Our team is investigating".
+2. Accurately preserve all issue details, error codes, steps already tried, and user intent from the draft.
+3. Structure the body with clean formatting, short paragraphs, and clear bullet points or numbered lists if steps/details are mentioned.
+4. Keep the subject line under 10 words, clear, and action-oriented (e.g., "Issue with Password Reset Link Returning 404 Error").
+5. Return ONLY the formatted response containing [SUBJECT] and [BODY]. Do NOT include conversational commentary, markdown code fences around the whole response, or meta-introductory notes.`;
+
+        contentsToAnalyze = `Customer's draft subject (might be empty): ${newSubject.trim() || "None yet"}\n\nCustomer's draft body message:\n${rawContent.trim()}`;
+      } else {
+        // Existing ticket follow-up/reply
+        let chatHistoryContext = "";
+        if (messages && messages.length > 0) {
+          chatHistoryContext = messages
+            .map((m) => {
+              const sender =
+                m.sender_type === "user"
+                  ? "User (Customer)"
+                  : "Ceaznet Support (Agent)";
+              const msgContent = htmlToMarkdown(m.message || "");
+              return `[${sender}]: ${msgContent}`;
+            })
+            .join("\n\n");
+        }
+
+        systemInstruction = `You are an expert communication assistant helping a CUSTOMER (User) write a follow-up reply to an ongoing support ticket.
+Your task is to refine, polish, and structure the CUSTOMER'S draft reply.
+This is a follow-up/reply, so do NOT generate a subject line.
+
+CRITICAL PERSPECTIVE RULES:
+1. The author is the CUSTOMER/USER responding to the support team, NOT a support representative.
+2. NEVER use agent clichés such as:
+   - "Thank you for your patience" (this is for agents; instead use "Thank you for the quick response / update" or "Thank you for your assistance")
+   - "Thank you for reaching out to us"
+   - "We are looking into this" / "Our team is investigating"
+   - "We apologize for the inconvenience"
+3. From the user's perspective, acknowledge the agent's previous message appropriately (e.g., "Thank you for the steps provided", "I followed your instructions, but unfortunately..."), clearly convey what happened or what is still failing, and politely request the next action or alternative solution.
+4. Accurately preserve all details, error logs, and user intent from the draft.
+5. Do NOT invent a new ticket or act as if you are starting a new thread. Maintain the natural flow of the conversation history.
+6. Correct all grammar, tone, spelling, and sentence structure.
+7. Return ONLY the refined message body. Do NOT include conversational commentary, meta text, or introductory notes.`;
+
+        contentsToAnalyze = `Here is the ongoing conversation history for context:
+=== CONVERSATION HISTORY ===
+${chatHistoryContext}
+============================
+
+Customer's draft follow-up to refine:
+${rawContent.trim()}`;
+      }
+
+      const response = await ai.models.generateContent({
+        model: selectedAiModel,
+        contents: contentsToAnalyze,
+        config: {
+          systemInstruction,
+          temperature: 0.3,
+        },
+      });
+
+      const refinedText = response.text?.trim();
+      if (refinedText) {
+        if (isComposing) {
+          let subject = "";
+          let body = "";
+
+          // Try matching [SUBJECT]: and [BODY]: tags
+          const subjectRegex =
+            /(?:\[SUBJECT\]:|SUBJECT:)\s*(.*?)(?=\n|\[BODY\]:|BODY:|$)/i;
+          const bodyRegex = /(?:\[BODY\]:|BODY:)\s*([\s\S]*)/i;
+
+          const sMatch = refinedText.match(subjectRegex);
+          const bMatch = refinedText.match(bodyRegex);
+
+          if (sMatch) {
+            subject = sMatch[1].trim();
+          }
+
+          if (bMatch) {
+            body = bMatch[1].trim();
+          }
+
+          // Fallback: If we couldn't parse both cleanly using markers, try line-by-line splits
+          if (!subject || !body) {
+            const lines = refinedText.split("\n");
+            const firstLine = lines[0] || "";
+            if (firstLine.toLowerCase().startsWith("subject:")) {
+              subject = firstLine.replace(/^subject:\s*/i, "").trim();
+              body = lines.slice(1).join("\n").trim();
+              if (body.toLowerCase().startsWith("body:")) {
+                body = body.replace(/^body:\s*/i, "").trim();
+              }
+            } else if (firstLine.toLowerCase().startsWith("[subject]:")) {
+              subject = firstLine.replace(/^\[subject\]:\s*/i, "").trim();
+              body = lines.slice(1).join("\n").trim();
+              if (body.toLowerCase().startsWith("[body]:")) {
+                body = body.replace(/^\[body\]:\s*/i, "").trim();
+              }
+            } else {
+              // Ultimate fallback
+              subject = newSubject.trim() || rawContent.slice(0, 40) + "...";
+              body = refinedText;
+            }
+          }
+
+          if (subject) {
+            setNewSubject(subject);
+          }
+
+          if (body) {
+            setNewMessage(body);
+            if (activeRef.current) {
+              activeRef.current.innerText = body;
+            }
+          } else {
+            setNewMessage(refinedText);
+            if (activeRef.current) {
+              activeRef.current.innerText = refinedText;
+            }
+          }
+        } else {
+          // Follow-up ticket (isComposing is false)
+          setNewMessage(refinedText);
+          if (activeRef.current) {
+            activeRef.current.innerText = refinedText;
+          }
+        }
+        addToast("Draft refined successfully with AI!", "success");
+      }
+    } catch (err: any) {
+      console.error("Failed to refine with AI:", err);
+      addToast(
+        err?.message || "Failed to refine with AI. Please check your API key.",
+        "error",
+      );
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  const insertFormatting = (
+    type:
+      | "bold"
+      | "italic"
+      | "underline"
+      | "strikethrough"
+      | "h3"
+      | "list"
+      | "orderedList"
+      | "quote"
+      | "code"
+      | "link"
+      | "clear",
+  ) => {
+    let textarea = document.activeElement as HTMLTextAreaElement | null;
+    if (
+      !textarea ||
+      !textarea.classList.contains("support-composer-textarea")
+    ) {
+      textarea = document.querySelector(
+        ".support-composer-textarea",
+      ) as HTMLTextAreaElement | null;
+    }
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let replacement = "";
+    let cursorOffset = 0;
+
+    switch (type) {
+      case "bold":
+        replacement = `**${selectedText || "bold text"}**`;
+        cursorOffset = selectedText ? replacement.length : 2;
+        break;
+      case "italic":
+        replacement = `*${selectedText || "italic text"}*`;
+        cursorOffset = selectedText ? replacement.length : 1;
+        break;
+      case "underline":
+        replacement = `<u>${selectedText || "underlined text"}</u>`;
+        cursorOffset = selectedText ? replacement.length : 3;
+        break;
+      case "strikethrough":
+        replacement = `~~${selectedText || "strikethrough text"}~~`;
+        cursorOffset = selectedText ? replacement.length : 2;
+        break;
+      case "h3":
+        replacement = `\n### ${selectedText || "Heading"}\n`;
+        cursorOffset = replacement.length;
+        break;
+      case "list":
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((line) => `- ${line}`)
+            .join("\n");
+        } else {
+          replacement = "\n- item";
+        }
+        cursorOffset = replacement.length;
+        break;
+      case "orderedList":
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((line, idx) => `${idx + 1}. ${line}`)
+            .join("\n");
+        } else {
+          replacement = "\n1. item";
+        }
+        cursorOffset = replacement.length;
+        break;
+      case "quote":
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n");
+        } else {
+          replacement = "\n> quote";
+        }
+        cursorOffset = replacement.length;
+        break;
+      case "code":
+        replacement = `\`\`\`\n${selectedText || "code here"}\n\`\`\``;
+        cursorOffset = selectedText ? replacement.length : 4;
+        break;
+      case "link":
+        replacement = `[${selectedText || "link text"}](https://example.com)`;
+        cursorOffset = selectedText ? replacement.length : 1;
+        break;
+      case "clear":
+        replacement = selectedText
+          .replace(/[*_~`>#]/g, "")
+          .replace(/<\/?u>/g, "");
+        cursorOffset = replacement.length;
+        break;
+      default:
+        break;
+    }
+
+    const newValue =
+      text.substring(0, start) + replacement + text.substring(end);
+    setNewMessage(newValue);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+    }, 0);
+  };
+
+  const handleEditMessage = (msgId: string, currentText: string) => {
+    setEditingMsgId(msgId);
+    setEditingText(currentText);
+    setActiveMenuMsgId(null);
+  };
+
+  const handleSaveEditedMessage = async (msgId: string) => {
+    if (!editingText.trim()) return;
+    try {
+      await supportService.updateMessage(msgId, editingText);
+      setEditingMsgId(null);
+      setEditingText("");
+      addToast("Message updated successfully", "success");
+    } catch (err) {
+      console.error("Failed to update message", err);
+      addToast("Failed to update message", "error");
+    }
+  };
+
+  const handleDeleteMessageClick = (msgId: string) => {
+    setMessageToDelete(msgId);
+    setActiveMenuMsgId(null);
+  };
+
+  const handleConfirmDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    setIsDeletingMsg(true);
+    try {
+      await supportService.deleteMessage(messageToDelete);
+      setMessageToDelete(null);
+      addToast("Message deleted successfully", "success");
+    } catch (err) {
+      console.error("Failed to delete message", err);
+      addToast("Failed to delete message", "error");
+    } finally {
+      setIsDeletingMsg(false);
+    }
+  };
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const { data, error } = await supabase
+          .from("platform_settings")
+          .select("setting_key, setting_value");
+        if (data && !error) {
+          const newSettings = {
+            support_email: "Support@ceaznet.com",
+            platform_logo_url: "/logo.png",
+          };
+          data.forEach((row: any) => {
+            let val = row.setting_value;
+            if (
+              typeof val === "string" &&
+              val.startsWith('"') &&
+              val.endsWith('"')
+            ) {
+              val = val.slice(1, -1);
+            }
+            if (row.setting_key === "support_email")
+              newSettings.support_email = val || "Support@ceaznet.com";
+            if (row.setting_key === "platform_logo_url")
+              newSettings.platform_logo_url = val || "/logo.png";
+          });
+          setPlatformSettings(newSettings);
+        }
+      } catch (err) {
+        console.error("Error fetching platform settings", err);
+      }
+    }
+    fetchSettings();
+  }, []);
+
+  const avatarUrl = userProfile?.avatar_url
+    ? userProfile.avatar_url
+    : `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userProfile?.full_name || user?.email || "A")}`;
+
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+
+  const handleMobileFocusScroll = (e: React.FocusEvent<HTMLElement>) => {
+    if (window.innerWidth < 768) {
+      const target = e.currentTarget;
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 300);
+    }
+  };
+
+  useEffect(() => {
+    setPortalNode(document.getElementById("floating-header-actions-portal"));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("supportActiveTab", activeTab);
+  }, [activeTab]);
+
+  const activeConversationRef = useRef<SupportConversation | null>(null);
+
+  useEffect(() => {
+    activeConversationRef.current = activeConversation;
+    if (activeConversation) {
+      localStorage.setItem(
+        "supportActiveConversationId",
+        activeConversation.id,
+      );
+    } else {
+      localStorage.removeItem("supportActiveConversationId");
+    }
+  }, [activeConversation]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadConversations();
+      const unsub = supportService.subscribeToConversations(
+        user.id,
+        (payload) => {
+          if (
+            payload?.eventType === "DELETE" &&
+            payload?.table === "support_conversations"
+          ) {
+            const deletedId = payload.old?.id;
+            if (deletedId) {
+              setConversations((prev) =>
+                prev.filter((c) => c.id !== deletedId),
+              );
+              setActiveConversation((prev) =>
+                prev?.id === deletedId ? null : prev,
+              );
+            }
+          }
+          // Simply reload to get updated unread counts safely without closure staleness
+          loadConversations(true);
+        },
+      );
+      return () => unsub();
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const convoId = activeConversation?.id;
+    if (convoId) {
+      const channel = supabase.channel(`support_typing_${convoId}`);
+      typingChannelRef.current = channel;
+      channel
+        .on("broadcast", { event: "typing" }, (payload) => {
+          if (payload.payload?.user_type === "admin") {
+            if (payload.payload?.isTyping === false) {
+              setAdminTyping(false);
+              if (typingTimer.current) clearTimeout(typingTimer.current);
+            } else {
+              setAdminTyping(true);
+              if (typingTimer.current) clearTimeout(typingTimer.current);
+              typingTimer.current = setTimeout(
+                () => setAdminTyping(false),
+                2000,
+              );
+            }
+          }
+        })
+        .on("broadcast", { event: "stop_typing" }, (payload) => {
+          if (payload.payload?.user_type === "admin") {
+            setAdminTyping(false);
+            if (typingTimer.current) clearTimeout(typingTimer.current);
+          }
+        })
+        .subscribe();
+      return () => {
+        if (typingTimer.current) clearTimeout(typingTimer.current);
+        supabase.removeChannel(channel);
+        typingChannelRef.current = null;
+      };
+    }
+  }, [activeConversation?.id]);
+
+  const handleUserTyping = (isTyping: boolean = true) => {
+    if (typingChannelRef.current) {
+      if (isTyping) {
+        const now = Date.now();
+        if (now - lastUserTypingRef.current > 1000) {
+          lastUserTypingRef.current = now;
+          typingChannelRef.current
+            .send({
+              type: "broadcast",
+              event: "typing",
+              payload: { user_type: "user", isTyping: true },
+            })
+            .catch(console.error);
+        }
+
+        if (userTypingTimerRef.current)
+          clearTimeout(userTypingTimerRef.current);
+        userTypingTimerRef.current = setTimeout(() => {
+          handleUserTyping(false);
+        }, 1000);
+      } else {
+        lastUserTypingRef.current = 0;
+        typingChannelRef.current
+          .send({
+            type: "broadcast",
+            event: "typing",
+            payload: { user_type: "user", isTyping: false },
+          })
+          .catch(console.error);
+
+        typingChannelRef.current
+          .send({
+            type: "broadcast",
+            event: "stop_typing",
+            payload: { user_type: "user" },
+          })
+          .catch(console.error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const convoId = activeConversation?.id;
+    if (convoId) {
+      loadMessages(convoId);
+      const unsub = supportService.subscribeToMessages(convoId, (payload) => {
+        if (payload.eventType === "INSERT") {
+          setMessages((prev) => {
+            if (prev.find((m) => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
+          loadConversations(true);
+        } else if (payload.eventType === "UPDATE") {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === payload.new.id ? payload.new : m)),
+          );
+          loadConversations(true);
+        } else if (payload.eventType === "DELETE") {
+          const deletedId = payload.old?.id || payload.new?.id;
+          if (deletedId) {
+            setMessages((prev) => prev.filter((m) => m.id !== deletedId));
+          }
+          loadConversations(true);
+        }
+      });
+      return () => unsub();
+    } else {
+      setMessages([]);
+    }
+  }, [activeConversation?.id]);
+
+  useEffect(() => {
+    if (activeConversation) {
+      const updated = conversations.find((c) => c.id === activeConversation.id);
+      if (
+        updated &&
+        (updated.status !== activeConversation.status ||
+          updated.updated_at !== activeConversation.updated_at)
+      ) {
+        setActiveConversation(updated);
+      }
+    }
+  }, [conversations, activeConversation]);
+
+  useEffect(() => {
+    if (activeConversation && user) {
+      const hasUnreadAdminMessags = messages.some(
+        (m) => m.sender_type === "admin" && !m.is_read,
+      );
+      if (hasUnreadAdminMessags) {
+        supportService.markMessagesAsRead(activeConversation.id, user.id);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.sender_type === "admin" ? { ...m, is_read: true } : m,
+          ),
+        );
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeConversation.id ? { ...c, unread_count: 0 } : c,
+          ),
+        );
+      }
+    }
+  }, [messages, activeConversation, user]);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleHeaderBack = useCallback(() => {
+    setIsComposing(false);
+    setActiveConversation(null);
+    setNewSubject("");
+    setNewMessage("");
+    if (createTicketEditorRef.current) {
+      createTicketEditorRef.current.innerHTML = "";
+    }
+    if (richEditorRef.current) {
+      richEditorRef.current.innerHTML = "";
+    }
+    setAttachments([]);
+    navigate("/support");
+  }, [navigate]);
+
+  useEffect(() => {
+    if (setSupportHeaderState) {
+      if (activeConversation || isComposing) {
+        setSupportHeaderState({
+          title: isComposing
+            ? "Create Ticket"
+            : activeConversation?.subject || "Support",
+          onBack: handleHeaderBack,
+        });
+      } else {
+        setSupportHeaderState({ title: null });
+      }
+    }
+  }, [
+    activeConversation,
+    isComposing,
+    setSupportHeaderState,
+    handleHeaderBack,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (setSupportHeaderState) setSupportHeaderState({ title: null });
+    };
+  }, [setSupportHeaderState]);
+
+  const supportId = useMemo(() => {
+    const parts = location.pathname.split("/");
+    return parts.length >= 3 && parts[1] === "support" && parts[2]
+      ? parts[2]
+      : null;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!supportId) {
+      if (activeConversation !== null) setActiveConversation(null);
+    } else if (conversations.length > 0) {
+      const convo = conversations.find((c) => c.id === supportId);
+      if (convo && activeConversation?.id !== supportId) {
+        setActiveConversation(convo);
+        setActiveTab(convo.type);
+        setIsComposing(false);
+      }
+    }
+  }, [supportId, conversations, activeConversation?.id]);
+
+  const loadConversations = async (silent = false) => {
+    const now = Date.now();
+    if (
+      isFetchingConversationsRef.current ||
+      now - lastFetchConversationsTimeRef.current < 400
+    ) {
+      return;
+    }
+    isFetchingConversationsRef.current = true;
+    lastFetchConversationsTimeRef.current = now;
+    try {
+      if (!silent) setLoading(true);
+      const data = await supportService.getConversations(user!.id);
+
+      setConversations((prev) => {
+        let newData = [...data];
+        if (activeConversationRef.current) {
+          newData = newData.map((c) =>
+            c.id === activeConversationRef.current?.id
+              ? { ...c, unread_count: 0 }
+              : c,
+          );
+        }
+        return newData;
+      });
+
+      if (!silent) {
+        const chats = data.filter(
+          (c) => c.type === "chat" || c.type === "mail",
+        );
+        const savedActiveId = localStorage.getItem(
+          "supportActiveConversationId",
+        );
+        if (savedActiveId) {
+          const selected = chats.find((c) => c.id === savedActiveId);
+          if (selected) {
+            setActiveConversation(selected);
+            setActiveTab(selected.type);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isFetchingConversationsRef.current = false;
+      if (!silent) setLoading(false);
+    }
+  };
+
+  const loadMessages = async (id: string, silent = false) => {
+    if (activeMessageFetchIdRef.current === id) {
+      return;
+    }
+    activeMessageFetchIdRef.current = id;
+    try {
+      const data = await supportService.getMessages(id);
+      setMessages((prev) => {
+        if (!silent) {
+          setTimeout(() => scrollToBottom(true), 50);
+        } else {
+          if (data.length > prev.length) {
+            // Only scroll if new messages arrived
+            setTimeout(() => scrollToBottom(true), 50);
+          }
+        }
+        return data;
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      activeMessageFetchIdRef.current = null;
+    }
+  };
+
+  const scrollToBottom = (force = false) => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } =
+        messagesContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+      if (force || isNearBottom) {
+        messagesContainerRef.current.scrollTop = scrollHeight;
+      }
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [messages]);
+
+  const handleConfirmDelete = async () => {
+    if (!conversationToDelete) return;
+
+    const convoId = conversationToDelete;
+    setIsDeletingConvo(true);
+    try {
+      await supportService.deleteConversation(convoId);
+      // If we reach here, it successfully deleted in DB (count > 0)
+      setConversations((prev) => prev.filter((c) => c.id !== convoId));
+      if (activeConversation?.id === convoId) {
+        setActiveConversation(null);
+        navigate("/support", { replace: true });
+      }
+      addToast("Deleted successfully.", "success");
+    } catch (err: any) {
+      console.error("Failed to delete conversation", err);
+      if (err.message && err.message.includes("database permissions")) {
+        addToast(
+          "Delete blocked. Please add DELETE RLS policy in Supabase SQL editor.",
+          "error",
+        );
+      } else {
+        addToast(
+          "Failed to delete. Wait 2 seconds or check permissions.",
+          "error",
+        );
+      }
+    } finally {
+      setIsDeletingConvo(false);
+      setConversationToDelete(null);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!newMessage.trim() && attachments.length === 0) || !user) return;
+
+    try {
+      setSending(true);
+      let convoId = activeConversation?.id;
+
+      if (!convoId && activeTab === "chat") {
+        const newConvo = await supportService.createConversation(
+          user.id,
+          "chat",
+        );
+        setActiveConversation(newConvo);
+        setConversations((prev) => [newConvo, ...prev]);
+        convoId = newConvo.id;
+      }
+
+      if (!convoId && activeTab === "mail") {
+        if (!newSubject.trim()) {
+          globalAlert("Please enter a subject for the mail.", {
+            type: "warning",
+          });
+          setSending(false);
+          return;
+        }
+        const newConvo = await supportService.createConversation(
+          user.id,
+          "mail",
+          newSubject,
+        );
+        setConversations((prev) => [newConvo, ...prev]);
+        navigate(`/support/${newConvo.id}`);
+        convoId = newConvo.id;
+        setNewSubject("");
+      }
+
+      if (convoId) {
+        let attachmentData;
+        if (attachments.length > 0) {
+          setIsUploadingAttachment(true);
+          const uploadPromises = attachments.map(async (attFile) => {
+            const metadata: UploadMetadata = {
+              userId: user?.id || "N/A",
+              userName:
+                user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                "Support User",
+              userEmail: user?.email || "N/A",
+              uploadedAt: new Date().toISOString(),
+              fileType: "SUPPORT ATTACHMENT",
+              mimeType: attFile.type || "N/A",
+              fileSize: `${(attFile.size / (1024 * 1024)).toFixed(2)} MB (${attFile.size.toLocaleString()} bytes)`,
+            };
+            const url = await uploadFileToTelegram(
+              attFile,
+              attFile.name,
+              metadata,
+            );
+            return {
+              url,
+              name: attFile.name,
+              type: attFile.type,
+            };
+          });
+
+          const uploaded = await Promise.all(uploadPromises);
+          attachmentData = {
+            url: uploaded.map((u) => u.url).join(","),
+            name: uploaded.map((u) => u.name).join(","),
+            type: uploaded.map((u) => u.type).join(","),
+          };
+        }
+
+        await supportService.sendMessage(
+          convoId,
+          user.id,
+          newMessage,
+          attachmentData,
+        );
+        setNewMessage("");
+        handleUserTyping(false);
+        if (richEditorRef.current) {
+          richEditorRef.current.innerHTML = "";
+        }
+        if (createTicketEditorRef.current) {
+          createTicketEditorRef.current.innerHTML = "";
+        }
+        setAttachments([]);
+        setIsUploadingAttachment(false);
+        setIsReplying(false);
+        setIsComposing(false);
+        setTimeout(() => scrollToBottom(true), 50);
+      }
+    } catch (e) {
+      console.error(e);
+      globalAlert("Failed to send message.", { type: "danger" });
+    } finally {
+      setSending(false);
+      setIsUploadingAttachment(false);
+    }
+  };
+
+  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setAttachments((prev) => [...prev, ...newFiles]);
+    }
+    e.target.value = "";
+  };
+
+  const filteredConversations = conversations.filter(
+    (c) => c.type === activeTab,
+  );
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "open":
+        return (
+          <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            Active
+          </span>
+        );
+      case "closed":
+        return (
+          <span className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            Closed
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            Pending
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const queryParams = new URLSearchParams(location.search);
+  const isGuestSupport = queryParams.get("guest") === "true";
+  const predefinedTopic = queryParams.get("topic") || "";
+  const predefinedMessage = queryParams.get("message") || "";
+  const predefinedEmail = queryParams.get("email") || "";
+
+  useEffect(() => {
+    if (user && isGuestSupport && !isComposing && !activeConversation) {
+      setActiveTab("mail");
+      setIsComposing(true);
+      if (predefinedTopic) setNewSubject(predefinedTopic);
+      if (predefinedMessage) setNewMessage(predefinedMessage);
+      // Clean URL silently
+      const url = new URL(window.location.href);
+      url.searchParams.delete("guest");
+      url.searchParams.delete("topic");
+      url.searchParams.delete("message");
+      url.searchParams.delete("email");
+      window.history.replaceState(
+        {},
+        document.title,
+        url.pathname + url.search,
+      );
+    }
+  }, [
+    user,
+    isGuestSupport,
+    isComposing,
+    activeConversation,
+    predefinedTopic,
+    predefinedMessage,
+  ]);
+
+  const [guestEmail, setGuestEmail] = useState(
+    predefinedEmail || (user?.email ?? ""),
+  );
+  const [guestTopic, setGuestTopic] = useState(predefinedTopic);
+  const [guestMessage, setGuestMessage] = useState(predefinedMessage);
+  const [guestSending, setGuestSending] = useState(false);
+  const [guestSent, setGuestSent] = useState(false);
+
+  const handleGuestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestEmail.trim() || !guestTopic.trim() || !guestMessage.trim())
+      return;
+    setGuestSending(true);
+    try {
+      // Attempt DB submission first
+      try {
+        if (user) {
+          const convo = await supportService.createConversation(
+            user.id,
+            "mail",
+            guestTopic,
+          );
+          if (convo) {
+            await supportService.sendMessage(convo.id, user.id, guestMessage);
+          }
+        } else {
+          const convo = await supportService.createGuestConversation(
+            "mail",
+            guestTopic,
+            guestEmail,
+          );
+          if (convo) {
+            await supportService.sendGuestMessage(convo.id, guestMessage);
+          }
+        }
+      } catch (dbErr) {
+        console.error("DB submission failed, falling back to Telegram:", dbErr);
+      }
+
+      // Then send via Telegram as a backup / alert
+      const { sendTelegramAlert } = await import("../services/telegramStorage");
+      const text = `🚨 GUEST SUPPORT REQUEST 🚨\n\nEmail: ${guestEmail}\nSubject: ${guestTopic}\nMessage: ${guestMessage}`;
+      const success = await sendTelegramAlert(text);
+      if (success) {
+        setGuestSent(true);
+        addToast(
+          "Message sent successfully. We will contact you soon.",
+          "success",
+        );
+      } else {
+        throw new Error("Failed to send");
+      }
+    } catch (err) {
+      addToast("Failed to send. Please try again later.", "error");
+    } finally {
+      setGuestSending(false);
+    }
+  };
+
+  if (!user && !isGuestSupport) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center pt-24 bg-neutral-50 dark:bg-black">
+        <div className="w-16 h-16 bg-neutral-200/50 dark:bg-neutral-800/50 rounded-full flex items-center justify-center mb-6">
+          <HeadphonesIcon className="w-8 h-8 text-neutral-500 dark:text-neutral-400" />
+        </div>
+        <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
+          We're here to help
+        </h2>
+        <p className="text-neutral-500 dark:text-neutral-400 max-w-sm mb-6">
+          Please sign in to start a live chat or submit a support ticket.
+        </p>
+        <button
+          onClick={() => navigate("/home")}
+          className="px-6 py-2 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-full font-medium"
+        >
+          Go Home
+        </button>
+      </div>
+    );
+  }
+
+  if (isGuestSupport && !user) {
+    if (guestSent) {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center pt-24 bg-neutral-50 dark:bg-black">
+          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
+            <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
+            Message Sent
+          </h2>
+          <p className="text-neutral-500 dark:text-neutral-400 max-w-sm mb-6">
+            Our support team has received your message and will get back to you
+            at {guestEmail} as soon as possible.
+          </p>
+          <button
+            onClick={() => navigate("/home")}
+            className="px-6 py-2 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-full font-medium"
+          >
+            Return to Home
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="w-full h-full flex flex-col bg-white dark:bg-black overflow-y-auto transition-colors pt-12 md:pt-0"
+        style={{
+          paddingBottom: "calc(var(--dev-console-padding, 0px) + 1rem)",
+        }}
+      >
+        <form
+          onSubmit={handleGuestSubmit}
+          className="w-full max-w-full mx-auto flex flex-col min-h-full bg-white dark:bg-black py-4 md:py-6 px-4 md:px-8"
+        >
+          {/* Compose Header */}
+          <div className="pb-6 border-b border-neutral-200 dark:border-white/10 flex-shrink-0">
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+              Create Ticket{" "}
+              {!user && (
+                <span className="text-sm font-normal text-neutral-500 bg-neutral-100 dark:bg-white/10 px-2 py-0.5 rounded-full ml-2">
+                  Guest
+                </span>
+              )}
+            </h2>
+            <p className="text-neutral-500 mt-1">
+              Submit a new support request
+            </p>
+          </div>
+          <div className="py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm flex-shrink-0">
+            <span className="text-neutral-400 w-16">To</span>
+            <span className="bg-neutral-100 dark:bg-white/10 px-2 py-1 rounded-md text-neutral-700 dark:text-neutral-200 font-medium">
+              Support Team
+            </span>
+          </div>
+          <div className="py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm flex-shrink-0">
+            <span className="text-neutral-400 w-16">From</span>
+            <input
+              type="email"
+              required
+              readOnly={!!user}
+              className={`flex-1 bg-transparent outline-none font-medium text-neutral-900 dark:text-white placeholder-neutral-400 ${user ? "opacity-80 cursor-default" : ""}`}
+              placeholder="Your email address"
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+              onFocus={handleMobileFocusScroll}
+            />
+          </div>
+          <div className="py-4 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm flex-shrink-0 min-w-0">
+            <span className="text-neutral-400 w-16 shrink-0">Subject</span>
+            <input
+              type="text"
+              required
+              className="flex-1 min-w-0 bg-transparent outline-none font-medium text-neutral-900 dark:text-white placeholder-neutral-400"
+              placeholder="Briefly describe your issue"
+              value={guestTopic}
+              onChange={(e) => setGuestTopic(e.target.value)}
+              onFocus={handleMobileFocusScroll}
+            />
+          </div>
+          <div className="py-3 sm:py-4 flex flex-col gap-4 flex-1 min-h-[160px] md:min-h-[220px]">
+            <textarea
+              required
+              className="w-full h-full bg-transparent outline-none resize-none text-[15px] text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 leading-relaxed custom-scrollbar min-h-[160px] md:min-h-[220px]"
+              placeholder="Write your message here..."
+              value={guestMessage}
+              onChange={(e) => setGuestMessage(e.target.value)}
+              onFocus={handleMobileFocusScroll}
+            ></textarea>
+          </div>
+          <div className="py-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-1 text-neutral-400">
+              {/* Guest doesn't support attachments in this version, so no file clip */}
+            </div>
+            <button
+              type="submit"
+              disabled={
+                guestSending ||
+                !guestEmail.trim() ||
+                !guestTopic.trim() ||
+                !guestMessage.trim()
+              }
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-colors disabled:opacity-50"
+            >
+              {guestSending ? "Sending..." : "Send Message"}
+              {guestSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  const showSidebar = !activeConversation && !isComposing;
+
+  return (
+    <div className="w-full h-full flex flex-col bg-white dark:bg-black overflow-hidden hover:bg-white dark:hover:bg-black transition-colors">
+      <div className="flex-1 w-full max-w-full mx-auto flex overflow-hidden relative">
+        {/* Sidebar */}
+        <div
+          className={`w-full md:w-[280px] lg:w-[320px] shrink-0 flex-col bg-neutral-50 dark:bg-black md:bg-white md:dark:bg-black border-r border-neutral-200/60 dark:border-white/10 relative z-10 pt-[72px] md:pt-[72px] ${showSidebar ? "flex" : "hidden md:flex"}`}
+          style={{ paddingBottom: "var(--dev-console-padding, 0px)" }}
+        >
+          <div className="flex-1 overflow-y-auto no-scrollbar bg-transparent py-2">
+            {loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-neutral-400 min-h-[200px] h-full">
+                <Loader2 className="w-6 h-6 text-neutral-400 animate-spin mb-2" />
+                <span className="text-xs font-medium">
+                  Loading conversations...
+                </span>
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-neutral-400 min-h-[200px] h-full text-center">
+                <p className="text-sm font-medium">No {activeTab} history.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {filteredConversations.map((convo) => (
+                  <div
+                    key={convo.id}
+                    onClick={() => {
+                      navigate(`/support/${convo.id}`);
+                      setIsComposing(false);
+                    }}
+                    className={`w-full text-left py-4 px-4 transition-all relative group border-b last:border-b-0 border-neutral-100 dark:border-white/5 cursor-pointer min-w-0 overflow-hidden ${activeConversation?.id === convo.id ? "bg-blue-50/40 dark:bg-blue-900/10" : "bg-transparent hover:bg-neutral-50/50 dark:hover:bg-white/[0.02]"}`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        navigate(`/support/${convo.id}`);
+                        setIsComposing(false);
+                      }
+                    }}
+                  >
+                    {/* Active indicator */}
+                    <div
+                      className={`absolute left-0 top-0 bottom-0 w-[3px] transition-colors rounded-r-md ${activeConversation?.id === convo.id ? "bg-blue-600 dark:bg-blue-500" : "bg-transparent group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800"}`}
+                    ></div>
+
+                    <div className="flex justify-between items-start mb-1.5 gap-2 pl-1 min-w-0">
+                      <div className="flex flex-row items-center gap-2 max-w-full min-w-0 flex-1">
+                        {getStatusBadge(convo.status)}
+                        {activeTab === "mail" && (
+                          <span className="text-[11px] font-mono tracking-wider text-neutral-400 dark:text-neutral-500 uppercase truncate shrink-0">
+                            #{convo.id.split("-")[0]}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[11px] shrink-0 tabular-nums font-medium ${(convo.unread_count ?? 0) > 0 ? "text-blue-600 dark:text-blue-400" : "text-neutral-400 dark:text-neutral-500"}`}
+                      >
+                        {convo.last_message_time
+                          ? format(new Date(convo.last_message_time), "h:mm a")
+                          : format(new Date(convo.updated_at), "MMM d")}
+                      </span>
+                    </div>
+
+                    <div className="pl-1 flex flex-col relative pb-1 min-w-0 w-full">
+                      {activeTab === "mail" ? (
+                        <h4
+                          className={`text-[14px] leading-snug line-clamp-1 break-words [overflow-wrap:anywhere] min-w-0 transition-colors ${activeConversation?.id === convo.id ? "font-semibold text-blue-900 dark:text-blue-300" : "font-medium text-neutral-800 dark:text-neutral-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"}`}
+                        >
+                          {convo.subject || "No Subject"}
+                        </h4>
+                      ) : (
+                        <h4
+                          className={`text-[14px] leading-snug line-clamp-1 break-words [overflow-wrap:anywhere] min-w-0 transition-colors ${activeConversation?.id === convo.id ? "font-semibold text-blue-900 dark:text-blue-300" : "font-medium text-neutral-800 dark:text-neutral-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"}`}
+                        >
+                          Live Session
+                        </h4>
+                      )}
+
+                      {/* Last message preview with Markdown support */}
+                      {convo.last_message && (
+                        <div className="flex items-center justify-between gap-3 mt-1 min-h-[20px] pr-6 min-w-0 w-full overflow-hidden">
+                          <div
+                            className={`text-[13px] truncate max-w-full min-w-0 flex-1 [&_p]:inline [&_p]:truncate [&_span]:inline [&_strong]:font-semibold [&_b]:font-semibold [&_em]:italic [&_i]:italic [&_u]:underline [&_del]:line-through ${(convo.unread_count ?? 0) > 0 ? "text-neutral-900 dark:text-white font-medium" : "text-neutral-500 dark:text-neutral-400"}`}
+                          >
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeRaw]}
+                              components={{
+                                p: ({ children }) => (
+                                  <span className="inline truncate">
+                                    {children}
+                                  </span>
+                                ),
+                                h1: ({ children }) => (
+                                  <span className="inline font-semibold">
+                                    {children}
+                                  </span>
+                                ),
+                                h2: ({ children }) => (
+                                  <span className="inline font-semibold">
+                                    {children}
+                                  </span>
+                                ),
+                                h3: ({ children }) => (
+                                  <span className="inline font-semibold">
+                                    {children}
+                                  </span>
+                                ),
+                                ul: ({ children }) => (
+                                  <span className="inline">{children}</span>
+                                ),
+                                ol: ({ children }) => (
+                                  <span className="inline">{children}</span>
+                                ),
+                                li: ({ children }) => (
+                                  <span className="inline mr-1.5">
+                                    • {children}
+                                  </span>
+                                ),
+                                blockquote: ({ children }) => (
+                                  <span className="inline italic opacity-85">
+                                    {children}
+                                  </span>
+                                ),
+                                code: ({ children }) => (
+                                  <span className="inline font-mono text-[12px] bg-neutral-200/70 dark:bg-neutral-800 px-1 py-0.5 rounded">
+                                    {children}
+                                  </span>
+                                ),
+                                pre: ({ children }) => (
+                                  <span className="inline font-mono text-[12px]">
+                                    {children}
+                                  </span>
+                                ),
+                                a: ({ children }) => (
+                                  <span className="inline text-blue-500 underline">
+                                    {children}
+                                  </span>
+                                ),
+                                img: () => (
+                                  <span className="inline text-[11px] opacity-70">
+                                    [Image]
+                                  </span>
+                                ),
+                              }}
+                            >
+                              {convo.last_message}
+                            </ReactMarkdown>
+                          </div>
+                          {(convo.unread_count ?? 0) > 0 && (
+                            <span className="bg-blue-600 dark:bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums min-w-[20px] text-center absolute right-0 -top-1">
+                              {convo.unread_count}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {!convo.last_message && (
+                        <div className="flex justify-between items-center mt-1.5 pr-6 min-w-0">
+                          <p className="text-[12px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                            <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />{" "}
+                            Updated{" "}
+                            {format(new Date(convo.updated_at), "h:mm a")}
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConversationToDelete(convo.id);
+                        }}
+                        className="absolute bottom-0 right-0 text-neutral-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-black/80 backdrop-blur-sm rounded-md"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main Workspace */}
+        <div
+          className={`flex-1 flex-col bg-white dark:bg-black overflow-hidden relative ${showSidebar ? "hidden md:flex" : "flex"}`}
+        >
+          {/* Chat/Form Area */}
+          {activeTab === "mail" ? (
+            <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-white dark:bg-black relative">
+              <div
+                ref={messagesContainerRef}
+                className={`flex-1 w-full ${!activeConversation ? "p-0 pt-[52px] md:pt-[44px] pb-0 overflow-y-auto flex flex-col" : "px-2.5 sm:px-4 md:px-5 py-3 pt-[64px] md:pt-[50px] pb-1 overflow-y-auto"}`}
+              >
+                {!activeConversation ? (
+                  <div
+                    className="w-full max-w-full mx-auto flex flex-col min-h-full bg-white dark:bg-black pt-1 sm:pt-2 pb-0 px-4 md:px-8"
+                    style={{ paddingBottom: "var(--dev-console-padding, 0px)" }}
+                  >
+                    {/* Compose Header */}
+                    <div className="pb-2 sm:pb-2.5 border-b border-neutral-200 dark:border-white/10 flex-shrink-0">
+                      <h2 className="text-xl sm:text-2xl font-semibold text-neutral-900 dark:text-white">
+                        Create Ticket
+                      </h2>
+                      <p className="text-neutral-500 mt-0.5 text-xs sm:text-sm">
+                        Submit a new support request
+                      </p>
+                    </div>
+                    <div className="py-2 sm:py-2.5 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm flex-shrink-0">
+                      <span className="text-neutral-400 w-16 shrink-0">To</span>
+                      <span className="bg-neutral-100 dark:bg-white/10 px-2 py-0.5 rounded-md text-neutral-700 dark:text-neutral-200 font-medium text-xs">
+                        Support Team
+                      </span>
+                    </div>
+                    <div className="py-2 sm:py-2.5 border-b border-neutral-100 dark:border-white/5 flex items-center gap-4 text-sm flex-shrink-0 min-w-0">
+                      <span className="text-neutral-400 w-16 shrink-0">
+                        Subject
+                      </span>
+                      <input
+                        type="text"
+                        className="flex-1 min-w-0 bg-transparent outline-none font-medium text-neutral-900 dark:text-white placeholder-neutral-400 text-sm sm:text-base"
+                        placeholder="Briefly describe your issue"
+                        value={newSubject}
+                        onChange={(e) => setNewSubject(e.target.value)}
+                        onFocus={handleMobileFocusScroll}
+                      />
+                    </div>
+
+                    {/* Body Editor Area with Top Toolbar */}
+                    <div className="py-1.5 sm:py-2 flex flex-col gap-1.5 flex-1 min-h-[160px] md:min-h-[220px] relative">
+                      {/* Top Formatting & Attachments Toolbar */}
+                      <div className="py-1.5 border-b border-neutral-100 dark:border-white/5 flex items-center justify-between gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-shrink-0">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          className="hidden"
+                          multiple
+                          onChange={handleAttachmentChange}
+                        />
+                        <input
+                          type="file"
+                          ref={imageInputRef}
+                          accept="image/*"
+                          className="hidden"
+                          multiple
+                          onChange={handleAttachmentChange}
+                        />
+                        <div className="flex items-center gap-0.5 sm:gap-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("bold")}
+                            className={getFormatBtnClass(!!activeFormats.bold)}
+                            title="Bold"
+                          >
+                            <Bold className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("italic")}
+                            className={getFormatBtnClass(
+                              !!activeFormats.italic,
+                            )}
+                            title="Italic"
+                          >
+                            <Italic className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("underline")}
+                            className={getFormatBtnClass(
+                              !!activeFormats.underline,
+                            )}
+                            title="Underline"
+                          >
+                            <Underline className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("strikethrough")}
+                            className={getFormatBtnClass(
+                              !!activeFormats.strikethrough,
+                            )}
+                            title="Strikethrough"
+                          >
+                            <Strikethrough className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+
+                          <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
+
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("h3")}
+                            className={getFormatBtnClass(!!activeFormats.h3)}
+                            title="Heading"
+                          >
+                            <Heading1 className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("unorderedList")}
+                            className={getFormatBtnClass(
+                              !!activeFormats.unorderedList,
+                            )}
+                            title="Bullet List"
+                          >
+                            <List className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("orderedList")}
+                            className={getFormatBtnClass(
+                              !!activeFormats.orderedList,
+                            )}
+                            title="Numbered List"
+                          >
+                            <ListOrdered className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("quote")}
+                            className={getFormatBtnClass(!!activeFormats.quote)}
+                            title="Quote"
+                          >
+                            <Quote className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("code")}
+                            className={getFormatBtnClass(!!activeFormats.code)}
+                            title="Code Block"
+                          >
+                            <Code className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("link")}
+                            className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0"
+                            title="Insert Link"
+                          >
+                            <Link2 className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyRichFormat("clear")}
+                            className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0"
+                            title="Clear Formatting"
+                          >
+                            <RemoveFormatting className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                          </button>
+                        </div>
+
+                        {/* Right side attachment buttons */}
+                        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 pl-1.5 border-l border-neutral-200 dark:border-neutral-800">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-1 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                            title="Attach File"
+                          >
+                            <Paperclip className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            className="p-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            title="Attach Image"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Editor Content Area */}
+                      <div className="relative flex-1 min-h-[140px] md:min-h-[200px]">
+                        <div
+                          ref={createTicketEditorRef}
+                          contentEditable={!isRefining}
+                          onInput={() => {
+                            if (createTicketEditorRef.current) {
+                              setNewMessage(
+                                createTicketEditorRef.current.innerHTML,
+                              );
+                            }
+                            checkActiveFormats();
+                          }}
+                          onKeyUp={checkActiveFormats}
+                          onMouseUp={checkActiveFormats}
+                          onClick={checkActiveFormats}
+                          onFocus={(e) => {
+                            checkActiveFormats();
+                            handleMobileFocusScroll(e);
+                          }}
+                          onBlur={() => {
+                            setTimeout(() => {
+                              if (
+                                !createTicketEditorRef.current?.contains(
+                                  document.activeElement,
+                                )
+                              ) {
+                                setActiveFormats({});
+                              }
+                            }, 150);
+                          }}
+                          className={`support-composer-textarea w-full bg-transparent border-none focus:outline-none min-h-[140px] md:min-h-[200px] text-[15px] text-neutral-800 dark:text-neutral-200 leading-relaxed custom-scrollbar transition-opacity duration-200 ${isRefining ? "opacity-0 select-none pointer-events-none" : "opacity-100"}
+                                            [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_s]:line-through [&_strike]:line-through [&_h3]:text-base [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-zinc-600 [&_pre]:bg-neutral-100 [&_pre]:dark:bg-neutral-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_a]:text-indigo-600 [&_a]:underline`}
+                        />
+                        {(!newMessage || !newMessage.trim()) && !isRefining && (
+                          <div
+                            onClick={() =>
+                              createTicketEditorRef.current?.focus()
+                            }
+                            className="absolute top-2 left-0 text-neutral-400 dark:text-neutral-500 pointer-events-none text-sm select-none"
+                          >
+                            Write your message here. You can attach details like
+                            screenshots above.
+                          </div>
+                        )}
+
+                        {/* AI Refining Shimmering Skeleton Loader */}
+                        {isRefining && <ComposerShimmerSkeleton />}
+                      </div>
+
+                      {attachments.length > 0 && (
+                        <div className="px-1 py-1">
+                          <PendingAttachmentsList
+                            attachments={attachments}
+                            isUploading={isUploadingAttachment || sending}
+                            onRemove={(idx) =>
+                              setAttachments((prev) =>
+                                prev.filter((_, i) => i !== idx),
+                              )
+                            }
+                            onPreview={setPreviewFile}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Footer Actions: Model Selector, Template (left), AI, Send (right) */}
+                    <div className="py-1.5 sm:py-2 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between px-1 md:px-0 flex-shrink-0 gap-2 mt-auto">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        <div className="relative min-w-0 max-w-[130px] sm:max-w-[170px]">
+                          <CustomDropdown
+                            options={KNOWN_MODELS}
+                            value={selectedAiModel}
+                            onChange={(val) => {
+                              setSelectedAiModel(val);
+                              localStorage.setItem("support-ai-model", val);
+                            }}
+                            triggerClassName="!h-[28px] !p-1 !px-2 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg !text-[10.5px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 truncate"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          ref={createTemplateBtnRef}
+                          onClick={() => {
+                            if (createTemplateBtnRef.current) {
+                              setTemplateBtnRect(
+                                createTemplateBtnRef.current.getBoundingClientRect(),
+                              );
+                            }
+                            setShowTemplatesList(!showTemplatesList);
+                          }}
+                          className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors flex items-center justify-center shrink-0"
+                          title="Insert Template"
+                        >
+                          <Braces className="w-4 h-4 md:w-5 md:h-5" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <motion.button
+                          layout
+                          type="button"
+                          whileHover={
+                            !isRefining &&
+                            (newMessage.trim() ||
+                              createTicketEditorRef.current?.innerText?.trim())
+                              ? { scale: 1.05 }
+                              : {}
+                          }
+                          whileTap={
+                            !isRefining &&
+                            (newMessage.trim() ||
+                              createTicketEditorRef.current?.innerText?.trim())
+                              ? { scale: 0.95 }
+                              : {}
+                          }
+                          onClick={handleRefineWithAI}
+                          disabled={isRefining}
+                          title="Refine draft with AI"
+                          className={`relative overflow-hidden flex items-center justify-center transition-all rounded-full font-medium text-[12px] h-[32px] w-[32px] p-0 shrink-0 border ${
+                            isRefining
+                              ? "bg-neutral-900 border-transparent text-white cursor-wait scale-[0.98]"
+                              : "bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200"
+                          }`}
+                        >
+                          <AnimatePresence mode="wait">
+                            {isRefining ? (
+                              <motion.div
+                                key="generating"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="flex flex-row items-center justify-center z-10 w-full"
+                              >
+                                <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                  <motion.div
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                      delay: 0,
+                                    }}
+                                    className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full"
+                                  />
+                                  <motion.div
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                      delay: 0.2,
+                                    }}
+                                    className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full"
+                                  />
+                                  <motion.div
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                      delay: 0.4,
+                                    }}
+                                    className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full"
+                                  />
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="idle"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="flex flex-row items-center justify-center z-10"
+                              >
+                                <CustomAiSparkleIcon className="w-5 h-5" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {isRefining && (
+                            <div className="absolute inset-0 z-0 bg-slate-950 overflow-hidden pointer-events-none rounded-full">
+                              <motion.div
+                                className="absolute mix-blend-screen filter blur-[8px] opacity-90 rounded-full"
+                                style={{
+                                  width: "140%",
+                                  height: "200%",
+                                  background: "#38bdf8",
+                                  left: "-25%",
+                                  top: "-50%",
+                                }}
+                                animate={{
+                                  x: ["0%", "15%", "-5%", "0%"],
+                                  y: ["0%", "25%", "-10%", "0%"],
+                                  scale: [1, 1.25, 0.9, 1],
+                                  rotate: [0, 90, 180, 360],
+                                }}
+                                transition={{
+                                  duration: 3,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }}
+                              />
+                              <motion.div
+                                className="absolute mix-blend-screen filter blur-[10px] opacity-80 rounded-full"
+                                style={{
+                                  width: "120%",
+                                  height: "160%",
+                                  background: "#818cf8",
+                                  right: "-20%",
+                                  bottom: "-40%",
+                                }}
+                                animate={{
+                                  x: ["0%", "-15%", "5%", "0%"],
+                                  y: ["0%", "-20%", "10%", "0%"],
+                                  scale: [1, 1.15, 0.95, 1],
+                                  rotate: [0, -90, -180, -360],
+                                }}
+                                transition={{
+                                  duration: 4,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }}
+                              />
+                            </div>
+                          )}
+                        </motion.button>
+
+                        <button
+                          type="button"
+                          onClick={handleSendMessage}
+                          disabled={
+                            sending ||
+                            (!newMessage.trim() && attachments.length === 0) ||
+                            !newSubject.trim()
+                          }
+                          className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <AnimatePresence mode="wait">
+                            {sending ? (
+                              <motion.div
+                                key="sending"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="flex flex-row items-center justify-center z-10 w-full"
+                              >
+                                <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                  <motion.div
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                      delay: 0,
+                                    }}
+                                    className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full"
+                                  />
+                                  <motion.div
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                      delay: 0.2,
+                                    }}
+                                    className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full"
+                                  />
+                                  <motion.div
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                      delay: 0.4,
+                                    }}
+                                    className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full"
+                                  />
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="send"
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.8, opacity: 0 }}
+                                className="flex items-center gap-1.5"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                <span>
+                                  {isUploadingAttachment
+                                    ? "Uploading..."
+                                    : "Send"}
+                                </span>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full max-w-full mx-auto mt-0 space-y-4 mb-4 min-w-0">
+                    {/* Subject Header */}
+                    <div className="mb-4 flex flex-col items-start pb-4 md:pb-6 border-b border-neutral-200 dark:border-white/10 w-full min-w-0">
+                      <div className="flex items-center gap-3 w-full min-w-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 w-full min-w-0">
+                            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white leading-snug break-words [overflow-wrap:anywhere] min-w-0">
+                              {activeConversation.subject || "Support Ticket"}
+                            </h2>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            {getStatusBadge(activeConversation.status)}
+                            <span className="text-xs text-neutral-500 font-medium tracking-wide uppercase">
+                              ID: {activeConversation.id.split("-")[0]}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Message Thread */}
+                    <div className="space-y-4 mb-4">
+                      {messages.map((msg) => {
+                        const isUser = msg.sender_type === "user";
+                        const userName = isUser
+                          ? user?.user_metadata?.full_name ||
+                            user?.user_metadata?.name ||
+                            user?.email?.split("@")[0] ||
+                            "User"
+                          : "Ceaznet Support";
+                        const emailStr = isUser
+                          ? user?.email || "user@example.com"
+                          : platformSettings.support_email;
+
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`w-full pb-3.5 mb-3.5 border-b border-neutral-100 dark:border-neutral-800/60 last:border-0 last:mb-0 last:pb-0 ${
+                              !isUser
+                                ? "pl-2.5 sm:pl-3 border-l-2 border-l-indigo-500"
+                                : "pl-2.5 sm:pl-3 border-l-2 border-l-neutral-300 dark:border-l-neutral-700"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3 p-0 mb-2">
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
+                                  !isUser
+                                    ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+                                    : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700"
+                                }`}
+                              >
+                                {isUser ? (
+                                  avatarUrl ? (
+                                    <img
+                                      src={avatarUrl}
+                                      alt="User Avatar"
+                                      referrerPolicy="no-referrer"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <User className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+                                  )
+                                ) : platformSettings.platform_logo_url ? (
+                                  <img
+                                    src={platformSettings.platform_logo_url}
+                                    alt="Support Team"
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-contain p-1"
+                                  />
+                                ) : (
+                                  <HeadphonesIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                )}
+                              </div>
+                              <div className="flex flex-col flex-1 justify-center min-w-0">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex flex-col min-w-0">
+                                    <div className="flex items-baseline gap-2 flex-wrap">
+                                      <span className="text-[13px] font-bold text-neutral-900 dark:text-neutral-100">
+                                        {userName}
+                                      </span>
+                                      <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
+                                        -{" "}
+                                        {format(
+                                          new Date(msg.created_at),
+                                          "MM/dd/yyyy HH:mm",
+                                        )}
+                                      </span>
+                                    </div>
+                                    <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1.5">
+                                      <span className="text-[9px] uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-bold">
+                                        {isUser ? "From:" : "To:"}
+                                      </span>
+                                      <span>
+                                        {"<"}
+                                        {emailStr}
+                                        {">"}
+                                      </span>
+                                    </span>
+                                  </div>
+                                  <div className="relative shrink-0 z-30">
+                                    <button
+                                      onClick={() =>
+                                        setActiveMenuMsgId(
+                                          activeMenuMsgId === msg.id
+                                            ? null
+                                            : msg.id,
+                                        )
+                                      }
+                                      className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors p-1 rounded-md shrink-0"
+                                      title="More options"
+                                    >
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                    {activeMenuMsgId === msg.id && (
+                                      <>
+                                        <div
+                                          className="fixed inset-0 z-10"
+                                          onClick={() =>
+                                            setActiveMenuMsgId(null)
+                                          }
+                                        />
+                                        <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-[#121212] rounded-xl shadow-xl border border-neutral-100 dark:border-neutral-800 py-1.5 z-20 origin-top-right">
+                                          {isUser ? (
+                                            <>
+                                              <button
+                                                onClick={() =>
+                                                  handleEditMessage(
+                                                    msg.id,
+                                                    msg.message,
+                                                  )
+                                                }
+                                                className="w-full text-left px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors flex items-center gap-2"
+                                              >
+                                                <Pencil className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                                Edit
+                                              </button>
+                                              <button
+                                                onClick={() =>
+                                                  handleDeleteMessageClick(
+                                                    msg.id,
+                                                  )
+                                                }
+                                                className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors flex items-center gap-2"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Delete
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <div className="px-3 py-2 text-[11px] text-neutral-400 dark:text-neutral-500 font-medium whitespace-nowrap">
+                                              Cannot edit replies
+                                            </div>
+                                          )}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Message Body - Left aligned under header/logo without empty indent */}
+                            {editingMsgId === msg.id ? (
+                              <div className="mt-2 flex flex-col gap-2">
+                                <textarea
+                                  value={editingText}
+                                  onChange={(e) =>
+                                    setEditingText(e.target.value)
+                                  }
+                                  className="w-full p-2.5 text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-neutral-900 dark:text-neutral-100 resize-none min-h-[85px]"
+                                />
+                                <div className="flex items-center gap-2 self-end">
+                                  <button
+                                    onClick={() => {
+                                      setEditingMsgId(null);
+                                      setEditingText("");
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleSaveEditedMessage(msg.id)
+                                    }
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mt-3 text-[14px] sm:text-[15px] text-neutral-800 dark:text-neutral-200 leading-[1.7] markdown-body">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  rehypePlugins={[rehypeRaw]}
+                                >
+                                  {msg.message}
+                                </ReactMarkdown>
+                              </div>
+                            )}
+
+                            {msg.attachment_url && (
+                              <div className="mt-3">
+                                <ResolvedAttachment
+                                  msg={msg}
+                                  isUser={isUser}
+                                  isChat={false}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Reply Box was here */}
+                  </div>
+                )}
+              </div>
+              {/* Fixed Composer Wrapper */}
+              {activeConversation && activeConversation.status !== "closed" ? (
+                <div
+                  className="w-full border-t border-neutral-200 dark:border-white/10 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white dark:bg-black shrink-0 relative z-20"
+                  style={{ paddingBottom: "var(--dev-console-padding, 0px)" }}
+                >
+                  <div className="w-full max-w-full mx-auto">
+                    {!isReplying ? (
+                      <div className="flex gap-3 sm:gap-4">
+                        <button
+                          onClick={() => setIsReplying(true)}
+                          className="flex-1 md:flex-none py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-black"
+                        >
+                          <Reply className="w-4 h-4" /> Reply
+                        </button>
+                        <button
+                          onClick={() => setIsReplying(true)}
+                          className="flex-1 md:flex-none py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-black"
+                        >
+                          <Forward className="w-4 h-4" /> Forward
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-900/80 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+                        <div className="flex items-center justify-between w-full min-w-0 px-2 sm:px-2.5 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50">
+                          <div className="flex-1 flex items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("bold")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.bold,
+                              )}
+                              title="Bold"
+                            >
+                              <Bold className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("italic")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.italic,
+                              )}
+                              title="Italic"
+                            >
+                              <Italic className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("underline")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.underline,
+                              )}
+                              title="Underline"
+                            >
+                              <Underline className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("strikethrough")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.strikethrough,
+                              )}
+                              title="Strikethrough"
+                            >
+                              <Strikethrough className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+
+                            <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 shrink-0"></div>
+
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("h3")}
+                              className={getFormatBtnClass(!!activeFormats.h3)}
+                              title="Heading"
+                            >
+                              <Heading1 className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("unorderedList")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.unorderedList,
+                              )}
+                              title="Bullet List"
+                            >
+                              <List className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("orderedList")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.orderedList,
+                              )}
+                              title="Numbered List"
+                            >
+                              <ListOrdered className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("quote")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.quote,
+                              )}
+                              title="Quote"
+                            >
+                              <Quote className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("code")}
+                              className={getFormatBtnClass(
+                                !!activeFormats.code,
+                              )}
+                              title="Code Block"
+                            >
+                              <Code className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("link")}
+                              className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0"
+                              title="Insert Link"
+                            >
+                              <Link2 className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyRichFormat("clear")}
+                              className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors select-none shrink-0"
+                              title="Clear Formatting"
+                            >
+                              <RemoveFormatting className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 border-l border-neutral-200 dark:border-neutral-800 pl-1.5 sm:pl-2 ml-1">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              className="hidden"
+                              multiple
+                              onChange={handleAttachmentChange}
+                            />
+                            <input
+                              type="file"
+                              ref={imageInputRef}
+                              accept="image/*"
+                              className="hidden"
+                              multiple
+                              onChange={handleAttachmentChange}
+                            />
+                            {!isAttachExpanded ? (
+                              <button
+                                type="button"
+                                onClick={() => setIsAttachExpanded(true)}
+                                className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors"
+                                title="Attach (Click to expand options)"
+                              >
+                                <Paperclip className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1 transition-all">
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsAttachExpanded(false);
+                                  }}
+                                  className="p-1 bg-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors"
+                                  title="Attach File (Click to select, Double click to collapse)"
+                                >
+                                  <Paperclip className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => imageInputRef.current?.click()}
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsAttachExpanded(false);
+                                  }}
+                                  className="p-1 bg-transparent text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                  title="Attach Image (Click to select, Double click to collapse)"
+                                >
+                                  <ImageIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5 sm:mx-1 shrink-0"></div>
+                            <button
+                              type="button"
+                              onClick={() => setIsReplying(false)}
+                              className="p-1 bg-transparent text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors shrink-0"
+                              title="Close"
+                            >
+                              <X className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-3 relative">
+                          <div
+                            ref={richEditorRef}
+                            contentEditable={!isRefining}
+                            onInput={() => {
+                              if (richEditorRef.current) {
+                                setNewMessage(richEditorRef.current.innerHTML);
+                              }
+                              checkActiveFormats();
+                            }}
+                            onKeyUp={checkActiveFormats}
+                            onMouseUp={checkActiveFormats}
+                            onClick={checkActiveFormats}
+                            onFocus={checkActiveFormats}
+                            onBlur={() => {
+                              setTimeout(() => {
+                                if (
+                                  !richEditorRef.current?.contains(
+                                    document.activeElement,
+                                  )
+                                ) {
+                                  setActiveFormats({});
+                                }
+                              }, 150);
+                            }}
+                            className={`support-composer-textarea w-full min-h-[128px] max-h-[250px] overflow-y-auto bg-transparent border-none focus:outline-none text-[14px] sm:text-[15px] text-neutral-800 dark:text-neutral-200 leading-relaxed custom-scrollbar transition-opacity duration-200 ${isRefining ? "opacity-0 select-none pointer-events-none" : "opacity-100"}
+                                                     [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_s]:line-through [&_strike]:line-through [&_h3]:text-base [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-zinc-600 [&_pre]:bg-neutral-100 [&_pre]:dark:bg-neutral-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_a]:text-indigo-600 [&_a]:underline`}
+                          />
+                          {(!newMessage || !newMessage.trim()) &&
+                            !isRefining && (
+                              <div
+                                onClick={() => richEditorRef.current?.focus()}
+                                className="absolute top-3 left-3 text-neutral-400 dark:text-neutral-500 pointer-events-none text-sm select-none"
+                              >
+                                Write your response... You can attach details or
+                                files below.
+                              </div>
+                            )}
+
+                          {/* AI Refining Shimmering Skeleton Loader */}
+                          {isRefining && <ComposerShimmerSkeleton compact />}
+
+                          {attachments.length > 0 && (
+                            <div className="mt-2">
+                              <PendingAttachmentsList
+                                attachments={attachments}
+                                isUploading={isUploadingAttachment || sending}
+                                onRemove={(idx) =>
+                                  setAttachments((prev) =>
+                                    prev.filter((_, i) => i !== idx),
+                                  )
+                                }
+                                onPreview={setPreviewFile}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div className="py-2.5 flex items-center justify-between px-3 border-t border-neutral-100 dark:border-neutral-800/60 bg-neutral-50/50 dark:bg-neutral-950/30 gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <button
+                              type="button"
+                              ref={replyTemplateBtnRef}
+                              onClick={() => {
+                                if (replyTemplateBtnRef.current) {
+                                  setTemplateBtnRect(
+                                    replyTemplateBtnRef.current.getBoundingClientRect(),
+                                  );
+                                }
+                                setShowTemplatesList(!showTemplatesList);
+                              }}
+                              className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center justify-center shrink-0"
+                              title="Use Template"
+                            >
+                              <Braces className="w-4 h-4" />
+                            </button>
+
+                            <div className="relative min-w-0 max-w-[130px] sm:max-w-[170px]">
+                              <CustomDropdown
+                                options={KNOWN_MODELS}
+                                value={selectedAiModel}
+                                onChange={(val) => {
+                                  setSelectedAiModel(val);
+                                  localStorage.setItem("support-ai-model", val);
+                                }}
+                                triggerClassName="!h-[28px] !p-1 !px-2 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg !text-[10.5px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 truncate"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <motion.button
+                              layout
+                              type="button"
+                              whileHover={
+                                !isRefining &&
+                                (newMessage.trim() ||
+                                  richEditorRef.current?.innerText?.trim())
+                                  ? { scale: 1.05 }
+                                  : {}
+                              }
+                              whileTap={
+                                !isRefining &&
+                                (newMessage.trim() ||
+                                  richEditorRef.current?.innerText?.trim())
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
+                              onClick={handleRefineWithAI}
+                              disabled={isRefining}
+                              title="Refine draft with AI"
+                              className={`relative overflow-hidden flex items-center justify-center transition-all rounded-full font-medium text-[12px] h-[32px] w-[32px] p-0 shrink-0 border ${
+                                isRefining
+                                  ? "bg-neutral-900 border-transparent text-white cursor-wait scale-[0.98]"
+                                  : "bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200"
+                              }`}
+                            >
+                              <AnimatePresence mode="wait">
+                                {isRefining ? (
+                                  <motion.div
+                                    key="generating"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="flex flex-row items-center justify-center z-10 w-full"
+                                  >
+                                    <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                      <motion.div
+                                        animate={{ y: [0, -2, 0] }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          ease: "easeInOut",
+                                          delay: 0,
+                                        }}
+                                        className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full"
+                                      />
+                                      <motion.div
+                                        animate={{ y: [0, -2, 0] }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          ease: "easeInOut",
+                                          delay: 0.2,
+                                        }}
+                                        className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full"
+                                      />
+                                      <motion.div
+                                        animate={{ y: [0, -2, 0] }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          ease: "easeInOut",
+                                          delay: 0.4,
+                                        }}
+                                        className="w-1 h-1 bg-neutral-700 dark:bg-white rounded-full"
+                                      />
+                                    </div>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="idle"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="flex flex-row items-center justify-center z-10"
+                                  >
+                                    <CustomAiSparkleIcon className="w-5 h-5" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+
+                              {isRefining && (
+                                <div className="absolute inset-0 z-0 bg-slate-950 overflow-hidden pointer-events-none rounded-full">
+                                  <motion.div
+                                    className="absolute mix-blend-screen filter blur-[8px] opacity-90 rounded-full"
+                                    style={{
+                                      width: "140%",
+                                      height: "200%",
+                                      background: "#38bdf8",
+                                      left: "-25%",
+                                      top: "-50%",
+                                    }}
+                                    animate={{
+                                      x: ["0%", "15%", "-5%", "0%"],
+                                      y: ["0%", "25%", "-10%", "0%"],
+                                      scale: [1, 1.25, 0.9, 1],
+                                      rotate: [0, 90, 180, 360],
+                                    }}
+                                    transition={{
+                                      duration: 3,
+                                      repeat: Infinity,
+                                      ease: "linear",
+                                    }}
+                                  />
+                                  <motion.div
+                                    className="absolute mix-blend-screen filter blur-[10px] opacity-80 rounded-full"
+                                    style={{
+                                      width: "120%",
+                                      height: "160%",
+                                      background: "#818cf8",
+                                      right: "-20%",
+                                      bottom: "-40%",
+                                    }}
+                                    animate={{
+                                      x: ["0%", "-15%", "5%", "0%"],
+                                      y: ["0%", "-20%", "10%", "0%"],
+                                      scale: [1, 1.15, 0.95, 1],
+                                      rotate: [0, -90, -180, -360],
+                                    }}
+                                    transition={{
+                                      duration: 4,
+                                      repeat: Infinity,
+                                      ease: "linear",
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </motion.button>
+
+                            <button
+                              type="button"
+                              onClick={handleSendMessage}
+                              disabled={
+                                sending ||
+                                (!newMessage.trim() && attachments.length === 0)
+                              }
+                              className="relative overflow-hidden flex items-center justify-center gap-1.5 px-4 transition-all text-white rounded-full font-medium text-[12px] h-[32px] w-auto min-w-[70px] shrink-0 border bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-900 border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <AnimatePresence mode="wait">
+                                {sending ? (
+                                  <motion.div
+                                    key="sending"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="flex flex-row items-center justify-center z-10 w-full"
+                                  >
+                                    <div className="flex gap-1 items-center justify-center h-3 drop-shadow-md mix-blend-normal">
+                                      <motion.div
+                                        animate={{ y: [0, -2, 0] }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          ease: "easeInOut",
+                                          delay: 0,
+                                        }}
+                                        className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full"
+                                      />
+                                      <motion.div
+                                        animate={{ y: [0, -2, 0] }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          ease: "easeInOut",
+                                          delay: 0.2,
+                                        }}
+                                        className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full"
+                                      />
+                                      <motion.div
+                                        animate={{ y: [0, -2, 0] }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          ease: "easeInOut",
+                                          delay: 0.4,
+                                        }}
+                                        className="w-1 h-1 bg-white dark:bg-neutral-900 rounded-full"
+                                      />
+                                    </div>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="send"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                    className="flex items-center gap-1.5"
+                                  >
+                                    <Send className="w-3.5 h-3.5" />
+                                    <span>
+                                      {isUploadingAttachment
+                                        ? "Uploading..."
+                                        : "Send"}
+                                    </span>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : activeConversation ? (
+                <div
+                  className="w-full border-t border-neutral-200 dark:border-white/10 p-4 md:p-6 bg-white dark:bg-black shrink-0 relative z-20"
+                  style={{
+                    paddingBottom:
+                      "calc(var(--dev-console-padding, 0px) + 0.5rem)",
+                  }}
+                >
+                  <div className="max-w-full w-full mx-auto text-center text-neutral-500 dark:text-neutral-400 text-sm font-medium">
+                    This ticket has been closed. Please open a new ticket if you
+                    need further assistance.
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden relative flex flex-col bg-white dark:bg-black">
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto w-full absolute inset-0 px-4 md:px-6 pt-[64px] md:pt-[56px]"
+                style={{
+                  paddingBottom:
+                    "calc(var(--dev-console-padding, 0px) + 5.5rem)",
+                }}
+              >
+                {!activeConversation ? (
+                  <div className="w-full max-w-xl mx-auto text-center pt-24 space-y-4">
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <HeadphonesIcon className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+                      Live Support
+                    </h2>
+                    <p className="text-neutral-500 text-sm max-w-sm mx-auto">
+                      Send us a message and we'll connect you to a live agent
+                      shortly.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="w-full max-w-full mx-auto space-y-6 flex flex-col justify-end min-h-full">
+                    {messages.map((msg, i) => {
+                      const isUser = msg.sender_type === "user";
+                      const prevMsg = i > 0 ? messages[i - 1] : null;
+                      const nextMsg =
+                        i < messages.length - 1 ? messages[i + 1] : null;
+
+                      const sameSenderPrev =
+                        prevMsg && prevMsg.sender_type === msg.sender_type;
+                      const sameSenderNext =
+                        nextMsg && nextMsg.sender_type === msg.sender_type;
+
+                      const sameMinutePrev =
+                        prevMsg &&
+                        new Date(msg.created_at).getTime() -
+                          new Date(prevMsg.created_at).getTime() <
+                          60000 &&
+                        new Date(msg.created_at).getMinutes() ===
+                          new Date(prevMsg.created_at).getMinutes();
+                      const sameMinuteNext =
+                        nextMsg &&
+                        new Date(nextMsg.created_at).getTime() -
+                          new Date(msg.created_at).getTime() <
+                          60000 &&
+                        new Date(nextMsg.created_at).getMinutes() ===
+                          new Date(msg.created_at).getMinutes();
+
+                      const isGroupedWithPrev =
+                        sameSenderPrev && sameMinutePrev;
+                      const isGroupedWithNext =
+                        sameSenderNext && sameMinuteNext;
+
+                      const showTime = !isGroupedWithNext;
+                      const mt = isGroupedWithPrev ? "mt-1" : "mt-4";
+
+                      const roundedClass = isUser
+                        ? `rounded-2xl ${isGroupedWithNext ? "rounded-br-md" : "rounded-br-sm"} ${isGroupedWithPrev ? "rounded-tr-md" : ""}`
+                        : `rounded-2xl ${isGroupedWithNext ? "rounded-bl-md" : "rounded-bl-sm"} ${isGroupedWithPrev ? "rounded-tl-md" : ""}`;
+
+                      return (
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          key={msg.id}
+                          className={`flex flex-col ${isUser ? "items-end" : "items-start"} max-w-[85%] ${isUser ? "ml-auto" : "mr-auto"} ${mt}`}
+                        >
+                          <div
+                            className={`px-4 py-2.5 ${roundedClass} text-[15px] shadow-sm leading-relaxed ${isUser ? "bg-blue-600 text-white" : "bg-white dark:bg-black border border-neutral-100 dark:border-white/5 text-neutral-800 dark:text-neutral-200"}`}
+                          >
+                            <p className="whitespace-pre-wrap">{msg.message}</p>
+
+                            {msg.attachment_url && (
+                              <ResolvedAttachment
+                                msg={msg}
+                                isUser={isUser}
+                                isChat={true}
+                              />
+                            )}
+                          </div>
+
+                          {showTime && (
+                            <div
+                              className={`flex items-center gap-1 mt-1 px-1 ${isUser ? "flex-row-reverse" : ""}`}
+                            >
+                              <span className="text-[10.5px] text-neutral-400 font-medium tracking-wide">
+                                {format(new Date(msg.created_at), "h:mm a")}
+                              </span>
+                              {isUser &&
+                                (msg.is_read ? (
+                                  <CheckCheck className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                                ) : (
+                                  <Check className="w-3.5 h-3.5 text-neutral-400" />
+                                ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+
+                    {adminTyping && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-start max-w-[85%] mr-auto mt-4"
+                      >
+                        <div className="px-4 py-3 rounded-2xl rounded-bl-sm text-[15px] shadow-sm bg-white dark:bg-black border border-neutral-100 dark:border-white/5 text-neutral-800 dark:text-neutral-200">
+                          <div className="flex gap-1.5 items-center h-4">
+                            <div
+                              className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
+                              style={{ animationDelay: "0ms" }}
+                            />
+                            <div
+                              className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
+                              style={{ animationDelay: "150ms" }}
+                            />
+                            <div
+                              className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
+                              style={{ animationDelay: "300ms" }}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Input Area Overlay */}
+              {activeConversation?.status === "closed" ? (
+                <div
+                  className="absolute left-0 right-0 p-4 md:p-6 bg-white/90 dark:bg-black/90 backdrop-blur-md border-t border-neutral-200 dark:border-white/10"
+                  style={{ bottom: "var(--dev-console-padding, 0px)" }}
+                >
+                  <div className="max-w-full w-full mx-auto text-center text-neutral-500 dark:text-neutral-400 text-sm font-medium">
+                    This ticket has been closed. Please open a new ticket if you
+                    need further assistance.
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="absolute left-0 right-0 px-4 pt-6 pb-3 md:px-6 md:pb-4 bg-gradient-to-t from-white via-white to-transparent dark:from-black dark:via-black"
+                  style={{ bottom: "var(--dev-console-padding, 0px)" }}
+                >
+                  <form
+                    onSubmit={handleSendMessage}
+                    className={`w-full max-w-full mx-auto bg-white dark:bg-black border border-neutral-200 dark:border-neutral-700/60 rounded-[28px] flex flex-col overflow-hidden transition-all focus-within:border-blue-400 dark:focus-within:border-neutral-500 focus-within:ring-4 focus-within:ring-blue-400/10 dark:focus-within:ring-neutral-400/10 mb-2 px-1 py-1`}
+                  >
+                    {attachments.length > 0 && (
+                      <div className="mx-2 mt-2 px-2 pb-1">
+                        <PendingAttachmentsList
+                          attachments={attachments}
+                          isUploading={isUploadingAttachment || sending}
+                          onRemove={(idx) =>
+                            setAttachments((prev) =>
+                              prev.filter((_, i) => i !== idx),
+                            )
+                          }
+                          onPreview={setPreviewFile}
+                        />
+                      </div>
+                    )}
+
+                    <div className="relative flex items-end px-1 pb-1 pt-1">
+                      <textarea
+                        ref={textareaRef}
+                        value={newMessage}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value);
+                          handleUserTyping();
+                          e.target.style.height = "auto";
+                          e.target.style.height =
+                            Math.min(e.target.scrollHeight, 120) + "px";
+                        }}
+                        placeholder={
+                          !activeConversation
+                            ? "Start a conversation..."
+                            : "Message..."
+                        }
+                        className="flex-1 bg-transparent px-3 py-2 text-[15px] text-neutral-900 dark:text-white placeholder-neutral-400 outline-none resize-none overflow-y-auto custom-scrollbar max-h-[120px] min-h-[40px]"
+                        rows={1}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage(e);
+                            if (textareaRef.current) {
+                              textareaRef.current.style.height = "auto";
+                            }
+                          }
+                        }}
+                      />
+                      <div className="pl-1 pr-1 mb-[2px] shrink-0">
+                        <button
+                          type="submit"
+                          disabled={
+                            sending ||
+                            (!newMessage.trim() && attachments.length === 0)
+                          }
+                          className={`p-1.5 rounded-full transition-all flex items-center justify-center h-[36px] w-[36px] ${!newMessage.trim() && attachments.length === 0 ? "bg-neutral-100 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-600" : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 active:scale-95 shadow-sm"} disabled:opacity-50`}
+                        >
+                          {sending ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <ArrowUp className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {portalNode &&
+        createPortal(
+          <div className="relative pointer-events-auto flex items-center gap-1">
+            <button
+              onClick={() => {
+                setActiveTab("chat");
+                setActiveConversation(null);
+                setIsComposing(false);
+                navigate("/support");
+              }}
+              className={`relative flex items-center justify-center h-9 w-9 transition-all focus:outline-none rounded-full ${activeTab === "chat" ? "text-amber-600 dark:text-amber-400" : "text-neutral-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 hover:text-amber-600 dark:hover:text-amber-400"}`}
+              title="Live Chat"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("mail");
+                setActiveConversation(null);
+                setIsComposing(false);
+                navigate("/support");
+              }}
+              className={`relative flex items-center justify-center h-9 w-9 transition-all focus:outline-none rounded-full ${activeTab === "mail" ? "text-amber-600 dark:text-amber-400" : "text-neutral-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 hover:text-amber-600 dark:hover:text-amber-400"}`}
+              title="Tickets"
+            >
+              <Ticket className="h-5 w-5" />
+            </button>
+          </div>,
+          portalNode,
+        )}
+
+      {/* FAB */}
+      {!activeConversation && !isComposing && (
+        <button
+          onClick={() => {
+            setActiveConversation(null);
+            setIsComposing(true);
+            navigate("/support");
+          }}
+          className="fixed right-6 z-40 w-16 h-16 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group md:hidden"
+          style={{ bottom: "calc(var(--dev-console-padding, 0px) + 0.75rem)" }}
+          title={activeTab === "mail" ? "New Ticket" : "New Chat"}
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Portaled Template Picker to prevent clipping */}
+      {showTemplatesList &&
+        templateBtnRect &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] overflow-hidden"
+            onClick={() => setShowTemplatesList(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: "fixed",
+                bottom: Math.max(
+                  16,
+                  window.innerHeight - templateBtnRect.top + 8,
+                ),
+                left: Math.max(
+                  16,
+                  Math.min(templateBtnRect.left, window.innerWidth - 340),
+                ),
+                maxWidth: "calc(100vw - 32px)",
+                width: 320,
+              }}
+              className="bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 tracking-wide">
+                  Select Response Template
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplatesList(false)}
+                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="max-h-[280px] overflow-y-auto custom-scrollbar p-1.5 space-y-2">
+                {EMAIL_TEMPLATES.map((cat, i) => (
+                  <div key={i} className="space-y-0.5">
+                    <div className="px-2.5 py-1 text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                      {cat.category}
+                    </div>
+                    {cat.items.map((item, j) => (
+                      <button
+                        key={j}
+                        type="button"
+                        onClick={() => {
+                          if (isComposing) {
+                            setNewSubject(item.subject);
+                          }
+                          setNewMessage(item.content);
+                          if (createTicketEditorRef.current) {
+                            createTicketEditorRef.current.innerText =
+                              item.content;
+                          }
+                          if (richEditorRef.current) {
+                            richEditorRef.current.innerText = item.content;
+                          }
+                          setShowTemplatesList(false);
+                        }}
+                        className="w-full text-left px-2.5 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-lg transition-colors group flex flex-col"
+                      >
+                        <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {item.name}
+                        </span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1 mt-0.5">
+                          {item.subject}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      <ConfirmationModal
+        isOpen={!!conversationToDelete}
+        onClose={() => {
+          setIsDeletingConvo(false);
+          setConversationToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title={`Delete ${activeTab === "mail" ? "Ticket" : "Chat"}`}
+        message={`Are you sure you want to delete this ${activeTab === "mail" ? "ticket" : "chat"}? This action cannot be undone.`}
+        confirmButtonText="Delete"
+        confirmButtonVariant="danger"
+        isLoading={isDeletingConvo}
+      />
+
+      <DraftFilePreviewModal
+        file={previewFile}
+        onClose={() => setPreviewFile(null)}
+      />
+
+      <ConfirmationModal
+        isOpen={!!messageToDelete}
+        onClose={() => {
+          setIsDeletingMsg(false);
+          setMessageToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteMessage}
+        title="Delete Message"
+        message="Are you sure you want to delete this message? This action cannot be undone."
+        confirmButtonText="Delete"
+        confirmButtonVariant="danger"
+        isLoading={isDeletingMsg}
+      />
+    </div>
+  );
+};
