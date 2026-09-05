@@ -144,7 +144,6 @@ export const BroadcastPopup: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div 
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-                onClick={handleClose} 
             />
             <div className="relative z-10 w-full animate-fade-in-up flex flex-col justify-center items-center pointer-events-none">
                 {/* Dynamically render raw HTML message sent from admin panel */}
