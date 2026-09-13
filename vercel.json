@@ -1,0 +1,31 @@
+{
+  "env": {
+    "NODE_OPTIONS": "--no-deprecation"
+  },
+  "rewrites": [
+    {
+      "source": "/api/dairy/suggest-icon",
+      "destination": "/api/dairy-suggest-icon"
+    },
+    {
+      "source": "/api/version/check",
+      "destination": "/api/version-control"
+    },
+    {
+      "source": "/api/image-cache-status",
+      "destination": "/api/image-proxy?action=status"
+    },
+    {
+      "source": "/api/image-cache-clear",
+      "destination": "/api/image-proxy?action=clear"
+    },
+    {
+      "source": "/api/image-cache-delete",
+      "destination": "/api/image-proxy?action=delete"
+    },
+    {
+      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
