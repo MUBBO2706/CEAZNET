@@ -656,7 +656,7 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
                         >
                             <span>Load More Transactions</span>
                             {totalCount !== undefined && totalCount > 0 && (
-                                <span className="text-[10px] opacity-75 font-mono">
+                                <span className="text-xs opacity-75 font-normal">
                                     ({transactions.length} of {totalCount})
                                 </span>
                             )}
@@ -667,7 +667,7 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
 
             {!effectiveHasMore && isServerPaginated && transactions.length >= 30 && (
                 <div 
-                    className="py-4 text-center text-[10px] font-mono uppercase tracking-wider opacity-60" 
+                    className="py-4 text-center text-xs opacity-60 font-normal" 
                     style={{ color: 'var(--finance-loader-text)' }}
                 >
                     All {totalCount || transactions.length} transactions loaded

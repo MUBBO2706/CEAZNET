@@ -38,7 +38,7 @@ export const useAuth = () => {
         getSession();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event, session) => {
+            (event, newSession) => {
                 if (event === 'PASSWORD_RECOVERY') {
                     // Only honor the event if this tab actually navigated to the recovery URL.
                     // This prevents the 'Update Password' modal from popping up in other open tabs.
@@ -49,8 +49,20 @@ export const useAuth = () => {
                     // Don't overwrite PASSWORD_RECOVERY if it just happened
                     setAuthEvent(prev => prev === 'PASSWORD_RECOVERY' ? prev : event);
                 }
-                setSession(session);
-                setUser(session?.user ?? null);
+                setSession(prevSession => {
+                    if (prevSession?.access_token === newSession?.access_token && prevSession?.user?.id === newSession?.user?.id) {
+                        return prevSession;
+                    }
+                    return newSession;
+                });
+                setUser(prevUser => {
+                    const nextUser = newSession?.user ?? null;
+                    if (!prevUser && !nextUser) return null;
+                    if (prevUser && nextUser && prevUser.id === nextUser.id && prevUser.updated_at === nextUser.updated_at && prevUser.email === nextUser.email) {
+                        return prevUser;
+                    }
+                    return nextUser;
+                });
                 setIsLoading(false);
             }
         );

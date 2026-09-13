@@ -474,13 +474,26 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         }
     }, [user, activeProfile.id, calendarMonth.year, calendarMonth.month, analyticsData, dateFilter, calendarDailyCache]);
 
-    useEffect(() => {
-        loadStats();
-    }, [loadStats]);
+    const prevStatsKeyRef = useRef<string | undefined>(undefined);
+    const prevAnalyticsKeyRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
-        loadAnalyticsData();
-    }, [loadAnalyticsData]);
+        if (!user) return;
+        const key = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}:${typeFilter}:${categoryFilter}`;
+        if (prevStatsKeyRef.current !== key) {
+            prevStatsKeyRef.current = key;
+            loadStats();
+        }
+    }, [user?.id, activeProfile.id, dateFilter, typeFilter, categoryFilter, loadStats, user]);
+
+    useEffect(() => {
+        if (!user) return;
+        const key = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}`;
+        if (prevAnalyticsKeyRef.current !== key) {
+            prevAnalyticsKeyRef.current = key;
+            loadAnalyticsData();
+        }
+    }, [user?.id, activeProfile.id, dateFilter, loadAnalyticsData, user]);
 
     useEffect(() => {
         if (viewMode === 'calendar') {
