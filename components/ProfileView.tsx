@@ -129,6 +129,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [isRowActionRunning, setIsRowActionRunning] = useState<string | null>(null);
 
+  // Codex Pagination State (Lazy Loading)
+  const [codexPage, setCodexPage] = useState(1);
+  const [codexLimit, setCodexLimit] = useState(10);
+  const [codexSearch, setCodexSearch] = useState('');
+  const [codexTotalCount, setCodexTotalCount] = useState<number | undefined>(undefined);
+
   const overviewTableScrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to actions when confirming
@@ -207,13 +213,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       const activeStatus = options?.status ?? currentSessionFilter;
       const fetchLimit = options?.limit !== undefined 
         ? options.limit 
-        : (viewMode === 'sessions_codex' ? 0 : 10);
+        : (viewMode === 'sessions_codex' ? codexLimit : 10);
+      const fetchOffset = options?.offset !== undefined
+        ? options.offset
+        : (viewMode === 'sessions_codex' ? (codexPage - 1) * codexLimit : 0);
+      const fetchSearch = options?.search !== undefined
+        ? options.search
+        : (viewMode === 'sessions_codex' ? codexSearch : '');
 
       const data = await fetchUserSessions(token, {
         status: activeStatus,
         limit: fetchLimit,
-        offset: options?.offset ?? 0,
-        search: options?.search ?? '',
+        offset: fetchOffset,
+        search: fetchSearch,
         forceRefresh,
       });
 
@@ -221,6 +233,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         setSessions(data.data);
         if (data.stats) {
           setSessionStats(data.stats);
+        }
+        if (data.total !== undefined) {
+          setCodexTotalCount(data.total);
         }
         
         // Asynchronously resolve device names
@@ -256,9 +271,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   useEffect(() => {
     if (user) {
       if (viewMode === 'sessions_codex') {
-        fetchSessions(false, { limit: 0, status: currentSessionFilter });
+        fetchSessions(false, { 
+          limit: codexLimit, 
+          offset: (codexPage - 1) * codexLimit, 
+          status: currentSessionFilter,
+          search: codexSearch
+        });
       } else {
-        fetchSessions(false, { limit: 10, status: 'all' });
+        fetchSessions(false, { limit: 10, offset: 0, status: 'all', search: '' });
       }
       
       const channel = supabase.channel(`profile_sessions_${user.id}`)
@@ -752,12 +772,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     return (
       <SessionDetailsView
         sessions={sessions}
+        totalSessionsCount={codexTotalCount}
+        currentPage={codexPage}
+        itemsPerPage={codexLimit}
         currentSessionKey={currentSessionKey}
         currentDeviceId={currentDeviceId}
         userEmail={user?.email}
         userName={userProfile.full_name || ''}
         onBack={() => setViewMode('overview')}
-        onRefresh={() => fetchSessions(true, { limit: 0, status: currentSessionFilter })}
+        onRefresh={() => fetchSessions(true, { limit: codexLimit, offset: (codexPage - 1) * codexLimit, status: currentSessionFilter, search: codexSearch })}
         onTerminateSession={handleTerminateSession}
         onDeleteSession={handleDeleteSession}
         onTerminateAllOther={handleTerminateAllOther}
@@ -766,7 +789,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         sessionStats={sessionStats}
         onStatusFilterChange={(newStatus) => {
           setCurrentSessionFilter(newStatus);
-          fetchSessions(false, { status: newStatus, limit: 0 });
+          setCodexPage(1);
+          fetchSessions(false, { status: newStatus, limit: codexLimit, offset: 0, search: codexSearch });
+        }}
+        onPageChange={(newPage) => {
+          setCodexPage(newPage);
+          fetchSessions(false, { status: currentSessionFilter, limit: codexLimit, offset: (newPage - 1) * codexLimit, search: codexSearch });
+        }}
+        onItemsPerPageChange={(newLimit) => {
+          setCodexLimit(newLimit);
+          setCodexPage(1);
+          fetchSessions(false, { status: currentSessionFilter, limit: newLimit, offset: 0, search: codexSearch });
+        }}
+        onSearchChange={(newSearch) => {
+          setCodexSearch(newSearch);
+          setCodexPage(1);
+          fetchSessions(false, { status: currentSessionFilter, limit: codexLimit, offset: 0, search: newSearch });
         }}
       />
     );

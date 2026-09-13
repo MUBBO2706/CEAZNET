@@ -59,6 +59,9 @@ export interface SessionItem {
 
 interface SessionDetailsViewProps {
   sessions: SessionItem[];
+  totalSessionsCount?: number;
+  currentPage?: number;
+  itemsPerPage?: number;
   currentSessionKey: string;
   currentDeviceId?: string;
   userEmail?: string;
@@ -72,6 +75,9 @@ interface SessionDetailsViewProps {
   isLoading?: boolean;
   sessionStats?: { total: number; active: number; logged_out: number; terminated: number; expired: number };
   onStatusFilterChange?: (status: StatusFilter) => void;
+  onPageChange?: (page: number) => void;
+  onItemsPerPageChange?: (limit: number) => void;
+  onSearchChange?: (search: string) => void;
 }
 
 type StatusFilter = 'all' | 'active' | 'logged_out' | 'terminated' | 'expired';
@@ -252,6 +258,9 @@ export const getSessionActions = (
 
 export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
   sessions,
+  totalSessionsCount,
+  currentPage: currentPageProp,
+  itemsPerPage: itemsPerPageProp,
   currentSessionKey,
   currentDeviceId,
   userEmail,
@@ -265,6 +274,9 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
   isLoading = false,
   sessionStats,
   onStatusFilterChange,
+  onPageChange,
+  onItemsPerPageChange,
+  onSearchChange,
 }) => {
   const { addToast } = useToast();
 
@@ -333,9 +345,36 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // Internal Pagination Fallback
+  const [internalCurrentPage, setInternalCurrentPage] = useState(1);
+  const [internalItemsPerPage, setInternalItemsPerPage] = useState(10);
+
+  const activePage = currentPageProp !== undefined ? currentPageProp : internalCurrentPage;
+  const activeItemsPerPage = itemsPerPageProp !== undefined ? itemsPerPageProp : internalItemsPerPage;
+
+  const handlePageChange = (newPage: number) => {
+    if (onPageChange) {
+      onPageChange(newPage);
+    } else {
+      setInternalCurrentPage(newPage);
+    }
+  };
+
+  const handleItemsPerPageChange = (newLimit: number) => {
+    if (onItemsPerPageChange) {
+      onItemsPerPageChange(newLimit);
+    } else {
+      setInternalItemsPerPage(newLimit);
+      setInternalCurrentPage(1);
+    }
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    if (onSearchChange) {
+      onSearchChange(val);
+    }
+  };
 
   // Selected Session for Detail Modal
   const [selectedSessionForModal, setSelectedSessionForModal] = useState<SessionItem | null>(null);
@@ -599,16 +638,43 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
     });
   }, [resolvedSessions, searchQuery, statusFilter, timeRangeFilter, customStartDate, customEndDate, sortOption, currentSessionKey]);
 
-  // Paginated Sessions
-  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / itemsPerPage));
+  // Total Records & Paginated Sessions
+  const totalRecords = useMemo(() => {
+    if (searchQuery.trim()) {
+      return totalSessionsCount ?? filteredSessions.length;
+    }
+    if (statusFilter === 'all') {
+      return sessionStats?.total ?? totalSessionsCount ?? filteredSessions.length;
+    }
+    if (statusFilter === 'active') {
+      return sessionStats?.active ?? totalSessionsCount ?? filteredSessions.length;
+    }
+    if (statusFilter === 'logged_out') {
+      return sessionStats?.logged_out ?? totalSessionsCount ?? filteredSessions.length;
+    }
+    if (statusFilter === 'terminated') {
+      return sessionStats?.terminated ?? totalSessionsCount ?? filteredSessions.length;
+    }
+    if (statusFilter === 'expired') {
+      return sessionStats?.expired ?? totalSessionsCount ?? filteredSessions.length;
+    }
+    return totalSessionsCount ?? filteredSessions.length;
+  }, [statusFilter, sessionStats, totalSessionsCount, filteredSessions.length, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(totalRecords / activeItemsPerPage));
   const paginatedSessions = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredSessions.slice(start, start + itemsPerPage);
-  }, [filteredSessions, currentPage, itemsPerPage]);
+    if (onPageChange) {
+      return filteredSessions;
+    }
+    const start = (activePage - 1) * activeItemsPerPage;
+    return filteredSessions.slice(start, start + activeItemsPerPage);
+  }, [onPageChange, filteredSessions, activePage, activeItemsPerPage]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, timeRangeFilter, sortOption, itemsPerPage]);
+    if (!onPageChange) {
+      setInternalCurrentPage(1);
+    }
+  }, [searchQuery, statusFilter, timeRangeFilter, sortOption, activeItemsPerPage, onPageChange]);
 
   // Export as PDF
   const handleExportPDF = () => {
@@ -1011,13 +1077,13 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by IP, device, browser, OS, city..."
                 className="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] focus:outline-none focus:border-[var(--profile-accent)] transition-colors h-full min-h-[36px]"
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => handleSearchChange('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--profile-text-muted)] hover:text-[var(--profile-text-primary)]"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1474,8 +1540,8 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
           <div className="flex items-center justify-between w-full border-b border-gray-200/50 dark:border-white/5 pb-3">
             {/* Previous Button */}
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              onClick={() => handlePageChange(Math.max(1, activePage - 1))}
+              disabled={activePage <= 1 || isLoading}
               className="flex items-center gap-1 py-1 px-1 text-xs font-semibold text-[var(--profile-text-secondary)] hover:text-[var(--profile-text-primary)] hover:bg-[var(--profile-table-row-hover)] rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer select-none bg-transparent border-0"
               title="Previous Page"
             >
@@ -1485,13 +1551,13 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
 
             {/* Page indicator in the center */}
             <span className="px-2 font-semibold text-[var(--profile-text-primary)] text-xs">
-              Page {currentPage} / {totalPages}
+              Page {activePage} / {totalPages}
             </span>
 
             {/* Next Button */}
             <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(Math.min(totalPages, activePage + 1))}
+              disabled={activePage >= totalPages || isLoading}
               className="flex items-center gap-1 py-1 px-1 text-xs font-semibold text-[var(--profile-text-secondary)] hover:text-[var(--profile-text-primary)] hover:bg-[var(--profile-table-row-hover)] rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer select-none bg-transparent border-0"
               title="Next Page"
             >
@@ -1506,15 +1572,15 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
             <div className="flex items-center gap-1 flex-wrap">
               <span>Showing</span>
               <span className="font-semibold text-[var(--profile-text-primary)]">
-                {filteredSessions.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+                {totalRecords === 0 ? 0 : (activePage - 1) * activeItemsPerPage + 1}
               </span>
               <span>to</span>
               <span className="font-semibold text-[var(--profile-text-primary)]">
-                {Math.min(currentPage * itemsPerPage, filteredSessions.length)}
+                {Math.min(activePage * activeItemsPerPage, totalRecords)}
               </span>
               <span>from</span>
               <span className="font-semibold text-[var(--profile-text-primary)]">
-                {filteredSessions.length}
+                {totalRecords}
               </span>
               <span className="hidden sm:inline">records</span>
             </div>
@@ -1527,7 +1593,7 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                   onClick={() => setIsRowsPerPageDropdownOpen(!isRowsPerPageDropdownOpen)}
                   className="px-2.5 py-1 rounded-lg bg-[var(--profile-input-bg)] text-[var(--profile-input-text)] border border-[var(--profile-input-border)] hover:bg-[var(--profile-table-row-hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium text-[11px]"
                 >
-                  <span>{itemsPerPage} rows</span>
+                  <span>{activeItemsPerPage} rows</span>
                   <ChevronDown className="w-3 h-3 opacity-60" />
                 </button>
                 {isRowsPerPageDropdownOpen && (
@@ -1538,14 +1604,13 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
                         <button
                           key={num}
                           onClick={() => {
-                            setItemsPerPage(num);
-                            setCurrentPage(1);
+                            handleItemsPerPageChange(num);
                             setIsRowsPerPageDropdownOpen(false);
                           }}
-                          className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${itemsPerPage === num ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
+                          className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[var(--profile-table-row-hover)] flex items-center justify-between transition-colors ${activeItemsPerPage === num ? 'text-[var(--profile-accent)] font-semibold' : 'text-[var(--profile-text-secondary)]'}`}
                         >
                           <span>{num} rows</span>
-                          {itemsPerPage === num && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)]" />}
+                          {activeItemsPerPage === num && <Check className="w-3.5 h-3.5 text-[var(--profile-accent)]" />}
                         </button>
                       ))}
                     </div>
