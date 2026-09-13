@@ -286,6 +286,12 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     }, []);
 
     const loadData = useCallback(async (resetPage = 1) => {
+        if (!user) {
+            setTransactions([]);
+            setIsLoading(false);
+            return;
+        }
+
         if (resetPage === 1) {
             setIsLoading(true);
         } else {
@@ -344,28 +350,40 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     }, [isLoadingMore, hasMore, page, loadData]);
 
     const refreshLinkedNote = useCallback(async () => {
+        if (!user) return;
         const note = await fetchLinkedNote(user, activeProfile.id);
         setLinkedNote(note || null);
     }, [user, activeProfile.id]);
 
+    const prevUserIdRef = useRef<string | undefined>(undefined);
     const prevProfileIdRef = useRef<string | null | undefined>(undefined);
-    const prevDateFilterRef = useRef<string>(dateFilter);
+    const prevDateFilterRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
-        loadProfiles();
-        updateWalletCounts();
-        loadCustomCategoriesData();
+        if (user) {
+            loadProfiles();
+            updateWalletCounts();
+            loadCustomCategoriesData();
+        }
     }, [user?.id]);
 
-    // Load transactions and linked note when profile or dateFilter changes (single source of truth)
+    // Load transactions and linked note when user, profile, or dateFilter changes (single source of truth)
     useEffect(() => {
-        if (prevProfileIdRef.current !== activeProfile.id || prevDateFilterRef.current !== dateFilter) {
+        const userChanged = prevUserIdRef.current !== user?.id;
+        const profileChanged = prevProfileIdRef.current !== activeProfile.id;
+        const dateFilterChanged = prevDateFilterRef.current !== dateFilter;
+
+        if (userChanged || profileChanged || dateFilterChanged) {
+            prevUserIdRef.current = user?.id;
             prevProfileIdRef.current = activeProfile.id;
             prevDateFilterRef.current = dateFilter;
-            loadData(1);
-            refreshLinkedNote();
+            
+            if (user) {
+                loadData(1);
+                refreshLinkedNote();
+            }
         }
-    }, [activeProfile.id, dateFilter, loadData, refreshLinkedNote]);
+    }, [user, user?.id, activeProfile.id, dateFilter, loadData, refreshLinkedNote]);
 
     // Database aggregated stats state (representing 100% of transactions without loading full list)
     const [dbStats, setDbStats] = useState<FinancePeriodStats>(DEFAULT_STATS);
