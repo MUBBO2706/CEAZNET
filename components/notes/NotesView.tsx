@@ -1177,11 +1177,11 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
     }, [selectedNote?.title, selectedNote?.updatedAt, isReadOnly, isWalletLinked, isSyncing, isSaving, selectedNote, handleCloseNote]);
 
     return (
-        <main className="relative z-10 h-full overflow-y-auto bg-[#F2F4F7] dark:bg-black transition-colors scrollbar-hide pt-20 md:pt-16 dev-console-spacing-pb">
+        <main className="relative z-10 h-full overflow-y-auto bg-[#F2F4F7] dark:bg-black transition-colors scrollbar-hide pt-20 md:pt-16 dev-console-spacing-pb flex flex-col">
             
-            <div className="w-full max-w-[1600px] mx-auto p-3 md:p-6 pb-6 flex flex-col">
+            <div className="w-full max-w-[1600px] mx-auto p-3 md:p-6 pb-6 flex flex-col flex-1">
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-[60vh] text-center" style={{ color: 'var(--notes-loader-text)' }}>
+                    <div className="flex-1 min-h-[50vh] flex flex-col items-center justify-center text-center my-auto" style={{ color: 'var(--notes-loader-text)' }}>
                         <Loader className="w-7 h-7 sm:w-8 sm:h-8 animate-spin mb-3" style={{ color: 'var(--notes-loader-spinner)' }} />
                         <p className="text-sm font-medium tracking-tight">Loading notes...</p>
                     </div>

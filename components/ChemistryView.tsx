@@ -379,7 +379,10 @@ const ChemistryView: React.FC<ChemistryViewProps> = ({ customMolecule, user }) =
     );
 
     return (
-        <div className="absolute inset-0 w-full h-full bg-white dark:bg-black overflow-hidden flex flex-col">
+        <div 
+            className="absolute inset-0 w-full h-full bg-white dark:bg-black overflow-hidden flex flex-col transition-[padding-bottom] duration-200"
+            style={{ paddingBottom: 'var(--dev-console-padding, 0px)' }}
+        >
             
             {/* Header Portal Integration */}
             {headerPortalTarget && createPortal(
@@ -439,7 +442,7 @@ const ChemistryView: React.FC<ChemistryViewProps> = ({ customMolecule, user }) =
             {/* --- MAIN VIEWER AREA --- */}
             <div className="flex-1 relative h-full w-full">
                 {isLoading && (
-                    <div className="absolute inset-0 z-40 flex flex-col items-center justify-center pointer-events-none transition-all duration-300 backdrop-blur-md bg-white/30 dark:bg-black/30">
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-all duration-300 backdrop-blur-md bg-white/30 dark:bg-black/30">
                         <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
                             <div className="relative w-20 h-20 flex items-center justify-center">
                                 <div className="absolute inset-0 border-[2px] border-amber-500/30 rounded-full animate-[spin_3s_linear_infinite]" style={{ borderRadius: '50% 50% 50% 50% / 30% 70% 30% 70%' }}></div>

@@ -495,13 +495,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose, currentV
             </div>
             
             {/* Desktop Sidebar */}
-            <div ref={sidebarRef} className={`hidden md:block flex-shrink-0 h-full relative z-40 ${isMounted ? 'transition-all duration-300 ease-in-out' : ''} ${isCollapsed ? 'w-[72px]' : 'w-max'}`}>
+            <div ref={sidebarRef} className={`hidden md:block flex-shrink-0 h-full relative z-50 ${isMounted ? 'transition-all duration-300 ease-in-out' : ''} ${isCollapsed ? 'w-[72px]' : 'w-max'}`}>
                 {sidebarContent}
 
                 {/* Desktop Edge Toggle Button */}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="absolute top-5 -right-4 w-8 h-8 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center z-10 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-transform hover:scale-110"
+                    className="absolute top-5 -right-4 w-8 h-8 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center z-50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-transform hover:scale-110"
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                     {isCollapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}

@@ -205,9 +205,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       loadSessionStats(forceRefresh);
 
       const activeStatus = options?.status ?? currentSessionFilter;
+      const fetchLimit = options?.limit !== undefined 
+        ? options.limit 
+        : (viewMode === 'sessions_codex' ? 0 : 10);
+
       const data = await fetchUserSessions(token, {
         status: activeStatus,
-        limit: options?.limit ?? (viewMode === 'sessions_codex' ? 30 : 10),
+        limit: fetchLimit,
         offset: options?.offset ?? 0,
         search: options?.search ?? '',
         forceRefresh,
@@ -251,7 +255,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   useEffect(() => {
     if (user) {
-      fetchSessions();
+      if (viewMode === 'sessions_codex') {
+        fetchSessions(false, { limit: 0, status: currentSessionFilter });
+      } else {
+        fetchSessions(false, { limit: 10, status: 'all' });
+      }
       
       const channel = supabase.channel(`profile_sessions_${user.id}`)
         .on(
@@ -749,7 +757,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         userEmail={user?.email}
         userName={userProfile.full_name || ''}
         onBack={() => setViewMode('overview')}
-        onRefresh={() => fetchSessions(true)}
+        onRefresh={() => fetchSessions(true, { limit: 0, status: currentSessionFilter })}
         onTerminateSession={handleTerminateSession}
         onDeleteSession={handleDeleteSession}
         onTerminateAllOther={handleTerminateAllOther}
@@ -758,7 +766,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         sessionStats={sessionStats}
         onStatusFilterChange={(newStatus) => {
           setCurrentSessionFilter(newStatus);
-          fetchSessions(false, { status: newStatus, limit: 30 });
+          fetchSessions(false, { status: newStatus, limit: 0 });
         }}
       />
     );
@@ -989,7 +997,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {(sessions.length > 0 || sessionStats.total > 0) && (
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setViewMode('sessions_codex')}
+                    onClick={() => {
+                      setViewMode('sessions_codex');
+                      fetchSessions(false, { limit: 0, status: 'all' });
+                    }}
                     className="flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-xs font-semibold transition-all cursor-pointer bg-transparent border-0 p-0 focus:outline-none"
                     title="View Complete Session History"
                   >
