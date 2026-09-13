@@ -674,7 +674,7 @@ export const getNotes = async (user: User | null): Promise<Note[]> => {
                 const { data: { session } } = await supabase.auth.getSession();
                 const token = session?.access_token;
                 
-                const response = await fetch('/api/db/query', {
+                const response = await fetch('/api/db/query?q=fetch_notes', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -820,7 +820,7 @@ export const saveNote = async (note: Note, user: User | null) => {
         }, { onConflict: 'id' });
         if (error) logSupabaseError("Error saving note", error);
         
-        fetch('/api/db/clear-cache', {
+        fetch('/api/db/clear-cache?q=clear_notes_save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ table: 'notes' })
@@ -839,7 +839,7 @@ export const deleteNote = async (id: string, user: User | null) => {
         const { error } = await supabase.from('notes').delete().eq('id', id);
         if (error) logSupabaseError("Error deleting note", error);
         
-        fetch('/api/db/clear-cache', {
+        fetch('/api/db/clear-cache?q=clear_notes_delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ table: 'notes' })

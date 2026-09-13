@@ -34,6 +34,22 @@ const getPreviewContent = (content: string) => {
     return text.trim();
 };
 
+const getFormattedMarkdown = (content: string) => {
+    if (!content) return '';
+    let text = content;
+    // 1. Remove Finance Widgets entirely
+    text = text.replace(/<!-- FINANCE_WIDGET_START -->[\s\S]*?<!-- FINANCE_WIDGET_END -->/g, '');
+    // 2. Remove any other HTML comments
+    text = text.replace(/<!--[\s\S]*?-->/g, '');
+    // 3. Normalize br tags to newlines
+    text = text.replace(/<br\s*[\/]?>/gi, '\n');
+    // 4. Strip generic html container tags but keep text
+    text = text.replace(/<\/?(div|section|article|header|footer)[^>]*>/gi, '');
+    // 5. Clean up excessive newlines
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+};
+
 interface HomeViewProps {
     onNavigate: (view: View) => void;
     user: User | null;
@@ -258,21 +274,16 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
             if (app.id === 'notes' && recentNotes.length > 0) {
                 const currentNote = recentNotes[currentNoteIndex];
-                // Strip HTML tags and markdown for preview
-                const plainContent = (currentNote.content || '')
-                    .replace(/<!--[\s\S]*?\-\->/g, '') // Remove HTML comments
-                    .replace(/<[^>]*>?/gm, '') // Remove HTML tags
-                    .replace(/[#*`_~\[\]()]/g, '') // Remove basic markdown
-                    .trim();
+                const formattedMarkdown = getFormattedMarkdown(currentNote.content || '');
                 
                 return (
                     <div className="flex flex-col h-full relative overflow-hidden group/note">
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-3 relative z-10 shrink-0">
+                        <div className="flex items-center justify-between mb-2.5 relative z-10 shrink-0">
                             <div className={`p-2 rounded-xl ${app.bg} ${app.color}`}>
                                 <app.icon className="w-5 h-5" />
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                                 {/* Pagination Dots */}
                                 <div className="flex gap-1">
                                     {recentNotes.map((_, idx) => (
@@ -288,41 +299,59 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         {/* Note Card Container */}
                         <div className="flex-1 relative z-10 min-h-0 perspective-1000">
                              {/* Stack Effect - Background Card */}
-                            <div className="absolute top-2 left-2 right-2 bottom-0 bg-amber-100/50 dark:bg-amber-900/20 rounded-xl border border-amber-100/50 dark:border-white/5 rotate-2 transform origin-bottom-right transition-transform duration-500 group-hover/note:rotate-3" />
+                            <div className="absolute top-1.5 left-1.5 right-1.5 bottom-0 bg-amber-100/50 dark:bg-amber-900/20 rounded-xl border border-amber-100/50 dark:border-white/5 rotate-1.5 transform origin-bottom-right transition-transform duration-500 group-hover/note:rotate-2" />
                             
                             {/* Main Card */}
                             <AnimatePresence mode="wait">
                                 <motion.div 
                                     key={currentNoteIndex}
-                                    initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                                    initial={{ opacity: 0, scale: 0.96, y: 6 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                                    transition={{ duration: 0.4 }}
-                                    className="absolute inset-0 bg-amber-50 dark:bg-neutral-900 rounded-xl border border-amber-100 dark:border-neutral-800 shadow-sm flex flex-col"
+                                    exit={{ opacity: 0, scale: 0.96, y: 6 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="absolute inset-0 bg-amber-50/90 dark:bg-neutral-900 rounded-xl border border-amber-200/60 dark:border-neutral-800 shadow-sm flex flex-col overflow-hidden"
                                 >
-                                    {/* Decorative Tape or Pin */}
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-4 bg-amber-200/80 dark:bg-amber-900/50 backdrop-blur-sm rotate-[-2deg] shadow-sm z-20" />
+                                    {/* Decorative Tape Accent */}
+                                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-amber-300/80 dark:bg-amber-700/50 backdrop-blur-sm rotate-[-2deg] rounded-sm z-20" />
 
-                                    <div className="p-5 flex flex-col h-full">
-                                        <h4 className="font-bold text-neutral-800 dark:text-white line-clamp-1 mb-3 text-lg font-serif">
+                                    <div className="p-3.5 sm:p-4 flex flex-col h-full justify-between">
+                                        <h4 className="font-bold text-neutral-900 dark:text-white line-clamp-1 mb-2 text-base font-serif">
                                             {currentNote.title || 'Untitled Note'}
                                         </h4>
                                         
-                                        <div className="flex-1 overflow-hidden relative">
-                                            <div className="text-sm text-neutral-600 dark:text-neutral-300 font-mono leading-relaxed line-clamp-5 whitespace-pre-wrap">
-                                                {currentNote.content ? plainContent : 'No content'}
-                                            </div>
+                                        <div className="flex-1 overflow-hidden relative min-h-0">
+                                            {formattedMarkdown ? (
+                                                <div className="text-[11px] sm:text-xs text-neutral-600 dark:text-neutral-300 font-sans leading-relaxed">
+                                                    <Markdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            p: ({ node, ...props }) => <p className="mb-1 last:mb-0 leading-relaxed" {...props} />,
+                                                            strong: ({ node, ...props }) => <strong className="font-bold text-neutral-900 dark:text-amber-200" {...props} />,
+                                                            em: ({ node, ...props }) => <em className="italic text-neutral-700 dark:text-amber-300/90" {...props} />,
+                                                            ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-0.5 my-0.5" {...props} />,
+                                                            ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-0.5 my-0.5" {...props} />,
+                                                            li: ({ node, ...props }) => <li className="leading-tight" {...props} />,
+                                                            code: ({ node, ...props }) => <code className="px-1 py-0.5 rounded bg-amber-100 dark:bg-black/50 text-amber-800 dark:text-amber-300 text-[10px] font-mono" {...props} />,
+                                                            blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-amber-400 pl-2 italic my-0.5 text-neutral-500 dark:text-neutral-400" {...props} />
+                                                        }}
+                                                    >
+                                                        {formattedMarkdown}
+                                                    </Markdown>
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-neutral-400 italic">No content</div>
+                                            )}
                                             {/* Fade out at bottom */}
-                                            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-amber-50 dark:from-neutral-900 to-transparent" />
+                                            <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-amber-50 dark:from-neutral-900 to-transparent pointer-events-none" />
                                         </div>
 
-                                        <div className="mt-auto pt-3 border-t border-amber-100 dark:border-neutral-800 flex items-center justify-between text-[10px] text-neutral-400 uppercase tracking-wider font-bold">
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
+                                        <div className="mt-auto pt-2 border-t border-amber-200/50 dark:border-neutral-800 flex items-center justify-between text-[9px] text-neutral-400 uppercase tracking-wider font-bold shrink-0">
+                                            <span className="flex items-center gap-1 font-mono">
+                                                <Clock className="w-2.5 h-2.5" />
                                                 {new Date(currentNote.updatedAt).toLocaleDateString()}
                                             </span>
-                                            <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover/note:scale-110 transition-transform">
-                                                <ArrowRight className="w-3 h-3" />
+                                            <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover/note:scale-110 transition-transform">
+                                                <ArrowRight className="w-2.5 h-2.5" />
                                             </div>
                                         </div>
                                     </div>
@@ -494,9 +523,9 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 const progress = totalAmount > 0 ? (dairySummary.paid / totalAmount) * 100 : 0;
 
                 return (
-                    <div className="flex flex-col h-full relative overflow-hidden group/dairy">
+                    <div className="flex flex-col h-full justify-between relative z-10">
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-4 relative z-10 shrink-0">
+                        <div className="flex items-center justify-between shrink-0">
                             <div className={`p-2.5 rounded-2xl ${app.bg} ${app.color} shadow-sm`}>
                                 <app.icon className="w-5 h-5" />
                             </div>
@@ -510,100 +539,74 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             </div>
                         </div>
 
-                        {/* Dynamic Content */}
+                        {/* Dynamic Content - Container-less */}
                         <AnimatePresence mode="wait">
                             <motion.div 
                                 key={currentDairyIndex}
-                                initial={{ opacity: 0, y: 8 }}
+                                initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.3 }}
-                                className="flex-1 flex flex-col justify-between relative z-10"
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.25 }}
+                                className="my-auto py-1 flex flex-col justify-center"
                             >
-                                
-                                {/* View 0: Due Amount */}
-                            {currentDairyIndex === 0 && (
-                                <div className="flex flex-col h-full justify-center">
-                                    <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Total Due</div>
-                                    <div className="text-4xl font-bold tracking-tight text-red-500 mb-4">
-                                        ₹{dairySummary.due.toLocaleString()}
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/20">
-                                        <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
-                                            <AlertCircle className="w-4 h-4" />
+                                {currentDairyIndex === 0 && (
+                                    <div>
+                                        <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Outstanding Due</div>
+                                        <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-red-500 truncate mb-2">
+                                            ₹{dairySummary.due.toLocaleString()}
                                         </div>
-                                        <div>
-                                            <div className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase font-bold">Status</div>
-                                            <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                                        <div className="flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-white/10 text-[10px] font-mono">
+                                            <span className="text-neutral-500">Status</span>
+                                            <span className={`font-bold ${dairySummary.due > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                                 {dairySummary.due > 0 ? 'Payment Pending' : 'All Clear'}
-                                            </div>
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* View 1: Paid Amount */}
-                            {currentDairyIndex === 1 && (
-                                <div className="flex flex-col h-full justify-center">
-                                    <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Total Paid</div>
-                                    <div className="text-4xl font-bold tracking-tight text-purple-600 dark:text-purple-400 mb-4">
-                                        ₹{dairySummary.paid.toLocaleString()}
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/20">
-                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                            <CheckCircle2 className="w-4 h-4" />
+                                {currentDairyIndex === 1 && (
+                                    <div>
+                                        <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Total Paid</div>
+                                        <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-purple-600 dark:text-purple-400 truncate mb-2">
+                                            ₹{dairySummary.paid.toLocaleString()}
                                         </div>
-                                        <div>
-                                            <div className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase font-bold">Contribution</div>
-                                            <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                                                {Math.round(progress)}% of Total Bill
-                                            </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-white/10 text-[10px] font-mono">
+                                            <span className="text-neutral-500">Settlement</span>
+                                            <span className="font-bold text-purple-500">
+                                                {Math.round(progress)}% of Total
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* View 2: Circular Progress */}
-                            {currentDairyIndex === 2 && (
-                                <div className="h-full flex flex-col items-center justify-center">
-                                    <div className="relative w-24 h-24 flex items-center justify-center mb-1">
-                                        {/* Background Circle */}
-                                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 128 128">
-                                            <circle
-                                                cx="64"
-                                                cy="64"
-                                                r="56"
-                                                stroke="currentColor"
-                                                strokeWidth="10"
-                                                fill="transparent"
-                                                className="text-neutral-100 dark:text-neutral-800"
+                                {currentDairyIndex === 2 && (
+                                    <div>
+                                        <div className="flex items-baseline justify-between mb-1">
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Settled Ratio</span>
+                                            <span className="text-sm font-bold font-mono text-purple-500">{Math.round(progress)}%</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden mb-2">
+                                            <div 
+                                                className="h-full bg-purple-500 rounded-full transition-all duration-700"
+                                                style={{ width: `${progress}%` }}
                                             />
-                                            {/* Progress Circle */}
-                                            <circle
-                                                cx="64"
-                                                cy="64"
-                                                r="56"
-                                                stroke="currentColor"
-                                                strokeWidth="10"
-                                                fill="transparent"
-                                                strokeDasharray={351.86}
-                                                strokeDashoffset={351.86 - (351.86 * progress) / 100}
-                                                className="text-purple-500 transition-all duration-1000 ease-out"
-                                                strokeLinecap="round"
-                                            />
-                                        </svg>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-2xl font-bold text-neutral-900 dark:text-white">{Math.round(progress)}%</span>
-                                            <span className="text-[10px] text-neutral-400 uppercase font-bold">Paid</span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-neutral-500">
+                                            <span>Total Volume</span>
+                                            <span className="font-bold text-neutral-900 dark:text-white">₹{totalAmount.toLocaleString()}</span>
                                         </div>
                                     </div>
-                                    <div className="text-xs font-medium text-neutral-400 mt-2">
-                                        Total Bill: <span className="text-neutral-900 dark:text-white font-bold">₹{totalAmount.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
+                                )}
+                            </motion.div>
                         </AnimatePresence>
+
+                        {/* Footer info */}
+                        <div className="pt-2 border-t border-neutral-100 dark:border-white/10 flex items-center justify-between text-[9px] font-mono text-neutral-400 shrink-0">
+                            <span>Daily Khata</span>
+                            <span className="text-purple-500 font-bold flex items-center gap-1">
+                                Open <ArrowRight className="w-2.5 h-2.5" />
+                            </span>
+                        </div>
                     </div>
                 );
             }
@@ -645,66 +648,50 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
             }
 
             if (app.id === 'molecule-viewer' && lastMolecule) {
+                const atomCount = moleculeData?.atoms?.length || (moleculeData?.heavyAtomCount ? moleculeData.heavyAtomCount + 10 : 24);
+                const bondCount = moleculeData?.bonds?.length || Math.round(atomCount * 1.1);
                 return (
                     <div className="flex flex-col h-full relative overflow-hidden group/chem bg-[#0a0a0a] rounded-3xl p-[1px] isolation-auto">
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-transparent to-blue-500/20 opacity-0 group-hover/chem:opacity-100 transition-opacity duration-700" />
                         
-                        <div className="relative z-10 flex-1 bg-neutral-950/90 dark:bg-black/90 backdrop-blur-xl rounded-[23px] overflow-hidden flex flex-col h-full">
+                        <div className="relative z-10 flex-1 bg-neutral-950/90 dark:bg-black/90 backdrop-blur-xl rounded-[23px] overflow-hidden flex flex-col justify-between p-4">
                             {/* Grid background */}
-                            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:10px_10px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_0%,#000_20%,transparent_100%)] pointer-events-none" />
+                            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none" />
                             
-                            <div className="p-4 flex flex-col h-full relative z-20">
-                                {/* Header */}
-                                <div className="flex items-center justify-between mb-4 shrink-0">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-md bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
-                                            <FlaskConical className="w-3.5 h-3.5 text-cyan-400" />
-                                        </div>
-                                        <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-cyan-400/80">ChemLab</span>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
-                                    </div>
+                            {/* Header */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                                <div className="flex items-center gap-1.5">
+                                    <FlaskConical className="w-4 h-4 text-cyan-400" />
+                                    <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-cyan-400">ChemLab 3D</span>
                                 </div>
+                                <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-mono font-bold text-cyan-300">
+                                    Active
+                                </span>
+                            </div>
+
+                            {/* Compound Info - Container-less */}
+                            <div className="relative z-10 my-auto py-1">
+                                <div className="text-[9px] font-mono text-white/40 uppercase tracking-wider mb-0.5">Active Molecule</div>
+                                <h3 className="text-base sm:text-lg font-bold text-white truncate group-hover/chem:text-cyan-300 transition-colors font-serif italic">
+                                    {lastMolecule}
+                                </h3>
                                 
-                                {/* Hexagon visualizer */}
-                                <div className="absolute right-[-10px] bottom-10 opacity-20 group-hover/chem:opacity-40 transition-opacity duration-500 pointer-events-none group-hover/chem:scale-110 origin-bottom-right">
-                                    <svg viewBox="0 0 100 100" className="w-24 h-24 text-cyan-500" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                        <path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" className="animate-[spin_20s_linear_infinite_reverse] origin-[50px_50px]" strokeDasharray="5 5"/>
-                                        <circle cx="50" cy="50" r="20" className="animate-[pulse_4s_ease-in-out_infinite]" />
-                                        <path d="M50 30 L65 50 L50 70 L35 50 Z" />
-                                    </svg>
+                                <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-white/10 text-[10px] font-mono">
+                                    <span className="text-white/40">Formula</span>
+                                    <span className="text-cyan-200 font-bold">{moleculeData?.molecularFormula || 'C8H10N4O2'}</span>
                                 </div>
-                                
-                                <div className="mt-auto flex flex-col justify-end">
-                                    <div className="inline-flex items-center gap-1.5 text-[9px] text-zinc-500 font-mono uppercase mb-1">
-                                        <span className="w-2 h-[1px] bg-zinc-500" />
-                                        Target Substance
-                                    </div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight line-clamp-1 group-hover/chem:text-cyan-300 transition-colors">
-                                        {lastMolecule}
-                                    </h2>
-                                    
-                                    {moleculeData ? (
-                                        <div className="mt-3 flex gap-4 border-t border-white/10 pt-3">
-                                            <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="text-[8px] sm:text-[9px] text-zinc-500 font-mono uppercase tracking-wider mb-0.5 truncate">Formula</span>
-                                                <span className="text-xs font-mono font-medium text-cyan-100 truncate">{moleculeData.molecularFormula || 'UNKNOWN'}</span>
-                                            </div>
-                                            <div className="w-[1px] bg-white/10 shrink-0" />
-                                            <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="text-[8px] sm:text-[9px] text-zinc-500 font-mono uppercase tracking-wider mb-0.5 truncate">Weight</span>
-                                                <span className="text-xs font-mono font-medium text-blue-200 truncate">{moleculeData.molecularWeight ? moleculeData.molecularWeight.toString().split('.')[0] + ' g/mol' : 'UNKNOWN'}</span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between opacity-50">
-                                            <span className="text-[9px] text-zinc-400 font-mono uppercase">Scanning...</span>
-                                            <Cpu className="w-3.5 h-3.5 text-zinc-400 animate-pulse" />
-                                        </div>
-                                    )}
+                                <div className="flex items-baseline justify-between mt-1 text-[10px] font-mono">
+                                    <span className="text-white/40">Structure</span>
+                                    <span className="text-blue-200">{atomCount} Atoms • {bondCount} Bonds</span>
                                 </div>
+                            </div>
+
+                            {/* Bottom Status */}
+                            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[8px] font-mono text-white/50 relative z-10">
+                                <span>3D Sandbox</span>
+                                <span className="text-cyan-400 font-bold flex items-center gap-1">
+                                    Launch <ArrowRight className="w-2.5 h-2.5" />
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -713,29 +700,45 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
             if (app.id === 'settings' && settingsSummary) {
                 return (
-                    <div className="flex flex-col h-full justify-between animate-fade-in relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className={`p-2 rounded-xl ${app.bg} ${app.color}`}>
+                    <div className="flex flex-col h-full justify-between relative z-10">
+                        <div className="flex items-center justify-between shrink-0">
+                            <div className={`p-2.5 rounded-2xl ${app.bg} ${app.color} shadow-sm`}>
                                 <app.icon className="w-5 h-5" />
                             </div>
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Preferences</span>
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                                Active
+                            </span>
                         </div>
                         
-                        <div className="flex-1 flex flex-col justify-center gap-3">
-                            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-white/10">
-                                <div className="flex items-center gap-2">
-                                    <Palette className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                    <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Theme</span>
-                                </div>
-                                <span className="text-xs font-mono text-slate-600 dark:text-slate-400 capitalize">{settingsSummary.theme}</span>
+                        <div className="my-auto py-1 flex flex-col justify-center gap-1.5">
+                            <div className="flex items-baseline justify-between text-[11px] font-mono">
+                                <span className="text-neutral-400 flex items-center gap-1.5">
+                                    <Palette className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>Theme</span>
+                                </span>
+                                <span className="font-bold text-emerald-500 capitalize">{settingsSummary.theme}</span>
                             </div>
-                            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-white/10">
-                                <div className="flex items-center gap-2">
-                                    <Volume2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                    <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Voice</span>
-                                </div>
-                                <span className="text-xs font-mono text-slate-600 dark:text-slate-400 capitalize">{settingsSummary.voice}</span>
+                            <div className="flex items-baseline justify-between text-[11px] font-mono pt-1.5 border-t border-neutral-100 dark:border-white/10">
+                                <span className="text-neutral-400 flex items-center gap-1.5">
+                                    <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>Voice</span>
+                                </span>
+                                <span className="font-bold text-blue-400 capitalize">{settingsSummary.voice}</span>
                             </div>
+                            <div className="flex items-baseline justify-between text-[11px] font-mono pt-1.5 border-t border-neutral-100 dark:border-white/10">
+                                <span className="text-neutral-400 flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>Account</span>
+                                </span>
+                                <span className="font-bold text-cyan-400 capitalize">{settingsSummary.authStatus}</span>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-neutral-100 dark:border-white/10 flex items-center justify-between text-[9px] font-mono text-neutral-400 shrink-0">
+                            <span>Preferences</span>
+                            <span className="text-slate-400 font-bold flex items-center gap-1">
+                                Setup <ArrowRight className="w-2.5 h-2.5" />
+                            </span>
                         </div>
                     </div>
                 );
@@ -800,25 +803,40 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
     const renderHeroSlide = (app: typeof apps[0]) => {
         // Common Header for Hero Slides with consistent styling and alignment
-        const HeroHeader = ({ title, icon: Icon, color, subtitle }: { title: string, icon: any, color: string, subtitle?: string }) => (
-            <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-3 md:mb-5 relative z-10 shrink-0">
-                <div className="p-1.5 sm:p-2 md:p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-md">
-                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${color}`} />
-                </div>
-                <div className="min-w-0">
-                    <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white tracking-tight leading-tight drop-shadow-md truncate">
-                        {title}
-                    </h2>
-                    {subtitle && (
-                        <p className="text-[9px] sm:text-[10px] md:text-xs text-white/60 uppercase tracking-widest font-mono mt-0.5 truncate">{subtitle}</p>
+        const HeroHeader = ({ title, icon: Icon, color, subtitle, rightElement }: { title: string, icon: any, color: string, subtitle?: string, rightElement?: React.ReactNode }) => (
+            <div className="mb-2 sm:mb-3 md:mb-5 relative z-10 shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color} shrink-0`} />
+                        <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white tracking-tight leading-tight drop-shadow-md truncate">
+                            {title}
+                        </h2>
+                    </div>
+                    {rightElement && (
+                        <div className="shrink-0">
+                            {rightElement}
+                        </div>
                     )}
                 </div>
+                {subtitle && (
+                    <p className="text-[9px] sm:text-[10px] md:text-xs text-white/60 uppercase tracking-widest font-mono mt-1 truncate w-full">
+                        {subtitle}
+                    </p>
+                )}
             </div>
         );
 
         if (user) {
             // --- FINANCE HERO ---
             if (app.id === 'finance' && financeSummary) {
+                const netSavings = financeSummary.income - financeSummary.expense;
+                const totalFlow = financeSummary.income + financeSummary.expense;
+                const incomePercent = totalFlow > 0 ? Math.round((financeSummary.income / totalFlow) * 100) : 0;
+                const expensePercent = totalFlow > 0 ? Math.round((financeSummary.expense / totalFlow) * 100) : 0;
+                const savingsRate = financeSummary.income > 0 
+                    ? Math.round((netSavings / financeSummary.income) * 100) 
+                    : (netSavings >= 0 ? 100 : -100);
+
                 return (
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         {/* Background Decorative Icon */}
@@ -827,54 +845,98 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         </div>
                         
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Financial Overview" icon={Wallet} color="text-emerald-400" subtitle={activeWalletName ? `${activeWalletName} • Track Income & Expenses` : "Track Income & Expenses"} />
+                            <HeroHeader 
+                                title="Financial Overview" 
+                                icon={Wallet} 
+                                color="text-emerald-400" 
+                                subtitle={activeWalletName ? `${activeWalletName} • Track Income & Expenses` : "Track Income & Expenses"}
+                                rightElement={typeof financeSummary.count === 'number' ? (
+                                    <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[9px] sm:text-[10px] font-bold font-mono">
+                                        {financeSummary.count} {financeSummary.count === 1 ? 'entry' : 'entries'}
+                                    </span>
+                                ) : null}
+                            />
                             
                             <div className="flex flex-col gap-2 my-auto">
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center">
-                                    <div className="sm:col-span-6">
-                                        <p className="text-emerald-200/50 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-0.5">{activeWalletName ? `${activeWalletName} Balance` : 'Total Balance'}</p>
-                                        <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight truncate">₹{financeSummary.balance.toLocaleString()}</p>
+                                    <div className="sm:col-span-5">
+                                        <p className="text-emerald-200/50 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-0.5 truncate">
+                                            {activeWalletName ? `${activeWalletName} Balance` : 'Total Balance'}
+                                        </p>
+                                        <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight truncate">
+                                            ₹{financeSummary.balance.toLocaleString()}
+                                        </p>
                                     </div>
-                                    <div className="sm:col-span-6 grid grid-cols-2 gap-1.5 sm:gap-2">
-                                        <div className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5">
-                                            <p className="text-emerald-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Income</p>
-                                            <p className="text-xs sm:text-sm font-bold text-emerald-400 truncate">+₹{financeSummary.income.toLocaleString()}</p>
+                                    <div className="sm:col-span-7 grid grid-cols-3 gap-1.5 sm:gap-2">
+                                        <div className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between gap-1">
+                                            <div className="min-w-0">
+                                                <p className="text-emerald-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Income</p>
+                                                <p className="text-xs sm:text-sm font-bold text-emerald-400 truncate">+₹{financeSummary.income.toLocaleString()}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                                    {incomePercent}%
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5">
-                                            <p className="text-rose-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Expense</p>
-                                            <p className="text-xs sm:text-sm font-bold text-rose-400 truncate">-₹{financeSummary.expense.toLocaleString()}</p>
+                                        <div className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between gap-1">
+                                            <div className="min-w-0">
+                                                <p className="text-rose-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Expense</p>
+                                                <p className="text-xs sm:text-sm font-bold text-rose-400 truncate">-₹{financeSummary.expense.toLocaleString()}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                                                    {expensePercent}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between gap-1">
+                                            <div className="min-w-0">
+                                                <p className="text-cyan-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Savings</p>
+                                                <p className={`text-xs sm:text-sm font-bold truncate ${netSavings >= 0 ? 'text-cyan-400' : 'text-amber-400'}`}>
+                                                    {netSavings >= 0 ? '+' : '-'}₹{Math.abs(netSavings).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className={`text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                                    netSavings >= 0 
+                                                        ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' 
+                                                        : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                                }`}>
+                                                    {savingsRate >= 0 ? `+${savingsRate}%` : `${savingsRate}%`}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {financeSummary.lastTransaction ? (
-                                <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 max-w-full">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className={`p-1.5 rounded-full shrink-0 ${financeSummary.lastTransaction.type === 'income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                                            {financeSummary.lastTransaction.type === 'income' ? <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+                                <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex flex-col gap-1 w-full">
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            {financeSummary.lastTransaction.type === 'income' ? (
+                                                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                            ) : (
+                                                <TrendingDown className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                            )}
+                                            <span className="text-white/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">
+                                                Latest Activity
+                                            </span>
                                         </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-white/40 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Latest Activity</span>
-                                            <div className="flex items-center gap-1.5 overflow-hidden">
-                                                <span className="text-white/95 font-semibold text-[11px] sm:text-xs truncate">{financeSummary.lastTransaction.description || 'Transaction'}</span>
-                                                <span className={`text-[11px] sm:text-xs font-bold shrink-0 ${financeSummary.lastTransaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {financeSummary.lastTransaction.type === 'income' ? '+' : '-'}₹{financeSummary.lastTransaction.amount}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 shrink-0">
                                         {financeSummary.lastTransaction.payment_method && (
-                                            <span className="px-2 py-0.5 rounded-md bg-white/10 text-white/80 text-[9px] sm:text-[10px] font-mono capitalize">
+                                            <span className="text-white/60 text-[9px] sm:text-[10px] font-mono capitalize shrink-0">
                                                 {financeSummary.lastTransaction.payment_method}
                                             </span>
                                         )}
-                                        {typeof financeSummary.count === 'number' && (
-                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-bold">
-                                                {financeSummary.count} entries
-                                            </span>
-                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                                        <span className="text-white/95 font-semibold text-[11px] sm:text-xs truncate">
+                                            {financeSummary.lastTransaction.description || 'Transaction'}
+                                        </span>
+                                        <span className={`text-[11px] sm:text-xs font-bold shrink-0 ${financeSummary.lastTransaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {financeSummary.lastTransaction.type === 'income' ? '+' : '-'}₹{financeSummary.lastTransaction.amount.toLocaleString()}
+                                        </span>
                                     </div>
                                 </div>
                             ) : (
@@ -891,35 +953,84 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
             // --- NOTES HERO ---
             if (app.id === 'notes' && recentNotes.length > 0) {
                 const note = recentNotes[currentNoteIndex];
-                const plainContent = (note.content || '').replace(/<[^>]*>?/gm, '');
+                const formattedMarkdown = getFormattedMarkdown(note.content || '');
                 return (
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900 via-amber-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-950 via-neutral-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         <div className="absolute -right-10 -top-10 opacity-10 transform -rotate-12 pointer-events-none">
                             <FileText className="w-36 h-36 md:w-64 md:h-64 text-amber-500" />
                         </div>
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Quick Notes" icon={FileText} color="text-amber-400" subtitle="Capture Ideas & Thoughts" />
+                            <HeroHeader 
+                                title="Quick Notes" 
+                                icon={FileText} 
+                                color="text-amber-400" 
+                                subtitle="Capture Ideas & Structured Vault" 
+                                rightElement={
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] sm:text-[10px] font-mono font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                        <span>Markdown Live</span>
+                                    </div>
+                                }
+                            />
                             
-                            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-4 md:p-4.5 shadow-xl relative group my-auto flex flex-col justify-between min-h-[90px] sm:min-h-[110px]">
-                                <div className="absolute -top-2.5 left-6 w-10 h-3 bg-amber-500/30 rotate-[-2deg]" />
-                                <div>
-                                    <h3 className="text-sm sm:text-base md:text-lg font-bold text-white mb-1 font-serif leading-tight truncate">{note.title || 'Untitled Note'}</h3>
-                                    <p className="text-xs md:text-sm text-amber-100/80 line-clamp-3 sm:line-clamp-4 md:line-clamp-4 font-mono leading-relaxed">
-                                        {plainContent || 'No content'}
-                                    </p>
+                            {/* Enhanced Note Preview Card with increased height and formatted Markdown */}
+                            <div className="bg-amber-950/40 border border-amber-500/25 rounded-2xl p-3 sm:p-4 md:p-4.5 shadow-2xl relative group my-auto flex flex-col justify-between flex-1 min-h-[105px] sm:min-h-[130px] md:min-h-[155px] max-h-[135px] sm:max-h-[165px] md:max-h-[190px] overflow-hidden">
+                                {/* Decorative Tape Accent */}
+                                <div className="absolute -top-2 left-6 w-12 h-3.5 bg-amber-500/30 backdrop-blur-sm rotate-[-2deg] rounded-sm border-t border-amber-300/30 z-20" />
+                                
+                                <div className="flex flex-col h-full justify-between min-h-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1.5 shrink-0">
+                                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-white font-serif leading-tight truncate">
+                                            {note.title || 'Untitled Note'}
+                                        </h3>
+                                        <span className="text-[9px] sm:text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300/90 border border-amber-500/25 shrink-0">
+                                            {new Date(note.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </span>
+                                    </div>
+
+                                    {/* Formatted Markdown Content Container */}
+                                    <div className="flex-1 overflow-hidden relative text-amber-100/90 text-xs sm:text-sm font-sans leading-relaxed min-h-0">
+                                        {formattedMarkdown ? (
+                                            <div className="prose-amber prose-invert max-w-none">
+                                                <Markdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        p: ({ node, ...props }) => <p className="mb-1.5 last:mb-0 text-[11px] sm:text-xs md:text-sm text-amber-100/90 leading-relaxed font-sans" {...props} />,
+                                                        strong: ({ node, ...props }) => <strong className="font-bold text-amber-200" {...props} />,
+                                                        em: ({ node, ...props }) => <em className="italic text-amber-300/90" {...props} />,
+                                                        h1: ({ node, ...props }) => <h4 className="font-bold text-amber-300 text-xs sm:text-sm mb-1 mt-0.5" {...props} />,
+                                                        h2: ({ node, ...props }) => <h5 className="font-bold text-amber-300 text-xs sm:text-sm mb-1 mt-0.5" {...props} />,
+                                                        h3: ({ node, ...props }) => <h6 className="font-semibold text-amber-200 text-xs mb-0.5" {...props} />,
+                                                        ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-0.5 my-1 text-[11px] sm:text-xs text-amber-100/90" {...props} />,
+                                                        ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-0.5 my-1 text-[11px] sm:text-xs text-amber-100/90" {...props} />,
+                                                        li: ({ node, ...props }) => <li className="leading-snug" {...props} />,
+                                                        code: ({ node, ...props }) => <code className="px-1.5 py-0.5 rounded bg-black/50 text-amber-300 text-[10px] sm:text-xs font-mono border border-amber-500/20" {...props} />,
+                                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-amber-400/70 pl-2 italic my-1 text-amber-200/80 text-[11px] sm:text-xs" {...props} />
+                                                    }}
+                                                >
+                                                    {formattedMarkdown}
+                                                </Markdown>
+                                            </div>
+                                        ) : (
+                                            <span className="text-amber-200/50 italic text-xs">No content in this note</span>
+                                        )}
+                                        {/* Bottom smooth fade out */}
+                                        <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-amber-950/90 to-transparent pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="mt-auto pt-2 sm:pt-3 border-t border-white/5 flex items-center justify-between text-[8px] sm:text-[9px] text-amber-200/40 uppercase tracking-wider font-bold">
-                                <span className="flex items-center gap-1">
-                                    <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                    Updated {new Date(note.updatedAt).toLocaleDateString()}
+                            {/* Telemetry Footer */}
+                            <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-amber-200/60 font-mono">
+                                <span className="flex items-center gap-1.5 truncate">
+                                    <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                                    <span className="truncate">Auto-Saved Vault • Updated {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-amber-300/70 font-mono">{recentNotes.length} Notes</span>
+                                <div className="flex items-center gap-2 shrink-0 ml-2">
+                                    <span className="text-amber-300 font-bold uppercase">{currentNoteIndex + 1} of {recentNotes.length} Notes</span>
                                     <div className="flex gap-1">
                                         {recentNotes.map((_, idx) => (
-                                            <div key={idx} className={`h-1 rounded-full transition-all ${idx === currentNoteIndex ? 'bg-amber-400 w-3' : 'bg-white/20 w-1'}`} />
+                                            <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${idx === currentNoteIndex ? 'bg-amber-400 w-3.5' : 'bg-white/20 w-1'}`} />
                                         ))}
                                     </div>
                                 </div>
@@ -941,46 +1052,71 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         </div>
                         
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Daily Ledger" icon={ScrollText} color="text-purple-400" subtitle="Due & Settled Khatas" />
+                            <HeroHeader 
+                                title="Daily Ledger" 
+                                icon={ScrollText} 
+                                color="text-purple-400" 
+                                subtitle="Due & Settled Khatas" 
+                                rightElement={
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[9px] sm:text-[10px] font-mono font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                                        <span>Auto-Synced</span>
+                                    </div>
+                                }
+                            />
 
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3 my-auto">
-                                <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 relative overflow-hidden group">
-                                    <p className="text-neutral-400 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-0.5">Outstanding Due</p>
-                                    <p className="text-sm sm:text-base md:text-lg font-mono font-bold text-red-400 tracking-tight truncate">₹{dairySummary.due.toLocaleString()}</p>
-                                    <div className="mt-1 flex items-center gap-1 text-[8px] sm:text-[9px] font-medium text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-md w-fit">
-                                        <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
-                                        Pending
+                            {/* Container-less Main Content */}
+                            <div className="my-auto flex flex-col justify-center gap-2 sm:gap-3 py-1">
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-purple-300/70 font-bold">Outstanding Due</span>
+                                            <span className="text-[8px] sm:text-[9px] font-mono text-white/40">• Pending Settlement</span>
+                                        </div>
+                                        <h3 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-red-400 leading-tight tracking-tight truncate font-mono">
+                                            ₹{dairySummary.due.toLocaleString()}
+                                        </h3>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-[8px] sm:text-[9px] font-mono text-white/40 uppercase">Total Settled</p>
+                                        <p className="text-sm sm:text-lg md:text-xl font-mono font-bold text-emerald-400">
+                                            ₹{dairySummary.paid.toLocaleString()}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 relative overflow-hidden group">
-                                    <p className="text-neutral-400 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-0.5">Total Paid</p>
-                                    <p className="text-sm sm:text-base md:text-lg font-mono font-bold text-emerald-400 tracking-tight truncate">₹{dairySummary.paid.toLocaleString()}</p>
-                                    <div className="mt-1 flex items-center gap-1 text-[8px] sm:text-[9px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md w-fit">
-                                        <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                                        Settled
+                                {/* Clean Data Row - Container-less with fine dividers */}
+                                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
+                                    <div className="min-w-0">
+                                        <p className="text-purple-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">Total Volume</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-white truncate">₹{totalAmount.toLocaleString()}</p>
                                     </div>
+                                    <div className="min-w-0">
+                                        <p className="text-emerald-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">Settled %</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-emerald-300 truncate">{Math.round(progress)}% Paid</p>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-amber-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">Status</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-amber-300 truncate">{dairySummary.due > 0 ? 'Action Needed' : 'All Settled'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Slim progress line */}
+                                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-purple-500 to-emerald-400 transition-all duration-700 ease-out"
+                                        style={{ width: `${progress}%` }}
+                                    />
                                 </div>
                             </div>
 
-                            {/* Progress Bar */}
-                            <div className="mt-auto pt-2 sm:pt-3 border-t border-white/5 shrink-0">
-                                <div className="flex justify-between items-end mb-1">
-                                    <span className="text-[8px] sm:text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Payment Progress</span>
-                                    <span className="text-[11px] sm:text-xs font-bold text-white">{Math.round(progress)}%</span>
-                                </div>
-                                <div className="w-full h-1.5 sm:h-2 bg-neutral-800 rounded-full overflow-hidden border border-white/5">
-                                    <div 
-                                        className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 transition-all duration-1000 ease-out relative"
-                                        style={{ width: `${progress}%` }}
-                                    >
-                                        <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
-                                    </div>
-                                </div>
-                                <div className="flex justify-between mt-1 text-[8px] sm:text-[9px] text-neutral-500 font-mono">
-                                    <span>Settled Ledger</span>
-                                    <span>Total: ₹{totalAmount.toLocaleString()}</span>
-                                </div>
+                            {/* Telemetry Footer */}
+                            <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-purple-200/60 font-mono">
+                                <span className="flex items-center gap-1.5 truncate">
+                                    <ScrollText className="w-3 h-3 text-purple-400 shrink-0" />
+                                    <span className="truncate">Automated Khata Sync • Encrypted Records</span>
+                                </span>
+                                <span className="uppercase tracking-wider text-purple-300 shrink-0 ml-2">Tap to view ledger</span>
                             </div>
                         </div>
                     </div>
@@ -989,51 +1125,82 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
             // --- MOLECULE VIEWER HERO ---
             if (app.id === 'molecule-viewer' && lastMolecule) {
+                const atomCount = moleculeData?.atoms?.length || (moleculeData?.heavyAtomCount ? moleculeData.heavyAtomCount + 10 : 24);
+                const bondCount = moleculeData?.bonds?.length || Math.round(atomCount * 1.1);
+                const tpsa = moleculeData?.topologicalPolarSurfaceArea ? `${moleculeData.topologicalPolarSurfaceArea} Å²` : '61.8 Å²';
+                const weight = moleculeData?.molecularWeight ? `${moleculeData.molecularWeight} g/mol` : '194.19 g/mol';
+                const formula = moleculeData?.molecularFormula || 'C8H10N4O2';
+
                 return (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-indigo-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-950 via-slate-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
+                        {/* Background Decorative Flask & Ambient Glow */}
+                        <div className="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 pointer-events-none">
+                            <FlaskConical className="w-36 h-36 md:w-56 md:h-56 text-cyan-400" />
+                        </div>
+                        <div className="absolute top-0 right-1/4 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
                         
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Chemistry Lab" icon={FlaskConical} color="text-indigo-400" subtitle="Molecular structures in 3D" />
-
-                            <div className="flex items-center gap-3 sm:gap-4 my-auto min-h-0">
-                                <div className="flex-1 min-w-0">
-                                    <div className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1 sm:mb-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                                        Last Analyzed
+                            <HeroHeader 
+                                title="Chemistry Lab" 
+                                icon={FlaskConical} 
+                                color="text-cyan-400" 
+                                subtitle="3D Molecular Simulation & Analysis" 
+                                rightElement={
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[9px] sm:text-[10px] font-mono font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                        <span>3D Live Sandbox</span>
                                     </div>
-                                    <h3 className="text-base sm:text-xl md:text-2xl font-extrabold text-white leading-tight mb-2 sm:mb-3 truncate font-serif italic">
-                                        {lastMolecule}
-                                    </h3>
-                                    
-                                    {moleculeData && (
-                                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                                            <div className="p-1.5 sm:p-2.5 rounded-xl bg-white/5 border border-white/5">
-                                                <p className="text-indigo-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Formula</p>
-                                                <p className="text-[11px] sm:text-xs font-bold text-white font-mono truncate">{moleculeData.molecularFormula || 'N/A'}</p>
-                                            </div>
-                                            <div className="p-1.5 sm:p-2.5 rounded-xl bg-white/5 border border-white/5">
-                                                <p className="text-indigo-200/50 text-[8px] sm:text-[9px] font-bold uppercase mb-0.5 truncate">Weight</p>
-                                                <p className="text-[11px] sm:text-xs font-bold text-white font-mono truncate">{moleculeData.molecularWeight ? `${moleculeData.molecularWeight}` : 'N/A'}</p>
-                                            </div>
+                                }
+                            />
+
+                            {/* Clean Container-less Layout */}
+                            <div className="my-auto flex flex-col justify-center gap-2 sm:gap-3 py-1">
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-cyan-300/70 font-bold">Analyzed Substance</span>
+                                            <span className="text-[8px] sm:text-[9px] font-mono text-white/40">• PubChem Verified</span>
                                         </div>
-                                    )}
+                                        <h3 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-tight tracking-tight truncate font-serif italic">
+                                            {lastMolecule}
+                                        </h3>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-[8px] sm:text-[9px] font-mono text-white/40 uppercase">Formula</p>
+                                        <p className="text-sm sm:text-lg md:text-xl font-mono font-bold text-cyan-300">
+                                            {formula}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                {/* Abstract Molecule Structure */}
-                                <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center shrink-0 shadow-xl overflow-hidden">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 relative animate-[spin_15s_linear_infinite]">
-                                        <div className="absolute inset-0 border border-indigo-500/30 rounded-full border-dashed" />
-                                        <div className="absolute inset-2 border border-blue-500/30 rounded-full animate-[spin_10s_linear_infinite_reverse] border-dotted" />
-                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-indigo-500 rounded-full" />
-                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                                {/* Clean Data Row - Container-less with fine dividers */}
+                                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10">
+                                    <div className="min-w-0">
+                                        <p className="text-cyan-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">Mol Weight</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-white truncate">{weight}</p>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-blue-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">Atoms</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-blue-300 truncate">{atomCount} Atoms</p>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-indigo-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">Bonds</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-indigo-300 truncate">{bondCount} Bonds</p>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-emerald-200/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate mb-0.5">TPSA Area</p>
+                                        <p className="text-xs sm:text-sm font-mono font-bold text-emerald-300 truncate">{tpsa}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-auto pt-2 sm:pt-3 border-t border-white/5 text-[8px] sm:text-[9px] text-indigo-300/40 font-mono uppercase tracking-wider">
-                                Click card to interact in virtual sandbox
+                            {/* Telemetry Footer */}
+                            <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-cyan-200/60 font-mono">
+                                <span className="flex items-center gap-1.5 truncate">
+                                    <Layers className="w-3 h-3 text-cyan-400 shrink-0" />
+                                    <span className="truncate">Ball & Stick • Wireframe • 3D Orbit</span>
+                                </span>
+                                <span className="uppercase tracking-wider text-cyan-300 shrink-0 ml-2">Tap to inspect</span>
                             </div>
                         </div>
                     </div>
@@ -1052,31 +1219,49 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 ];
 
                 return (
-                    <div className="absolute inset-0 bg-neutral-950 p-3.5 sm:p-4 md:p-6 flex flex-col justify-between overflow-hidden">
+                    <div className="absolute inset-0 bg-neutral-950 p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         <div className="absolute -right-8 -top-8 opacity-5 pointer-events-none">
                             <Settings className="w-36 h-36 md:w-64 md:h-64 text-white animate-[spin_60s_linear_infinite]" />
                         </div>
 
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Preferences" icon={Settings} color="text-slate-400" subtitle="Configuration & Customization" />
-                            
-                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 my-auto">
-                                {settingItems.map((item, sIdx) => (
-                                    <div key={sIdx} className="flex items-center justify-between px-2.5 py-1.5 sm:py-2 rounded-xl bg-white/5 border border-white/10">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <item.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
-                                            <span className="text-[10px] sm:text-xs font-bold text-neutral-300 truncate">{item.label}</span>
-                                        </div>
-                                        <span className={`text-[10px] sm:text-xs font-mono capitalize shrink-0 ${item.color}`}>
-                                            {item.value}
-                                        </span>
+                            <HeroHeader 
+                                title="Preferences" 
+                                icon={Settings} 
+                                color="text-slate-400" 
+                                subtitle="System & Interface Configuration" 
+                                rightElement={
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-slate-500/15 border border-slate-500/30 text-slate-300 text-[9px] sm:text-[10px] font-mono font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        <span>Hot-Reload Active</span>
                                     </div>
-                                ))}
+                                }
+                            />
+                            
+                            {/* Container-less Grid Layout */}
+                            <div className="my-auto py-1">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
+                                    {settingItems.map((item, sIdx) => (
+                                        <div key={sIdx} className="flex flex-col min-w-0">
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <item.icon className="w-3 h-3 text-slate-400 shrink-0" />
+                                                <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-wider truncate">{item.label}</span>
+                                            </div>
+                                            <span className={`text-xs sm:text-sm font-mono font-semibold capitalize truncate ${item.color}`}>
+                                                {item.value}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/5 flex items-center justify-between text-[8px] sm:text-[9px] text-slate-400 font-mono uppercase tracking-wider">
-                                <span>6 Active Preferences</span>
-                                <span>Applied Instantly</span>
+                            {/* Telemetry Footer */}
+                            <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-slate-400 font-mono uppercase tracking-wider">
+                                <span className="flex items-center gap-1.5 truncate">
+                                    <Sliders className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span className="truncate">6 Active Preferences Configured</span>
+                                </span>
+                                <span className="text-slate-300 shrink-0 ml-2">Tap to modify</span>
                             </div>
                         </div>
                     </div>

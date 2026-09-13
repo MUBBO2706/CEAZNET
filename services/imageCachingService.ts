@@ -120,7 +120,7 @@ export async function batchFetchAndCacheImages(urls: string[]): Promise<void> {
   if (filteredUrls.length === 0) return;
 
   try {
-    const response = await fetch('/api/image-proxy', {
+    const response = await fetch('/api/image-proxy?action=batch_warmup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
