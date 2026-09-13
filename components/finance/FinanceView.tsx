@@ -306,19 +306,13 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         }
 
         try {
-            const timeoutPromise = new Promise<{ data: Transaction[]; totalCount: number; hasMore: boolean }>((resolve) => 
-                setTimeout(() => resolve({ data: [], totalCount: 0, hasMore: false }), 6000)
-            );
-            const res = await Promise.race([
-                getTransactionsPaginated(user, {
-                    profileId: activeProfile.id,
-                    page: resetPage,
-                    pageSize: 30,
-                    startDate: startDateStr,
-                    endDate: endDateStr
-                }),
-                timeoutPromise
-            ]);
+            const res = await getTransactionsPaginated(user, {
+                profileId: activeProfile.id,
+                page: resetPage,
+                pageSize: 30,
+                startDate: startDateStr,
+                endDate: endDateStr
+            });
             
             if (resetPage === 1) {
                 setTransactions(res.data || []);

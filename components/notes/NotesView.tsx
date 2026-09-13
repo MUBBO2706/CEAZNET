@@ -538,13 +538,7 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
     const loadNotes = async () => {
         setIsLoading(true);
         try {
-            const timeoutPromise = new Promise<Note[]>((resolve) => 
-                setTimeout(() => resolve([]), 5000)
-            );
-            const fetchedNotes = await Promise.race([
-                getNotes(user),
-                timeoutPromise
-            ]);
+            const fetchedNotes = await getNotes(user);
             setNotes(fetchedNotes || []);
         } catch (e) {
             console.error("Failed to load notes", e);
