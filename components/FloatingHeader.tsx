@@ -144,6 +144,12 @@ const sha256 = async (message: string): Promise<string> => {
 const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [localFinanceSearchQuery, setLocalFinanceSearchQuery] = useState(props.financeSearchQuery || '');
+
+  useEffect(() => {
+      setLocalFinanceSearchQuery(props.financeSearchQuery || '');
+  }, [props.financeSearchQuery]);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toasts, removeToast, addToast } = useToast();
   const { prompt, alert: globalAlert } = useGlobalModal();
@@ -434,30 +440,58 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                         <div className={`flex items-center transition-all duration-300 ease-in-out ${isSearchExpanded ? 'flex-1 pl-3 pr-1 w-full' : ''}`}>
                             {isSearchExpanded ? (
                                 <div className="flex items-center w-full px-2 py-0.5 transition-all duration-300">
-                                    <Search className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (isFinanceView && props.setFinanceSearchQuery) {
+                                                const trimmed = localFinanceSearchQuery.trim();
+                                                if (trimmed !== (props.financeSearchQuery || '').trim()) {
+                                                    props.setFinanceSearchQuery(trimmed);
+                                                }
+                                            }
+                                        }}
+                                        className="mr-2 flex-shrink-0 text-amber-500 hover:text-amber-600 focus:outline-none"
+                                        title={isFinanceView ? "Search transactions (Press Enter)" : "Search"}
+                                    >
+                                        <Search className="w-4 h-4" />
+                                    </button>
                                     <input
                                         ref={searchInputRef}
                                         type="text"
-                                        value={isNotesView ? (props.notesSearchQuery || '') : isFinanceView ? (props.financeSearchQuery || '') : (props.voiceHistorySearchQuery || '')}
+                                        value={isNotesView ? (props.notesSearchQuery || '') : isFinanceView ? localFinanceSearchQuery : (props.voiceHistorySearchQuery || '')}
                                         onChange={(e) => {
                                             if (isNotesView && props.setNotesSearchQuery) {
                                                 props.setNotesSearchQuery(e.target.value);
-                                            } else if (isFinanceView && props.setFinanceSearchQuery) {
-                                                props.setFinanceSearchQuery(e.target.value);
+                                            } else if (isFinanceView) {
+                                                setLocalFinanceSearchQuery(e.target.value);
                                             } else if (isVoiceHistoryView && props.setVoiceHistorySearchQuery) {
                                                 props.setVoiceHistorySearchQuery(e.target.value);
                                             }
                                         }}
-                                        placeholder={(isNotesEditorOpen && props.notesHeaderState?.isWalletLinked) ? "Search transactions..." : isNotesView ? "Search notes..." : isFinanceView ? "Search transactions..." : "Search transcripts..."}
+                                        placeholder={(isNotesEditorOpen && props.notesHeaderState?.isWalletLinked) ? "Search transactions (Enter)..." : isNotesView ? "Search notes..." : isFinanceView ? "Search transactions (Press Enter)..." : "Search transcripts..."}
                                         className="w-full bg-transparent border-none focus:outline-none text-sm text-neutral-800 dark:text-white placeholder-neutral-400 h-8 font-medium"
                                         onBlur={() => { 
-                                            const query = isNotesView ? props.notesSearchQuery : isFinanceView ? props.financeSearchQuery : props.voiceHistorySearchQuery;
-                                            if (!query) {
-                                                closeSearch();
-                                            } 
+                                            if (isFinanceView) {
+                                                if (!localFinanceSearchQuery.trim() && !props.financeSearchQuery) {
+                                                    closeSearch();
+                                                }
+                                            } else {
+                                                const query = isNotesView ? props.notesSearchQuery : props.voiceHistorySearchQuery;
+                                                if (!query) {
+                                                    closeSearch();
+                                                } 
+                                            }
                                         }}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Escape') {
+                                            if (e.key === 'Enter') {
+                                                if (isFinanceView && props.setFinanceSearchQuery) {
+                                                    e.preventDefault();
+                                                    const trimmed = localFinanceSearchQuery.trim();
+                                                    if (trimmed !== (props.financeSearchQuery || '').trim()) {
+                                                        props.setFinanceSearchQuery(trimmed);
+                                                    }
+                                                }
+                                            } else if (e.key === 'Escape') {
                                                 closeSearch();
                                             }
                                         }}
@@ -466,18 +500,29 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         onMouseDown={(e) => {
                                             // Use onMouseDown to prevent onBlur from firing first
                                             e.preventDefault();
-                                            const query = isNotesView ? props.notesSearchQuery : isFinanceView ? props.financeSearchQuery : props.voiceHistorySearchQuery;
-                                            if (query) {
-                                                if (props.setNotesSearchQuery) props.setNotesSearchQuery('');
-                                                if (props.setFinanceSearchQuery) props.setFinanceSearchQuery('');
-                                                if (props.setVoiceHistorySearchQuery) props.setVoiceHistorySearchQuery('');
-                                                searchInputRef.current?.focus();
+                                            if (isFinanceView) {
+                                                if (localFinanceSearchQuery || props.financeSearchQuery) {
+                                                    setLocalFinanceSearchQuery('');
+                                                    if (props.setFinanceSearchQuery && props.financeSearchQuery) {
+                                                        props.setFinanceSearchQuery('');
+                                                    }
+                                                    searchInputRef.current?.focus();
+                                                } else {
+                                                    closeSearch();
+                                                }
                                             } else {
-                                                closeSearch();
+                                                const query = isNotesView ? props.notesSearchQuery : props.voiceHistorySearchQuery;
+                                                if (query) {
+                                                    if (props.setNotesSearchQuery) props.setNotesSearchQuery('');
+                                                    if (props.setVoiceHistorySearchQuery) props.setVoiceHistorySearchQuery('');
+                                                    searchInputRef.current?.focus();
+                                                } else {
+                                                    closeSearch();
+                                                }
                                             }
                                         }}
                                         className="p-1.5 rounded-full hover:text-amber-500 text-neutral-500 dark:text-gray-400 transition-colors ml-1 flex-shrink-0"
-                                        title={((isNotesView ? props.notesSearchQuery : isFinanceView ? props.financeSearchQuery : props.voiceHistorySearchQuery) ? "Clear search" : "Close search")}
+                                        title={((isNotesView ? props.notesSearchQuery : isFinanceView ? (localFinanceSearchQuery || props.financeSearchQuery) : props.voiceHistorySearchQuery) ? "Clear search" : "Close search")}
                                     >
                                         <X className="w-4 h-4" />
                                     </button>

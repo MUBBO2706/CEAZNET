@@ -285,16 +285,33 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+    interface PreSearchState {
+        transactions: Transaction[];
+        page: number;
+        hasMore: boolean;
+        totalCount: number;
+        categoryFilter: string;
+        typeFilter: TypeFilter;
+        dateFilter: DateFilter;
+        profileId: string | null;
+    }
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearchQuery(searchQuery);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
+    const preSearchStateRef = useRef<PreSearchState | null>(null);
+    const prevFetchKeyRef = useRef<string | undefined>(undefined);
+    const prevUserIdRef = useRef<string | undefined>(undefined);
+    const prevProfileIdRef = useRef<string | null | undefined>(undefined);
+    const prevDateFilterRef = useRef<string | undefined>(undefined);
+    const prevCategoryFilterRef = useRef<string | undefined>(undefined);
+    const prevTypeFilterRef = useRef<string | undefined>(undefined);
+    const prevSearchQueryRef = useRef<string | undefined>(undefined);
 
-    const loadData = useCallback(async (resetPage = 1, explicitSearchQuery?: string) => {
+    const loadData = useCallback(async (
+        resetPage = 1, 
+        overrideSearch?: string, 
+        overrideCategory?: string, 
+        overrideType?: TypeFilter, 
+        overrideDate?: DateFilter
+    ) => {
         if (!user) {
             setTransactions([]);
             setIsLoading(false);
@@ -307,20 +324,23 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             setIsLoadingMore(true);
         }
 
+        const effectiveDateFilter = overrideDate !== undefined ? overrideDate : dateFilter;
+        const effectiveCategoryFilter = overrideCategory !== undefined ? overrideCategory : categoryFilter;
+        const effectiveTypeFilter = overrideType !== undefined ? overrideType : typeFilter;
+        const effectiveSearch = overrideSearch !== undefined ? overrideSearch : (searchQuery || '');
+
         let startDateStr = undefined;
         let endDateStr = undefined;
         
-        if (dateFilter === 'this-month') {
+        if (effectiveDateFilter === 'this-month') {
             const now = new Date();
             startDateStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
             endDateStr = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
-        } else if (dateFilter !== 'all' && dateFilter.includes('-')) {
-            const [year, month] = dateFilter.split('-');
+        } else if (effectiveDateFilter !== 'all' && effectiveDateFilter.includes('-')) {
+            const [year, month] = effectiveDateFilter.split('-');
             startDateStr = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString();
             endDateStr = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999).toISOString();
         }
-
-        const effectiveSearch = explicitSearchQuery !== undefined ? explicitSearchQuery : debouncedSearchQuery;
 
         try {
             const res = await getTransactionsPaginated(user, {
@@ -329,7 +349,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                 pageSize: 30,
                 startDate: startDateStr,
                 endDate: endDateStr,
-                searchQuery: effectiveSearch.trim() || undefined
+                searchQuery: effectiveSearch.trim() || undefined,
+                categoryFilter: effectiveCategoryFilter !== 'all' ? effectiveCategoryFilter : undefined,
+                typeFilter: effectiveTypeFilter !== 'all' ? effectiveTypeFilter : undefined
             });
             
             if (resetPage === 1) {
@@ -354,7 +376,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, [user, activeProfile.id, dateFilter, debouncedSearchQuery]);
+    }, [user, activeProfile.id, dateFilter, categoryFilter, typeFilter, searchQuery]);
 
     const handleLoadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
@@ -367,11 +389,6 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         setLinkedNote(note || null);
     }, [user, activeProfile.id]);
 
-    const prevUserIdRef = useRef<string | undefined>(undefined);
-    const prevProfileIdRef = useRef<string | null | undefined>(undefined);
-    const prevDateFilterRef = useRef<string | undefined>(undefined);
-    const prevSearchQueryRef = useRef<string | undefined>(undefined);
-
     useEffect(() => {
         if (user) {
             loadProfiles();
@@ -380,27 +397,93 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         }
     }, [user?.id]);
 
-    // Load transactions and linked note when user, profile, dateFilter, or search query changes (single source of truth)
+    // Load transactions and linked note with duplicate guard, instant cache restoration on search clear, and server-side filtering
     useEffect(() => {
-        const userChanged = prevUserIdRef.current !== user?.id;
+        if (!user) return;
+
+        const currentTrimmedSearch = (searchQuery || '').trim();
+        const prevTrimmedSearch = (prevSearchQueryRef.current || '').trim();
+
+        const userChanged = prevUserIdRef.current !== user.id;
         const profileChanged = prevProfileIdRef.current !== activeProfile.id;
         const dateFilterChanged = prevDateFilterRef.current !== dateFilter;
-        const searchChanged = prevSearchQueryRef.current !== debouncedSearchQuery;
+        const categoryFilterChanged = prevCategoryFilterRef.current !== categoryFilter;
+        const typeFilterChanged = prevTypeFilterRef.current !== typeFilter;
+        const searchChanged = prevTrimmedSearch !== currentTrimmedSearch;
 
-        if (userChanged || profileChanged || dateFilterChanged || searchChanged) {
-            prevUserIdRef.current = user?.id;
-            prevProfileIdRef.current = activeProfile.id;
-            prevDateFilterRef.current = dateFilter;
-            prevSearchQueryRef.current = debouncedSearchQuery;
-            
-            if (user) {
-                loadData(1);
-                if (userChanged || profileChanged) {
-                    refreshLinkedNote();
-                }
+        // If nothing changed, do nothing
+        if (!userChanged && !profileChanged && !dateFilterChanged && !categoryFilterChanged && !typeFilterChanged && !searchChanged) {
+            return;
+        }
+
+        // Build composite key for duplicate guard
+        const currentFetchKey = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}:${categoryFilter}:${typeFilter}:${currentTrimmedSearch.toLowerCase()}`;
+        if (!userChanged && prevFetchKeyRef.current === currentFetchKey) {
+            return;
+        }
+
+        // Handle instant restore when search is cleared without hitting database again
+        if (searchChanged && currentTrimmedSearch === '' && prevTrimmedSearch !== '') {
+            const stashed = preSearchStateRef.current;
+            if (
+                stashed &&
+                stashed.profileId === activeProfile.id &&
+                stashed.dateFilter === dateFilter &&
+                stashed.categoryFilter === categoryFilter &&
+                stashed.typeFilter === typeFilter
+            ) {
+                // Instantly restore previous loaded transactions & pagination state
+                setTransactions(stashed.transactions);
+                setPage(stashed.page);
+                setHasMore(stashed.hasMore);
+                setTotalTransactionsCount(stashed.totalCount);
+                preSearchStateRef.current = null;
+
+                prevUserIdRef.current = user.id;
+                prevProfileIdRef.current = activeProfile.id;
+                prevDateFilterRef.current = dateFilter;
+                prevCategoryFilterRef.current = categoryFilter;
+                prevTypeFilterRef.current = typeFilter;
+                prevSearchQueryRef.current = searchQuery;
+                prevFetchKeyRef.current = currentFetchKey;
+                setIsLoading(false);
+                return;
             }
         }
-    }, [user, user?.id, activeProfile.id, dateFilter, debouncedSearchQuery, loadData, refreshLinkedNote]);
+
+        // If starting a search from a non-search state, stash current loaded data for instant restoration
+        if (searchChanged && currentTrimmedSearch !== '' && prevTrimmedSearch === '') {
+            if (!preSearchStateRef.current) {
+                preSearchStateRef.current = {
+                    transactions,
+                    page,
+                    hasMore,
+                    totalCount: totalTransactionsCount,
+                    categoryFilter,
+                    typeFilter,
+                    dateFilter,
+                    profileId: activeProfile.id
+                };
+            }
+        } else if (userChanged || profileChanged || dateFilterChanged || categoryFilterChanged || typeFilterChanged) {
+            // If primary filters change, invalidate previous search stash
+            preSearchStateRef.current = null;
+        }
+
+        // Update tracking refs
+        prevUserIdRef.current = user.id;
+        prevProfileIdRef.current = activeProfile.id;
+        prevDateFilterRef.current = dateFilter;
+        prevCategoryFilterRef.current = categoryFilter;
+        prevTypeFilterRef.current = typeFilter;
+        prevSearchQueryRef.current = searchQuery;
+        prevFetchKeyRef.current = currentFetchKey;
+
+        loadData(1);
+        if (userChanged || profileChanged) {
+            refreshLinkedNote();
+        }
+    }, [user, user?.id, activeProfile.id, dateFilter, categoryFilter, typeFilter, searchQuery, loadData, refreshLinkedNote, transactions, page, hasMore, totalTransactionsCount]);
 
     // Database aggregated stats state (representing 100% of transactions without loading full list)
     const [dbStats, setDbStats] = useState<FinancePeriodStats>(DEFAULT_STATS);
@@ -1074,43 +1157,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     }, [isSelectionMode, handleToggleSelection]);
 
     const transactionsByDate = useMemo(() => {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const search = searchQuery.toLowerCase().trim();
-
-        return transactions.filter(t => {
-            const tDate = new Date(t.transaction_date);
-            
-            // Enhanced Search Logic
-            let matchesSearch = true;
-            if (search) {
-                const dateStr = tDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
-                const timeStr = tDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase();
-                const amountStr = t.amount.toString();
-                
-                matchesSearch = 
-                    t.description.toLowerCase().includes(search) ||
-                    t.category.toLowerCase().includes(search) ||
-                    t.payment_method.toLowerCase().includes(search) ||
-                    amountStr.includes(search) ||
-                    dateStr.includes(search) ||
-                    timeStr.includes(search);
-            }
-
-            let matchesDate = true;
-            if (dateFilter === 'this-month') {
-                matchesDate = tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
-            } else if (dateFilter === 'all') {
-                matchesDate = true;
-            } else if (dateFilter.includes('-')) {
-                const [year, month] = dateFilter.split('-');
-                matchesDate = tDate.getFullYear() === parseInt(year, 10) && tDate.getMonth() === parseInt(month, 10) - 1;
-            }
-
-            return matchesSearch && matchesDate;
-        }).sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
-    }, [transactions, searchQuery, dateFilter]);
+        return [...transactions].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+    }, [transactions]);
 
     const availableCategories = useMemo(() => {
         const categorySet = new Set<string>();
@@ -1149,15 +1197,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         );
     }, [availableCategories, categorySearch]);
 
-    const transactionsForList = useMemo(() => {
-        return transactionsByDate.filter(t => {
-            const matchesType = typeFilter === 'all' || t.type === typeFilter;
-            const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter || (
-                categoryFilter.toLowerCase() === t.category.toLowerCase()
-            );
-            return matchesType && matchesCategory;
-        });
-    }, [transactionsByDate, typeFilter, categoryFilter]);
+    const transactionsForList = transactionsByDate;
 
     const availableMonths = useMemo(() => {
         const monthsMap = new Map<string, string>();
