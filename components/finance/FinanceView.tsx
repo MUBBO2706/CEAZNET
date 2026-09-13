@@ -285,7 +285,16 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const loadData = useCallback(async (resetPage = 1) => {
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const loadData = useCallback(async (resetPage = 1, explicitSearchQuery?: string) => {
         if (!user) {
             setTransactions([]);
             setIsLoading(false);
@@ -311,13 +320,16 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             endDateStr = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999).toISOString();
         }
 
+        const effectiveSearch = explicitSearchQuery !== undefined ? explicitSearchQuery : debouncedSearchQuery;
+
         try {
             const res = await getTransactionsPaginated(user, {
                 profileId: activeProfile.id,
                 page: resetPage,
                 pageSize: 30,
                 startDate: startDateStr,
-                endDate: endDateStr
+                endDate: endDateStr,
+                searchQuery: effectiveSearch.trim() || undefined
             });
             
             if (resetPage === 1) {
@@ -342,7 +354,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, [user, activeProfile.id, dateFilter]);
+    }, [user, activeProfile.id, dateFilter, debouncedSearchQuery]);
 
     const handleLoadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
@@ -358,6 +370,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const prevUserIdRef = useRef<string | undefined>(undefined);
     const prevProfileIdRef = useRef<string | null | undefined>(undefined);
     const prevDateFilterRef = useRef<string | undefined>(undefined);
+    const prevSearchQueryRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         if (user) {
@@ -367,23 +380,27 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         }
     }, [user?.id]);
 
-    // Load transactions and linked note when user, profile, or dateFilter changes (single source of truth)
+    // Load transactions and linked note when user, profile, dateFilter, or search query changes (single source of truth)
     useEffect(() => {
         const userChanged = prevUserIdRef.current !== user?.id;
         const profileChanged = prevProfileIdRef.current !== activeProfile.id;
         const dateFilterChanged = prevDateFilterRef.current !== dateFilter;
+        const searchChanged = prevSearchQueryRef.current !== debouncedSearchQuery;
 
-        if (userChanged || profileChanged || dateFilterChanged) {
+        if (userChanged || profileChanged || dateFilterChanged || searchChanged) {
             prevUserIdRef.current = user?.id;
             prevProfileIdRef.current = activeProfile.id;
             prevDateFilterRef.current = dateFilter;
+            prevSearchQueryRef.current = debouncedSearchQuery;
             
             if (user) {
                 loadData(1);
-                refreshLinkedNote();
+                if (userChanged || profileChanged) {
+                    refreshLinkedNote();
+                }
             }
         }
-    }, [user, user?.id, activeProfile.id, dateFilter, loadData, refreshLinkedNote]);
+    }, [user, user?.id, activeProfile.id, dateFilter, debouncedSearchQuery, loadData, refreshLinkedNote]);
 
     // Database aggregated stats state (representing 100% of transactions without loading full list)
     const [dbStats, setDbStats] = useState<FinancePeriodStats>(DEFAULT_STATS);

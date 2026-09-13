@@ -2041,7 +2041,12 @@ export const getTransactionsPaginated = async (
         }
         if (searchQuery && searchQuery.trim()) {
             const q = searchQuery.toLowerCase().trim();
-            all = all.filter(t => (t.description || '').toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q));
+            all = all.filter(t => 
+                (t.description || '').toLowerCase().includes(q) || 
+                (t.category || '').toLowerCase().includes(q) ||
+                (t.payment_method || '').toLowerCase().includes(q) ||
+                String(t.amount || '').includes(q)
+            );
         }
         if (typeFilter && typeFilter !== 'all') {
             all = all.filter(t => t.type === typeFilter);
@@ -2119,7 +2124,7 @@ export const getTransactionsPaginated = async (
 
             if (searchQuery && searchQuery.trim()) {
                 const q = searchQuery.trim();
-                query = query.or(`description.ilike.%${q}%,category.ilike.%${q}%`);
+                query = query.or(`description.ilike.%${q}%,category.ilike.%${q}%,payment_method.ilike.%${q}%`);
             }
 
             query = query.order('transaction_date', { ascending: false });
