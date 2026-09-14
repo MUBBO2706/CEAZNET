@@ -243,9 +243,11 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const [categoryDetailType, setCategoryDetailType] = useState<'expense' | 'income' | 'transfer'>('expense');
     const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
     const [pageSize, setPageSize] = useState<number>(30);
+    const [isPageSizeDropdownOpen, setIsPageSizeDropdownOpen] = useState(false);
     const prevPageSizeRef = useRef<number>(30);
     const monthDropdownRef = useRef<HTMLDivElement>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
+    const pageSizeDropdownRef = useRef<HTMLDivElement>(null);
     const [dataLoaded, setDataLoaded] = useState(false);
 
     const location = useLocation();
@@ -259,6 +261,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             }
             if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
                 setIsCategoryDropdownOpen(false);
+            }
+            if (pageSizeDropdownRef.current && !pageSizeDropdownRef.current.contains(event.target as Node)) {
+                setIsPageSizeDropdownOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -2243,8 +2248,10 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                     )}
 
                     {!isSelectionMode && !searchQuery && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 mb-6 relative z-30">
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 mb-6 relative z-30">
+                            {/* Mobile Row 1 / Desktop Left Group: Time & Type Selectors */}
+                            <div className="flex items-center gap-2 sm:gap-2.5">
+                                {/* Time Selector */}
                                 <div className="bg-white dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-gray-800 flex shadow-sm w-fit relative flex-shrink-0" ref={monthDropdownRef}>
                                     {/* All Time Button */}
                                     <button
@@ -2356,11 +2363,14 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         </div>
                                     </>
                                 )}
+                            </div>
 
+                            {/* Mobile Row 2 / Desktop Left continuation + Right Group: Category Selector & Limit Selector */}
+                            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5 w-full sm:w-auto sm:flex-1">
                                 {/* Category Filter */}
                                 {viewMode === 'list' && (
                                     <>
-                                        <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
+                                        <div className="hidden sm:block w-px h-6 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
                                         <div className="relative flex-shrink-0" ref={categoryDropdownRef}>
                                             <button
                                                 type="button"
@@ -2536,28 +2546,56 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         </div>
                                     </>
                                 )}
-                            </div>
 
-                            {/* Page Limit Selector */}
-                            <div className="flex items-center gap-2 bg-white dark:bg-black px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex-shrink-0 ml-auto sm:ml-0">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                    Page Limit:
-                                </span>
-                                <select
-                                    value={pageSize}
-                                    onChange={(e) => {
-                                        const newSize = Number(e.target.value);
-                                        setPageSize(newSize);
-                                        loadData(1, undefined, undefined, undefined, undefined, newSize);
-                                    }}
-                                    className="bg-transparent text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
-                                >
-                                    <option value={10} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">10</option>
-                                    <option value={20} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">20</option>
-                                    <option value={30} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">30</option>
-                                    <option value={50} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">50</option>
-                                    <option value={100} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">100</option>
-                                </select>
+                                {/* Custom Page Limit Selector */}
+                                <div className="relative flex-shrink-0 ml-auto" ref={pageSizeDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPageSizeDropdownOpen(prev => !prev)}
+                                        className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                                    >
+                                        <span className="text-gray-500 dark:text-gray-400 font-semibold">Page Limit:</span>
+                                        <span className="text-gray-900 dark:text-white font-extrabold">{pageSize}</span>
+                                        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isPageSizeDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {/* Custom Dropdown Menu */}
+                                    <AnimatePresence>
+                                        {isPageSizeDropdownOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                                                transition={{ duration: 0.15 }}
+                                                className="absolute top-[calc(100%+8px)] right-0 w-36 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
+                                            >
+                                                <div className="py-0.5 divide-y divide-gray-100/60 dark:divide-gray-800/60">
+                                                    {[10, 20, 30, 50, 100].map((option) => {
+                                                        const isSelected = pageSize === option;
+                                                        return (
+                                                            <button
+                                                                key={option}
+                                                                onClick={() => {
+                                                                    setPageSize(option);
+                                                                    setIsPageSizeDropdownOpen(false);
+                                                                    loadData(1, undefined, undefined, undefined, undefined, option);
+                                                                }}
+                                                                className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                                                    isSelected
+                                                                        ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold'
+                                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900/60'
+                                                                }`}
+                                                            >
+                                                                <span>{option} per page</span>
+                                                                {isSelected && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
                         </div>
                     )}
