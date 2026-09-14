@@ -242,9 +242,18 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const [categoryDetailModalId, setCategoryDetailModalId] = useState<string | null>(null);
     const [categoryDetailType, setCategoryDetailType] = useState<'expense' | 'income' | 'transfer'>('expense');
     const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
-    const [pageSize, setPageSize] = useState<number>(30);
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('ceaznet_finance_page_size');
+            if (saved) {
+                const num = Number(saved);
+                if (!isNaN(num) && num > 0) return num;
+            }
+        }
+        return 30;
+    });
     const [isPageSizeDropdownOpen, setIsPageSizeDropdownOpen] = useState(false);
-    const prevPageSizeRef = useRef<number>(30);
+    const prevPageSizeRef = useRef<number>(pageSize);
     const monthDropdownRef = useRef<HTMLDivElement>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
     const pageSizeDropdownRef = useRef<HTMLDivElement>(null);
@@ -503,6 +512,68 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         await loadData(page + 1);
     }, [isLoadingMore, hasMore, page, loadData]);
 
+    const handlePageSizeChange = useCallback(async (newSize: number) => {
+        setIsPageSizeDropdownOpen(false);
+        if (newSize === pageSize) return;
+
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('ceaznet_finance_page_size', String(newSize));
+        }
+
+        const currentLoadedCount = transactions.length;
+
+        if (newSize <= currentLoadedCount) {
+            setPageSize(newSize);
+            prevPageSizeRef.current = newSize;
+            setTransactions(prev => prev.slice(0, newSize));
+            setHasMore(totalTransactionsCount > newSize);
+        } else {
+            const neededCount = newSize - currentLoadedCount;
+            setPageSize(newSize);
+            prevPageSizeRef.current = newSize;
+
+            let start: string | undefined = undefined;
+            let end: string | undefined = undefined;
+            if (dateFilter === 'this-month') {
+                const now = new Date();
+                start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+            } else if (dateFilter !== 'all' && dateFilter.includes('-')) {
+                const [year, month] = dateFilter.split('-');
+                start = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString();
+                end = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999).toISOString();
+            }
+
+            setIsLoadingMore(true);
+            try {
+                const res = await getTransactionsPaginated(user, {
+                    profileId: activeProfile.id,
+                    offset: currentLoadedCount,
+                    pageSize: neededCount,
+                    searchQuery: (searchQuery || '').trim(),
+                    typeFilter,
+                    categoryFilter,
+                    startDate: start,
+                    endDate: end
+                });
+
+                if (res.data && res.data.length > 0) {
+                    setTransactions(prev => {
+                        const existingIds = new Set(prev.map(t => t.id));
+                        const fresh = res.data.filter(t => !existingIds.has(t.id));
+                        return [...prev, ...fresh];
+                    });
+                }
+                setHasMore(res.hasMore);
+                setTotalTransactionsCount(res.totalCount);
+            } catch (err) {
+                console.error("Error fetching incremental transactions on page size change", err);
+            } finally {
+                setIsLoadingMore(false);
+            }
+        }
+    }, [pageSize, transactions.length, totalTransactionsCount, dateFilter, user, activeProfile.id, searchQuery, typeFilter, categoryFilter]);
+
     const refreshLinkedNote = useCallback(async () => {
         if (!user) return;
         const note = await fetchLinkedNote(user, activeProfile.id);
@@ -544,6 +615,14 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
 
         // Build composite key for duplicate guard
         const currentFetchKey = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}:${categoryFilter}:${typeFilter}:${pageSize}:${currentTrimmedSearch.toLowerCase()}`;
+
+        // If only pageSize changed, handlePageSizeChange manages incremental load or slice
+        if (pageSizeChanged && !userChanged && !profileChanged && !dateFilterChanged && !categoryFilterChanged && !typeFilterChanged && !searchChanged) {
+            prevPageSizeRef.current = pageSize;
+            prevFetchKeyRef.current = currentFetchKey;
+            return;
+        }
+
         if (!userChanged && prevFetchKeyRef.current === currentFetchKey) {
             return;
         }
@@ -2570,16 +2649,12 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 className="absolute top-[calc(100%+8px)] right-0 w-36 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
                                             >
                                                 <div className="py-0.5 divide-y divide-gray-100/60 dark:divide-gray-800/60">
-                                                    {[10, 20, 30, 50, 100].map((option) => {
+                                                     {[10, 20, 30, 50, 100].map((option) => {
                                                         const isSelected = pageSize === option;
                                                         return (
                                                             <button
                                                                 key={option}
-                                                                onClick={() => {
-                                                                    setPageSize(option);
-                                                                    setIsPageSizeDropdownOpen(false);
-                                                                    loadData(1, undefined, undefined, undefined, undefined, option);
-                                                                }}
+                                                                onClick={() => handlePageSizeChange(option)}
                                                                 className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
                                                                     isSelected
                                                                         ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold'

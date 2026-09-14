@@ -2086,6 +2086,7 @@ export interface GetTransactionsOptions {
     profileId?: string | null;
     page?: number;
     pageSize?: number;
+    offset?: number;
     searchQuery?: string;
     typeFilter?: string;
     categoryFilter?: string;
@@ -2111,6 +2112,7 @@ export const getTransactionsPaginated = async (
         profileId,
         page = 1,
         pageSize = 30,
+        offset,
         searchQuery,
         typeFilter,
         categoryFilter,
@@ -2159,9 +2161,9 @@ export const getTransactionsPaginated = async (
         const totalCount = all.length;
         const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
         const effectivePage = Math.max(1, Math.min(page, totalPages));
-        const from = (effectivePage - 1) * pageSize;
+        const from = offset !== undefined ? offset : (effectivePage - 1) * pageSize;
         const data = fetchAll ? all : all.slice(from, from + pageSize);
-        const hasMore = !fetchAll && from + pageSize < totalCount;
+        const hasMore = !fetchAll && from + data.length < totalCount;
 
         return {
             data,
@@ -2173,7 +2175,8 @@ export const getTransactionsPaginated = async (
         };
     }
 
-    const cacheKey = `${user.id}:${profileId === undefined ? 'ALL' : isDefault(profileId) ? 'DEFAULT' : profileId}:${fetchAll ? 'ALL' : `P${page}_S${pageSize}`}:${searchQuery || ''}:${typeFilter || ''}:${categoryFilter || ''}:${startDate || ''}:${endDate || ''}`;
+    const cacheOffsetKey = offset !== undefined ? `O${offset}` : `P${page}`;
+    const cacheKey = `${user.id}:${profileId === undefined ? 'ALL' : isDefault(profileId) ? 'DEFAULT' : profileId}:${fetchAll ? 'ALL' : `${cacheOffsetKey}_S${pageSize}`}:${searchQuery || ''}:${typeFilter || ''}:${categoryFilter || ''}:${startDate || ''}:${endDate || ''}`;
     const cached = financeTransactionsCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < CACHE_TTL_30S)) {
         return cached.data;
@@ -2222,7 +2225,7 @@ export const getTransactionsPaginated = async (
             query = query.order('transaction_date', { ascending: false });
 
             if (!fetchAll) {
-                const from = (page - 1) * pageSize;
+                const from = offset !== undefined ? offset : (page - 1) * pageSize;
                 const to = from + pageSize - 1;
                 query = query.range(from, to);
             }
@@ -2239,14 +2242,15 @@ export const getTransactionsPaginated = async (
                 const filtered = profileId === undefined ? localAll : isDefault(profileId) ? localAll.filter(t => isDefault(t.profile_id)) : localAll.filter(t => t.profile_id === profileId);
                 const totalCount = filtered.length;
                 const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-                const from = (page - 1) * pageSize;
+                const from = offset !== undefined ? offset : (page - 1) * pageSize;
+                const sliceData = fetchAll ? filtered : filtered.slice(from, from + pageSize);
                 return {
-                    data: fetchAll ? filtered : filtered.slice(from, from + pageSize),
+                    data: sliceData,
                     totalCount,
                     page,
                     pageSize,
                     totalPages,
-                    hasMore: !fetchAll && from + pageSize < totalCount,
+                    hasMore: !fetchAll && from + sliceData.length < totalCount,
                 };
             }
 
@@ -2266,7 +2270,8 @@ export const getTransactionsPaginated = async (
 
             const totalCount = count !== null && count !== undefined ? count : res.length;
             const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-            const hasMore = !fetchAll && page * pageSize < totalCount;
+            const fromIndex = offset !== undefined ? offset : (page - 1) * pageSize;
+            const hasMore = !fetchAll && (fromIndex + res.length) < totalCount;
 
             const result: PaginatedTransactionsResult = {
                 data: res,
