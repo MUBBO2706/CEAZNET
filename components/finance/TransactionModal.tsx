@@ -1147,7 +1147,7 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
                             {/* Footer Buttons / Inline Discard Confirmation */}
                             {showDiscardConfirm ? (
-                                <div className="pt-3 border-t border-neutral-100 dark:border-white/[0.06] animate-fade-in-up space-y-3">
+                                <div className="pt-3 border-t border-neutral-100 dark:border-white/[0.06] space-y-3">
                                     <div className="flex flex-col gap-1 text-rose-500 dark:text-rose-400 px-1">
                                         <div className="flex items-start gap-2.5">
                                             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
