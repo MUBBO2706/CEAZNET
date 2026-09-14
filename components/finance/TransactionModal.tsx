@@ -555,9 +555,18 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
         }
     }
 
-    const recentTypeCategories = recentCategoryIds
+    let recentTypeCategories = recentCategoryIds
         .map(id => allTypeCategories.find(c => c.id === id))
         .filter((c): c is typeof allTypeCategories[0] => !!c);
+
+    if (category) {
+        const recentIdx = recentTypeCategories.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
+        if (recentIdx > 0) {
+            const selected = recentTypeCategories[recentIdx];
+            const remaining = recentTypeCategories.filter((_, idx) => idx !== recentIdx);
+            recentTypeCategories = [selected, ...remaining];
+        }
+    }
 
     for (const cat of recentTypeCategories) {
         if (visibleCategories.length >= 11) break;
@@ -583,10 +592,19 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
     visibleCategories = visibleCategories.slice(0, 11);
     
-    const filteredCategories = allTypeCategories.filter(c => 
+    let filteredCategories = allTypeCategories.filter(c => 
         c.label.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
         c.id.toLowerCase().includes(categorySearchQuery.toLowerCase())
     );
+
+    if (category) {
+        const selectedIdx = filteredCategories.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
+        if (selectedIdx > 0) {
+            const selected = filteredCategories[selectedIdx];
+            const remaining = filteredCategories.filter((_, idx) => idx !== selectedIdx);
+            filteredCategories = [selected, ...remaining];
+        }
+    }
 
     const selectedPaymentMethod = PAYMENT_METHODS.find(m => m.id === method) || PAYMENT_METHODS[0];
     const PaymentIcon = selectedPaymentMethod.icon;

@@ -1223,12 +1223,23 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     }, [transactions, customCategories]);
 
     const filteredCategoriesList = useMemo(() => {
-        if (!categorySearch.trim()) return availableCategories;
-        const q = categorySearch.toLowerCase().trim();
-        return availableCategories.filter(c => 
-            c.label.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
-        );
-    }, [availableCategories, categorySearch]);
+        let list = availableCategories;
+        if (categorySearch.trim()) {
+            const q = categorySearch.toLowerCase().trim();
+            list = availableCategories.filter(c => 
+                c.label.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+            );
+        }
+        if (categoryFilter && categoryFilter !== 'all') {
+            const selectedIdx = list.findIndex(c => c.id.toLowerCase() === categoryFilter.toLowerCase());
+            if (selectedIdx > 0) {
+                const selected = list[selectedIdx];
+                const rest = list.filter((_, i) => i !== selectedIdx);
+                return [selected, ...rest];
+            }
+        }
+        return list;
+    }, [availableCategories, categorySearch, categoryFilter]);
 
     const transactionsForList = transactionsByDate;
 

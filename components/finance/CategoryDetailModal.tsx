@@ -183,8 +183,17 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
             uniqueMap.set('Other', 'Other');
         }
 
-        return Array.from(uniqueMap.entries()).map(([id, label]) => ({ id, label }));
-    }, [categoryId, customCategories]);
+        const list = Array.from(uniqueMap.entries()).map(([id, label]) => ({ id, label }));
+        if (replacementCategory) {
+            const selectedIdx = list.findIndex(c => c.id.toLowerCase() === replacementCategory.toLowerCase());
+            if (selectedIdx > 0) {
+                const selected = list[selectedIdx];
+                const rest = list.filter((_, i) => i !== selectedIdx);
+                return [selected, ...rest];
+            }
+        }
+        return list;
+    }, [categoryId, customCategories, replacementCategory]);
 
     // Filtered Icons for picker
     const filteredIconNames = useMemo(() => {
