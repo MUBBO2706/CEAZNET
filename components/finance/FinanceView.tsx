@@ -242,6 +242,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const [categoryDetailModalId, setCategoryDetailModalId] = useState<string | null>(null);
     const [categoryDetailType, setCategoryDetailType] = useState<'expense' | 'income' | 'transfer'>('expense');
     const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
+    const [pageSize, setPageSize] = useState<number>(30);
+    const prevPageSizeRef = useRef<number>(30);
     const monthDropdownRef = useRef<HTMLDivElement>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -351,7 +353,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         overrideSearch?: string, 
         overrideCategory?: string, 
         overrideType?: TypeFilter, 
-        overrideDate?: DateFilter
+        overrideDate?: DateFilter,
+        overridePageSize?: number
     ) => {
         if (!user) {
             setTransactions([]);
@@ -369,6 +372,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         const effectiveCategoryFilter = overrideCategory !== undefined ? overrideCategory : categoryFilter;
         const effectiveTypeFilter = overrideType !== undefined ? overrideType : typeFilter;
         const effectiveSearch = overrideSearch !== undefined ? overrideSearch : (searchQuery || '');
+        const effectivePageSize = overridePageSize !== undefined ? overridePageSize : pageSize;
 
         let startDateStr = undefined;
         let endDateStr = undefined;
@@ -387,7 +391,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             const res = await getTransactionsPaginated(user, {
                 profileId: activeProfile.id,
                 page: resetPage,
-                pageSize: 30,
+                pageSize: effectivePageSize,
                 startDate: startDateStr,
                 endDate: endDateStr,
                 searchQuery: effectiveSearch.trim() || undefined,
@@ -487,7 +491,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, [user, activeProfile.id, dateFilter, categoryFilter, typeFilter, searchQuery]);
+    }, [user, activeProfile.id, dateFilter, categoryFilter, typeFilter, searchQuery, pageSize]);
 
     const handleLoadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
@@ -521,6 +525,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         const categoryFilterChanged = prevCategoryFilterRef.current !== categoryFilter;
         const typeFilterChanged = prevTypeFilterRef.current !== typeFilter;
         const searchChanged = prevTrimmedSearch !== currentTrimmedSearch;
+        const pageSizeChanged = prevPageSizeRef.current !== pageSize;
 
         // If user or profile changed, invalidate stash
         if (userChanged || profileChanged) {
@@ -528,12 +533,12 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         }
 
         // If nothing changed, do nothing
-        if (!userChanged && !profileChanged && !dateFilterChanged && !categoryFilterChanged && !typeFilterChanged && !searchChanged) {
+        if (!userChanged && !profileChanged && !dateFilterChanged && !categoryFilterChanged && !typeFilterChanged && !searchChanged && !pageSizeChanged) {
             return;
         }
 
         // Build composite key for duplicate guard
-        const currentFetchKey = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}:${categoryFilter}:${typeFilter}:${currentTrimmedSearch.toLowerCase()}`;
+        const currentFetchKey = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}:${categoryFilter}:${typeFilter}:${pageSize}:${currentTrimmedSearch.toLowerCase()}`;
         if (!userChanged && prevFetchKeyRef.current === currentFetchKey) {
             return;
         }
@@ -623,13 +628,14 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         prevCategoryFilterRef.current = categoryFilter;
         prevTypeFilterRef.current = typeFilter;
         prevSearchQueryRef.current = searchQuery;
+        prevPageSizeRef.current = pageSize;
         prevFetchKeyRef.current = currentFetchKey;
 
         loadData(1);
         if (userChanged || profileChanged) {
             refreshLinkedNote();
         }
-    }, [user, user?.id, activeProfile.id, dateFilter, categoryFilter, typeFilter, searchQuery, loadData, refreshLinkedNote, transactions, page, hasMore, totalTransactionsCount]);
+    }, [user, user?.id, activeProfile.id, dateFilter, categoryFilter, typeFilter, searchQuery, pageSize, loadData, refreshLinkedNote, transactions, page, hasMore, totalTransactionsCount]);
 
     // Database aggregated stats state (representing 100% of transactions without loading full list)
     const [dbStats, setDbStats] = useState<FinancePeriodStats>(DEFAULT_STATS);
@@ -2237,298 +2243,322 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                     )}
 
                     {!isSelectionMode && !searchQuery && (
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-6 relative z-30">
-                            <div className="bg-white dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-gray-800 flex shadow-sm w-fit relative flex-shrink-0" ref={monthDropdownRef}>
-                                {/* All Time Button */}
-                                <button
-                                    onClick={() => {
-                                        setDateFilter('all');
-                                        setIsMonthDropdownOpen(false);
-                                    }}
-                                    className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
-                                        dateFilter === 'all' 
-                                            ? 'text-white dark:text-black' 
-                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                    }`}
-                                >
-                                    {dateFilter === 'all' && (
-                                        <motion.div 
-                                            layoutId="activeFilter"
-                                            className="absolute inset-0 bg-black dark:bg-white rounded-lg pointer-events-none"
-                                            initial={false}
-                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                        />
-                                    )}
-                                    <span className="relative z-10 whitespace-nowrap">All Time</span>
-                                </button>
+                        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 mb-6 relative z-30">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                                <div className="bg-white dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-gray-800 flex shadow-sm w-fit relative flex-shrink-0" ref={monthDropdownRef}>
+                                    {/* All Time Button */}
+                                    <button
+                                        onClick={() => {
+                                            setDateFilter('all');
+                                            setIsMonthDropdownOpen(false);
+                                        }}
+                                        className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                                            dateFilter === 'all' 
+                                                ? 'text-white dark:text-black' 
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        {dateFilter === 'all' && (
+                                            <motion.div 
+                                                layoutId="activeFilter"
+                                                className="absolute inset-0 bg-black dark:bg-white rounded-lg pointer-events-none"
+                                                initial={false}
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10 whitespace-nowrap">All Time</span>
+                                    </button>
 
-                                {/* Month Dropdown Trigger */}
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        if (dateFilter === 'all') {
-                                            setDateFilter('this-month');
-                                            setIsMonthDropdownOpen(true);
-                                        } else {
-                                            setIsMonthDropdownOpen(prev => !prev);
-                                        }
-                                    }}
-                                    className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                        dateFilter !== 'all' 
-                                            ? 'text-white dark:text-black' 
-                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                    }`}
-                                >
-                                    {dateFilter !== 'all' && (
-                                        <motion.div 
-                                            layoutId="activeFilter"
-                                            className="absolute inset-0 bg-black dark:bg-white rounded-lg pointer-events-none"
-                                            initial={false}
-                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                        />
-                                    )}
-                                    <span className="relative z-10 whitespace-nowrap">
-                                        {dateFilter === 'this-month' 
-                                            ? 'This Month' 
-                                            : availableMonths.find(m => m.id === dateFilter)?.label || 'Select Month'}
-                                    </span>
-                                    {dateFilter !== 'all' && (
-                                        <ChevronDown className={`w-3.5 h-3.5 relative z-10 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`} />
-                                    )}
-                                </button>
-                                
-                                {/* Dropdown Menu */}
-                                <AnimatePresence>
-                                    {isMonthDropdownOpen && dateFilter !== 'all' && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 6, scale: 0.95 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="absolute top-[calc(100%+8px)] left-0 w-52 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
-                                        >
-                                            <div className="max-h-60 overflow-y-auto scrollbar-hide py-0">
-                                                {availableMonths.map((month) => {
-                                                    const now = new Date();
-                                                    const currentMonthId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                                                    const isCurrentMonth = month.id === currentMonthId;
-                                                    const isSelected = dateFilter === month.id || (dateFilter === 'this-month' && isCurrentMonth);
-                                                    return (
-                                                        <button
-                                                            key={month.id}
-                                                            onClick={() => {
-                                                                setDateFilter(isCurrentMonth ? 'this-month' : month.id);
-                                                                setIsMonthDropdownOpen(false);
-                                                            }}
-                                                            className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 last:border-0 cursor-pointer ${
-                                                                isSelected
-                                                                    ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold'
-                                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900/60'
-                                                            }`}
-                                                        >
-                                                            {month.label}
-                                                            {isSelected && <Check className="w-4 h-4" />}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Type Filter */}
-                            {viewMode === 'list' && (
-                                <>
-                                    <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
-                                    <div className="bg-white dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-gray-800 flex shadow-sm flex-shrink-0">
-                                        <button onClick={() => setTypeFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${typeFilter === 'all' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>All</button>
-                                        <button onClick={() => setTypeFilter('income')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${typeFilter === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>In</button>
-                                        <button onClick={() => setTypeFilter('expense')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${typeFilter === 'expense' ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400' : 'text-gray-500 dark:text-gray-400'}`}>Out</button>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Category Filter */}
-                            {viewMode === 'list' && (
-                                <>
-                                    <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
-                                    <div className="relative flex-shrink-0" ref={categoryDropdownRef}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsCategoryDropdownOpen(prev => !prev)}
-                                            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                                                categoryFilter !== 'all'
-                                                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white border-indigo-600 dark:border-indigo-500'
-                                                    : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                                            }`}
-                                        >
-                                            <Tag className="w-3.5 h-3.5 flex-shrink-0" />
-                                            <span className="whitespace-nowrap max-w-[110px] xs:max-w-[140px] truncate">
-                                                {categoryFilter === 'all' 
-                                                    ? 'All Categories' 
-                                                    : availableCategories.find(c => c.id === categoryFilter)?.label || categoryFilter}
-                                            </span>
-                                            {categoryFilter !== 'all' && (
-                                                <span 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setCategoryFilter('all');
-                                                    }}
-                                                    className="ml-0.5 p-0.5 hover:bg-white/20 rounded-full transition-colors"
-                                                    title="Reset Category"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </span>
-                                            )}
-                                            <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-
-                                        {/* Dropdown Menu */}
-                                        <AnimatePresence>
-                                            {isCategoryDropdownOpen && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: 6, scale: 0.95 }}
-                                                    transition={{ duration: 0.15 }}
-                                                    className="absolute top-[calc(100%+8px)] left-0 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 flex flex-col overflow-hidden"
-                                                >
-                                                    {/* Header */}
-                                                    <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5 rounded-t-2xl flex-shrink-0">
-                                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Select Category</span>
-                                                        <span className="text-[10px] font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                                                            {availableCategories.length}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Search input inside dropdown */}
-                                                    <div className="relative border-b border-gray-100 dark:border-gray-800 bg-transparent flex-shrink-0 flex items-center px-4 py-2.5">
-                                                        <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mr-2.5 pointer-events-none" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search category..."
-                                                            value={categorySearch}
-                                                            onChange={(e) => setCategorySearch(e.target.value)}
-                                                            className="w-full bg-transparent text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none h-full"
-                                                            autoFocus
-                                                        />
-                                                        {categorySearch && (
+                                    {/* Month Dropdown Trigger */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (dateFilter === 'all') {
+                                                setDateFilter('this-month');
+                                                setIsMonthDropdownOpen(true);
+                                            } else {
+                                                setIsMonthDropdownOpen(prev => !prev);
+                                            }
+                                        }}
+                                        className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                            dateFilter !== 'all' 
+                                                ? 'text-white dark:text-black' 
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        {dateFilter !== 'all' && (
+                                            <motion.div 
+                                                layoutId="activeFilter"
+                                                className="absolute inset-0 bg-black dark:bg-white rounded-lg pointer-events-none"
+                                                initial={false}
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10 whitespace-nowrap">
+                                            {dateFilter === 'this-month' 
+                                                ? 'This Month' 
+                                                : availableMonths.find(m => m.id === dateFilter)?.label || 'Select Month'}
+                                        </span>
+                                        {dateFilter !== 'all' && (
+                                            <ChevronDown className={`w-3.5 h-3.5 relative z-10 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`} />
+                                        )}
+                                    </button>
+                                    
+                                    {/* Dropdown Menu */}
+                                    <AnimatePresence>
+                                        {isMonthDropdownOpen && dateFilter !== 'all' && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                                                transition={{ duration: 0.15 }}
+                                                className="absolute top-[calc(100%+8px)] left-0 w-52 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
+                                            >
+                                                <div className="max-h-60 overflow-y-auto scrollbar-hide py-0">
+                                                    {availableMonths.map((month) => {
+                                                        const now = new Date();
+                                                        const currentMonthId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                                                        const isCurrentMonth = month.id === currentMonthId;
+                                                        const isSelected = dateFilter === month.id || (dateFilter === 'this-month' && isCurrentMonth);
+                                                        return (
                                                             <button
-                                                                onClick={() => setCategorySearch('')}
-                                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 flex-shrink-0 ml-1"
-                                                            >
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Options List */}
-                                                    <div className="max-h-60 sm:max-h-64 overflow-y-auto scrollbar-hide divide-y divide-gray-100/60 dark:divide-gray-800/60 flex-1 rounded-b-2xl">
-                                                        {/* All Categories Option */}
-                                                        {(!categorySearch || 'all categories'.includes(categorySearch.toLowerCase())) && (
-                                                            <button
+                                                                key={month.id}
                                                                 onClick={() => {
-                                                                    setCategoryFilter('all');
-                                                                    setIsCategoryDropdownOpen(false);
-                                                                    setCategorySearch('');
+                                                                    setDateFilter(isCurrentMonth ? 'this-month' : month.id);
+                                                                    setIsMonthDropdownOpen(false);
                                                                 }}
-                                                                className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 transition-colors cursor-pointer group ${
-                                                                    categoryFilter === 'all'
-                                                                        ? 'bg-indigo-50/90 dark:bg-indigo-500/15 text-indigo-900 dark:text-white font-semibold'
-                                                                        : 'text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 last:border-0 cursor-pointer ${
+                                                                    isSelected
+                                                                        ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold'
+                                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900/60'
                                                                 }`}
                                                             >
-                                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                                                                        categoryFilter === 'all'
-                                                                            ? 'bg-indigo-500 text-white'
-                                                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
-                                                                    }`}>
-                                                                        <Tag className="w-4 h-4" />
-                                                                    </div>
-                                                                    <div className="flex flex-col text-left min-w-0">
-                                                                        <span className="text-xs font-bold truncate transition-colors">All Categories</span>
-                                                                        <span className="text-[10px] opacity-60 truncate transition-colors">Show all transactions</span>
-                                                                    </div>
-                                                                </div>
-                                                                {categoryFilter === 'all' && <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
+                                                                {month.label}
+                                                                {isSelected && <Check className="w-4 h-4" />}
                                                             </button>
-                                                        )}
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
 
-                                                        {filteredCategoriesList.map((cat) => {
-                                                            const IconComp = cat.icon;
-                                                            const isSelected = categoryFilter.toLowerCase() === cat.id.toLowerCase();
-                                                            return (
-                                                                <div
-                                                                    key={cat.id}
-                                                                    className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 transition-colors cursor-pointer group ${
-                                                                        isSelected
-                                                                            ? 'bg-indigo-50/90 dark:bg-indigo-500/15 text-indigo-900 dark:text-white font-semibold'
-                                                                            : 'text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
-                                                                    }`}
+                                {/* Type Filter */}
+                                {viewMode === 'list' && (
+                                    <>
+                                        <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
+                                        <div className="bg-white dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-gray-800 flex shadow-sm flex-shrink-0">
+                                            <button onClick={() => setTypeFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${typeFilter === 'all' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>All</button>
+                                            <button onClick={() => setTypeFilter('income')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${typeFilter === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>In</button>
+                                            <button onClick={() => setTypeFilter('expense')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${typeFilter === 'expense' ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400' : 'text-gray-500 dark:text-gray-400'}`}>Out</button>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Category Filter */}
+                                {viewMode === 'list' && (
+                                    <>
+                                        <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
+                                        <div className="relative flex-shrink-0" ref={categoryDropdownRef}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsCategoryDropdownOpen(prev => !prev)}
+                                                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                                                    categoryFilter !== 'all'
+                                                        ? 'bg-indigo-600 dark:bg-indigo-500 text-white border-indigo-600 dark:border-indigo-500'
+                                                        : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                                }`}
+                                            >
+                                                <Tag className="w-3.5 h-3.5 flex-shrink-0" />
+                                                <span className="whitespace-nowrap max-w-[110px] xs:max-w-[140px] truncate">
+                                                    {categoryFilter === 'all' 
+                                                        ? 'All Categories' 
+                                                        : availableCategories.find(c => c.id === categoryFilter)?.label || categoryFilter}
+                                                </span>
+                                                {categoryFilter !== 'all' && (
+                                                    <span 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setCategoryFilter('all');
+                                                        }}
+                                                        className="ml-0.5 p-0.5 hover:bg-white/20 rounded-full transition-colors"
+                                                        title="Reset Category"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </span>
+                                                )}
+                                                <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            {/* Dropdown Menu */}
+                                            <AnimatePresence>
+                                                {isCategoryDropdownOpen && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute top-[calc(100%+8px)] left-0 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 flex flex-col overflow-hidden"
+                                                    >
+                                                        {/* Header */}
+                                                        <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5 rounded-t-2xl flex-shrink-0">
+                                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Select Category</span>
+                                                            <span className="text-[10px] font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                                                                {availableCategories.length}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Search input inside dropdown */}
+                                                        <div className="relative border-b border-gray-100 dark:border-gray-800 bg-transparent flex-shrink-0 flex items-center px-4 py-2.5">
+                                                            <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mr-2.5 pointer-events-none" />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search category..."
+                                                                value={categorySearch}
+                                                                onChange={(e) => setCategorySearch(e.target.value)}
+                                                                className="w-full bg-transparent text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none h-full"
+                                                                autoFocus
+                                                            />
+                                                            {categorySearch && (
+                                                                <button
+                                                                    onClick={() => setCategorySearch('')}
+                                                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 flex-shrink-0 ml-1"
+                                                                >
+                                                                    <X className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Options List */}
+                                                        <div className="max-h-60 sm:max-h-64 overflow-y-auto scrollbar-hide divide-y divide-gray-100/60 dark:divide-gray-800/60 flex-1 rounded-b-2xl">
+                                                            {/* All Categories Option */}
+                                                            {(!categorySearch || 'all categories'.includes(categorySearch.toLowerCase())) && (
+                                                                <button
                                                                     onClick={() => {
-                                                                        setCategoryFilter(cat.id);
+                                                                        setCategoryFilter('all');
                                                                         setIsCategoryDropdownOpen(false);
                                                                         setCategorySearch('');
                                                                     }}
+                                                                    className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 transition-colors cursor-pointer group ${
+                                                                        categoryFilter === 'all'
+                                                                            ? 'bg-indigo-50/90 dark:bg-indigo-500/15 text-indigo-900 dark:text-white font-semibold'
+                                                                            : 'text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
+                                                                    }`}
                                                                 >
-                                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                        <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${cat.color}`}>
-                                                                            <IconComp className="w-4.5 h-4.5" />
+                                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                                                                            categoryFilter === 'all'
+                                                                                ? 'bg-indigo-500 text-white'
+                                                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                                                                        }`}>
+                                                                            <Tag className="w-4 h-4" />
                                                                         </div>
-                                                                        <span className="truncate text-xs font-bold">{cat.label}</span>
+                                                                        <div className="flex flex-col text-left min-w-0">
+                                                                            <span className="text-xs font-bold truncate transition-colors">All Categories</span>
+                                                                            <span className="text-[10px] opacity-60 truncate transition-colors">Show all transactions</span>
+                                                                        </div>
                                                                     </div>
-                                                                    
-                                                                    <div className="flex items-center gap-1 shrink-0">
-                                                                        {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
-                                                                         <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setIsCategoryDropdownOpen(false);
-                                                                                setCategoryDetailModalId(cat.id);
-                                                                                setCategoryDetailType(((cat as any).type) || 'expense');
-                                                                            }}
-                                                                            className="p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors opacity-70 group-hover:opacity-100"
-                                                                            title={`Category details, impact & settings for ${cat.label}`}
-                                                                        >
-                                                                            <Edit2 className="w-3.5 h-3.5" />
-                                                                        </button>
+                                                                    {categoryFilter === 'all' && <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
+                                                                </button>
+                                                            )}
+
+                                                            {filteredCategoriesList.map((cat) => {
+                                                                const IconComp = cat.icon;
+                                                                const isSelected = categoryFilter.toLowerCase() === cat.id.toLowerCase();
+                                                                return (
+                                                                    <div
+                                                                        key={cat.id}
+                                                                        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 transition-colors cursor-pointer group ${
+                                                                            isSelected
+                                                                                ? 'bg-indigo-50/90 dark:bg-indigo-500/15 text-indigo-900 dark:text-white font-semibold'
+                                                                                : 'text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
+                                                                        }`}
+                                                                        onClick={() => {
+                                                                            setCategoryFilter(cat.id);
+                                                                            setIsCategoryDropdownOpen(false);
+                                                                            setCategorySearch('');
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                            <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${cat.color}`}>
+                                                                                <IconComp className="w-4.5 h-4.5" />
+                                                                            </div>
+                                                                            <span className="truncate text-xs font-bold">{cat.label}</span>
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex items-center gap-1 shrink-0">
+                                                                            {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
+                                                                             <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setIsCategoryDropdownOpen(false);
+                                                                                    setCategoryDetailModalId(cat.id);
+                                                                                    setCategoryDetailType(((cat as any).type) || 'expense');
+                                                                                }}
+                                                                                className="p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors opacity-70 group-hover:opacity-100"
+                                                                                title={`Category details, impact & settings for ${cat.label}`}
+                                                                            >
+                                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
+                                                                );
+                                                            })}
+
+                                                            {filteredCategoriesList.length === 0 && (
+                                                                <div className="py-6 text-center text-xs text-gray-400">
+                                                                    No matching categories found
                                                                 </div>
-                                                            );
-                                                        })}
+                                                            )}
+                                                        </div>
 
-                                                        {filteredCategoriesList.length === 0 && (
-                                                            <div className="py-6 text-center text-xs text-gray-400">
-                                                                No matching categories found
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                        {/* Dropdown Footer: Manage Categories */}
+                                                        <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setIsCategoryDropdownOpen(false);
+                                                                    setCategoryDetailModalId(filteredCategoriesList[0]?.id || 'Food & Dining');
+                                                                    setCategoryDetailType('expense');
+                                                                }}
+                                                                className="w-full py-1.5 px-3 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center gap-1.5"
+                                                            >
+                                                                <Tag className="w-3.5 h-3.5" />
+                                                                <span>Manage & Edit Categories</span>
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
-                                                    {/* Dropdown Footer: Manage Categories */}
-                                                    <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/5 flex items-center justify-center flex-shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setIsCategoryDropdownOpen(false);
-                                                                setCategoryDetailModalId(filteredCategoriesList[0]?.id || 'Food & Dining');
-                                                                setCategoryDetailType('expense');
-                                                            }}
-                                                            className="w-full py-1.5 px-3 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center gap-1.5"
-                                                        >
-                                                            <Tag className="w-3.5 h-3.5" />
-                                                            <span>Manage & Edit Categories</span>
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                </>
-                            )}
+                            {/* Page Limit Selector */}
+                            <div className="flex items-center gap-2 bg-white dark:bg-black px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex-shrink-0 ml-auto sm:ml-0">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                    Page Limit:
+                                </span>
+                                <select
+                                    value={pageSize}
+                                    onChange={(e) => {
+                                        const newSize = Number(e.target.value);
+                                        setPageSize(newSize);
+                                        loadData(1, undefined, undefined, undefined, undefined, newSize);
+                                    }}
+                                    className="bg-transparent text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
+                                >
+                                    <option value={10} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">10</option>
+                                    <option value={20} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">20</option>
+                                    <option value={30} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">30</option>
+                                    <option value={50} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">50</option>
+                                    <option value={100} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">100</option>
+                                </select>
+                            </div>
                         </div>
                     )}
 
