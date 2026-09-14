@@ -131,9 +131,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // Codex Pagination State (Lazy Loading)
   const [codexPage, setCodexPage] = useState(1);
-  const [codexLimit, setCodexLimit] = useState(10);
+  const [codexLimit, setCodexLimit] = useState(() => {
+    return parseInt(localStorage.getItem('ceaznet_session_rows_per_page') || '10', 10);
+  });
   const [codexSearch, setCodexSearch] = useState('');
   const [codexTotalCount, setCodexTotalCount] = useState<number | undefined>(undefined);
+  
+  useEffect(() => {
+    localStorage.setItem('ceaznet_session_rows_per_page', codexLimit.toString());
+  }, [codexLimit]);
 
   const overviewTableScrollRef = useRef<HTMLDivElement>(null);
 
@@ -180,23 +186,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     sessionRef.current = session;
   }, [session]);
 
-  // Fetch optimized session stats (counts without full session rows payload)
-  const loadSessionStats = async (forceRefresh = false) => {
-    if (!user) return;
-    try {
-      const token = sessionRef.current?.access_token || session?.access_token;
-      if (!token) return;
-      const stats = await fetchSessionStats(token, forceRefresh);
-      setSessionStats(stats);
-    } catch (e) {
-      console.warn('Failed to load session stats:', e);
-    }
-  };
+  const lastFetchParams = useRef({ status: 'all', search: '' });
 
   // Fetch user sessions from backend on-demand with optional status filtering
   const fetchSessions = async (
     forceRefresh = false, 
-    options?: { status?: string; limit?: number; offset?: number; search?: string }
+    options?: { status?: string; limit?: number; offset?: number; search?: string, isCodexView?: boolean }
   ) => {
     if (!user) return;
     setIsLoadingSessions(true);
@@ -207,30 +202,59 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         return;
       }
 
-      // Concurrently trigger lightweight stats fetch
-      loadSessionStats(forceRefresh);
-
       const activeStatus = options?.status ?? currentSessionFilter;
-      const fetchLimit = options?.limit !== undefined 
-        ? options.limit 
-        : (viewMode === 'sessions_codex' ? codexLimit : 10);
-      const fetchOffset = options?.offset !== undefined
-        ? options.offset
-        : (viewMode === 'sessions_codex' ? (codexPage - 1) * codexLimit : 0);
       const fetchSearch = options?.search !== undefined
         ? options.search
         : (viewMode === 'sessions_codex' ? codexSearch : '');
 
+      const isCodex = options?.isCodexView !== undefined ? options.isCodexView : (viewMode === 'sessions_codex');
+
+      const filtersChanged = lastFetchParams.current.status !== activeStatus || lastFetchParams.current.search !== fetchSearch;
+      
+      if (filtersChanged) {
+          lastFetchParams.current = { status: activeStatus, search: fetchSearch };
+      }
+
+      const fetchLimit = options?.limit !== undefined 
+        ? options.limit 
+        : (isCodex ? codexLimit : 10);
+        
+      const fetchOffset = options?.offset !== undefined
+        ? options.offset
+        : (isCodex ? (codexPage - 1) * codexLimit : 0);
+
+      const requiredTotalItems = fetchOffset + fetchLimit;
+      const currentSessionsLength = filtersChanged || forceRefresh ? 0 : sessions.length;
+      
+      // If we already have enough sessions and no forceRefresh/filtersChanged, we don't need to fetch more.
+      if (currentSessionsLength >= requiredTotalItems && !forceRefresh && !filtersChanged) {
+          setIsLoadingSessions(false);
+          return; 
+      }
+
+      const actualLimit = requiredTotalItems - currentSessionsLength;
+      const actualOffset = currentSessionsLength;
+
       const data = await fetchUserSessions(token, {
         status: activeStatus,
-        limit: fetchLimit,
-        offset: fetchOffset,
+        limit: actualLimit,
+        offset: actualOffset,
         search: fetchSearch,
         forceRefresh,
       });
 
       if (data && Array.isArray(data.data)) {
-        setSessions(data.data);
+        if (filtersChanged || forceRefresh) {
+            setSessions(data.data);
+            lastFetchParams.current = { status: activeStatus, search: fetchSearch };
+        } else {
+            setSessions(prev => {
+                const existingIds = new Set(prev.map(s => s.id));
+                const newItems = data.data.filter((s: any) => !existingIds.has(s.id));
+                return [...prev, ...newItems];
+            });
+        }
+        
         if (data.stats) {
           setSessionStats(data.stats);
         }
@@ -242,20 +266,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         try {
           const rawSessions = data.data;
           const { resolveDeviceName } = await import('../utils/deviceUtils');
-          const resolvedList = await Promise.all(
+          Promise.all(
             rawSessions.map(async (s: any) => {
               if (s.device_name) {
                 try {
                   const resolvedName = await resolveDeviceName(s.device_name);
-                  return { ...s, device_name: resolvedName };
+                  setSessions(current => current.map(item => item.id === s.id ? { ...item, device_name: resolvedName } : item));
                 } catch (e) {
-                  return s;
+                  // Ignore
                 }
               }
-              return s;
             })
           );
-          setSessions(resolvedList);
         } catch (resolveErr) {
           console.warn('Failed to resolve device names in session list:', resolveErr);
         }
@@ -275,10 +297,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           limit: codexLimit, 
           offset: (codexPage - 1) * codexLimit, 
           status: currentSessionFilter,
-          search: codexSearch
+          search: codexSearch,
+          isCodexView: true
         });
       } else {
-        fetchSessions(false, { limit: 10, offset: 0, status: 'all', search: '' });
+        fetchSessions(false, { limit: 10, offset: 0, status: 'all', search: '', isCodexView: false });
       }
       
       const channel = supabase.channel(`profile_sessions_${user.id}`)
@@ -291,6 +314,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             // Invalidate the fetch cache in the background so future manual updates have clean state
             invalidateUserSessionsCache();
 
+            const getStatus = (key?: string) => {
+              if (!key) return 'active';
+              if (key.startsWith('LOGGED_OUT_')) return 'logged_out';
+              if (key.startsWith('TERMINATED_')) return 'terminated';
+              return 'active';
+            };
+
             // Directly update local state based on the payload to prevent any redundant GET requests!
             import('../utils/deviceUtils').then(({ resolveDeviceName }) => {
               setSessions(prevSessions => {
@@ -300,6 +330,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   const newSession = payload.new;
                   if (!newSession) return prevSessions;
                   
+                  // Local stats increment
+                  setSessionStats(prevStats => ({
+                    ...prevStats,
+                    total: prevStats.total + 1,
+                    active: prevStats.active + 1
+                  }));
+
                   // Check if already exists
                   const index = updated.findIndex(s => s.id === newSession.id);
                   if (index === -1) {
@@ -320,6 +357,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     const oldSession = updated[index];
                     const resolvedName = oldSession.device_name;
                     
+                    if (oldSession.session_key !== updatedSession.session_key) {
+                      setSessionStats(prevStats => {
+                        const oldS = getStatus(oldSession.session_key);
+                        const newS = getStatus(updatedSession.session_key);
+                        if (oldS === newS) return prevStats;
+                        return {
+                          ...prevStats,
+                          [oldS]: Math.max(0, prevStats[oldS as keyof typeof prevStats] - 1),
+                          [newS]: prevStats[newS as keyof typeof prevStats] + 1
+                        };
+                      });
+                    }
+
                     updated[index] = {
                       ...updatedSession,
                       // Preserve resolved device_name if raw device_name matches, otherwise resolve new raw device_name
@@ -337,6 +387,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 } else if (payload.eventType === 'DELETE') {
                   const oldSession = payload.old;
                   if (oldSession && oldSession.id) {
+                    const existing = updated.find(s => s.id === oldSession.id);
+                    if (existing) {
+                      setSessionStats(prevStats => {
+                        const oldS = getStatus(existing.session_key);
+                        return {
+                          ...prevStats,
+                          total: Math.max(0, prevStats.total - 1),
+                          [oldS]: Math.max(0, prevStats[oldS as keyof typeof prevStats] - 1)
+                        };
+                      });
+                    }
                     updated = updated.filter(s => s.id !== oldSession.id);
                   }
                 }
@@ -780,7 +841,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         userEmail={user?.email}
         userName={userProfile.full_name || ''}
         onBack={() => setViewMode('overview')}
-        onRefresh={() => fetchSessions(true, { limit: codexLimit, offset: (codexPage - 1) * codexLimit, status: currentSessionFilter, search: codexSearch })}
+        onRefresh={() => fetchSessions(true, { limit: codexLimit, offset: (codexPage - 1) * codexLimit, status: currentSessionFilter, search: codexSearch, isCodexView: true })}
         onTerminateSession={handleTerminateSession}
         onDeleteSession={handleDeleteSession}
         onTerminateAllOther={handleTerminateAllOther}
@@ -790,21 +851,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         onStatusFilterChange={(newStatus) => {
           setCurrentSessionFilter(newStatus);
           setCodexPage(1);
-          fetchSessions(false, { status: newStatus, limit: codexLimit, offset: 0, search: codexSearch });
+          fetchSessions(false, { status: newStatus, limit: codexLimit, offset: 0, search: codexSearch, isCodexView: true });
         }}
         onPageChange={(newPage) => {
           setCodexPage(newPage);
-          fetchSessions(false, { status: currentSessionFilter, limit: codexLimit, offset: (newPage - 1) * codexLimit, search: codexSearch });
+          fetchSessions(false, { status: currentSessionFilter, limit: codexLimit, offset: (newPage - 1) * codexLimit, search: codexSearch, isCodexView: true });
         }}
         onItemsPerPageChange={(newLimit) => {
           setCodexLimit(newLimit);
           setCodexPage(1);
-          fetchSessions(false, { status: currentSessionFilter, limit: newLimit, offset: 0, search: codexSearch });
+          fetchSessions(false, { status: currentSessionFilter, limit: newLimit, offset: 0, search: codexSearch, isCodexView: true });
         }}
         onSearchChange={(newSearch) => {
           setCodexSearch(newSearch);
           setCodexPage(1);
-          fetchSessions(false, { status: currentSessionFilter, limit: codexLimit, offset: 0, search: newSearch });
+          fetchSessions(false, { status: currentSessionFilter, limit: codexLimit, offset: 0, search: newSearch, isCodexView: true });
         }}
       />
     );
@@ -1037,7 +1098,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <button
                     onClick={() => {
                       setViewMode('sessions_codex');
-                      fetchSessions(false, { limit: 0, status: 'all' });
+                      fetchSessions(false, { status: 'all', isCodexView: true });
                     }}
                     className="flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-xs font-semibold transition-all cursor-pointer bg-transparent border-0 p-0 focus:outline-none"
                     title="View Complete Session History"

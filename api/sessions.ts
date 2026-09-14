@@ -432,7 +432,7 @@ export default async function handler(req: any, res: any) {
 
           const { data: terminatedCheck } = await userClient.from('user_sessions').select('id, session_key').eq('user_id', user.id).like('session_key', `TERMINATED_${session_key}%`).maybeSingle();
           if (terminatedCheck) {
-              return res.status(403).json({ error: "Session has been terminated", isTerminated: true, session_key: terminatedCheck.session_key });
+              return res.status(410).json({ error: "Session has been terminated", isTerminated: true, session_key: terminatedCheck.session_key });
           }
 
           let fullName = "";

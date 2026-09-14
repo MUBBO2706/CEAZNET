@@ -822,18 +822,25 @@ const App: React.FC = () => {
         });
 
         if (!response.ok) {
-          const errData = await response.json();
+          let errData: any = {};
+          try {
+            errData = await response.json();
+          } catch (e) {
+            console.warn("[Session Tracking] Could not parse error response as JSON", e);
+          }
           console.warn(
             "[Session Tracking] Failed to track session:",
-            errData.error,
+            errData?.error || response.statusText,
           );
-          if (errData.isTerminated) {
-            if (errData.session_key) {
+          if (errData?.isTerminated || response.status === 410 || response.status === 403) {
+            if (errData?.session_key) {
                const parsed = parseTerminationSessionKey(errData.session_key);
                if (errData.terminated_at && !parsed.time) {
                  parsed.time = errData.terminated_at;
                }
                setTerminationInfo(parsed);
+            } else {
+               setTerminationInfo({ by: 'Administrator', from: 'System', location: 'Unknown Location', time: new Date().toISOString() });
             }
             addToast("Your session was terminated remotely.", "warning");
             setIsSessionTerminatedModalOpen(true);

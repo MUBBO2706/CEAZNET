@@ -369,10 +369,17 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
     }
   };
 
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
     if (onSearchChange) {
-      onSearchChange(val);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = setTimeout(() => {
+        onSearchChange(val);
+      }, 1000);
     }
   };
 
@@ -663,12 +670,9 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
 
   const totalPages = Math.max(1, Math.ceil(totalRecords / activeItemsPerPage));
   const paginatedSessions = useMemo(() => {
-    if (onPageChange) {
-      return filteredSessions;
-    }
     const start = (activePage - 1) * activeItemsPerPage;
     return filteredSessions.slice(start, start + activeItemsPerPage);
-  }, [onPageChange, filteredSessions, activePage, activeItemsPerPage]);
+  }, [filteredSessions, activePage, activeItemsPerPage]);
 
   useEffect(() => {
     if (!onPageChange) {
@@ -1281,7 +1285,16 @@ export const SessionDetailsView: React.FC<SessionDetailsViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-300/70 dark:divide-white/15 text-gray-700 dark:text-neutral-300">
-              {paginatedSessions.length === 0 ? (
+              {isLoading && paginatedSessions.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="py-12 text-center text-[var(--profile-text-muted)]">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader className="w-8 h-8 text-purple-500 animate-spin" />
+                      <p className="font-medium">Loading sessions...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedSessions.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-12 text-center text-[var(--profile-text-muted)]">
                     <div className="flex flex-col items-center justify-center gap-2">
