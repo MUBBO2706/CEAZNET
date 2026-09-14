@@ -946,12 +946,17 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             
             await saveTransaction(transactionWithProfile, user);
             
+            // Calculate updated list for sync note optimization
+            const updatedList = isEdit
+                ? transactions.map(t => t.id === transactionWithProfile.id ? transactionWithProfile : t)
+                : [transactionWithProfile, ...transactions.filter(t => t.id !== transactionWithProfile.id)];
+
             // --- Sync with Notes (Add or Update) ---
             let synced = false;
             if (isEdit) {
-                synced = await syncTransactionUpdate(user, transactionWithProfile);
+                synced = await syncTransactionUpdate(user, transactionWithProfile, updatedList);
             } else {
-                synced = await syncTransactionAdd(user, transactionWithProfile);
+                synced = await syncTransactionAdd(user, transactionWithProfile, updatedList);
             }
             
             if (synced) {
@@ -964,13 +969,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             setEditingTransaction(null);
 
             // Update local state directly instead of re-fetching entire list from network
-            setTransactions(prev => {
-                if (isEdit) {
-                    return prev.map(t => t.id === transactionWithProfile.id ? transactionWithProfile : t);
-                } else {
-                    return [transactionWithProfile, ...prev.filter(t => t.id !== transactionWithProfile.id)];
-                }
-            });
+            setTransactions(updatedList);
             if (!isEdit) {
                 setTotalTransactionsCount(prev => prev + 1);
             }
@@ -1017,15 +1016,18 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             // Bulk save to database
             await saveTransactionsBulk(transactionsWithProfile, user);
             
+            const updatedList = [...transactionsWithProfile, ...transactions];
+            setTransactions(updatedList);
+            setTotalTransactionsCount(prev => prev + transactionsWithProfile.length);
+
             // Sync all to note at once
             let syncCount = 0;
             if (linkedNote) {
-                const success = await syncAllTransactionsToNote(user, activeProfile.id, activeProfile.name);
+                const success = await syncAllTransactionsToNote(user, activeProfile.id, activeProfile.name, updatedList);
                 if (success) syncCount = transactionsWithProfile.length;
             }
             
             addToast(`${newTransactions.length} items imported. ${syncCount > 0 ? `Synced ${syncCount} to notes.` : ''}`, 'success');
-            await loadData();
             await loadStats();
             await loadAnalyticsData();
             await loadCalendarDailyData();
@@ -1047,12 +1049,13 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             return;
         }
         try {
-            setTransactions(prev => prev.filter(t => t.id !== id));
+            const nextList = transactions.filter(t => t.id !== id);
+            setTransactions(nextList);
             setTotalTransactionsCount(prev => Math.max(0, prev - 1));
             const transactionToDelete = transactions.find(t => t.id === id);
             await deleteTransaction(id, user);
             if (transactionToDelete) {
-                await syncTransactionDelete(user, id, transactionToDelete.profile_id);
+                await syncTransactionDelete(user, id, transactionToDelete.profile_id, nextList);
             }
             addToast('Transaction deleted.', 'success');
             if (transactionToDelete) {
@@ -1075,10 +1078,11 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         
         // Prepare list for note sync deletion before removing from state
         const transactionsToDelete = transactions.filter(t => selectedIds.has(t.id));
+        const nextList = transactions.filter(t => !selectedIds.has(t.id));
         
         setIsBulkDeleting(true);
         try {
-            setTransactions(prev => prev.filter(t => !selectedIds.has(t.id)));
+            setTransactions(nextList);
             setTotalTransactionsCount(prev => Math.max(0, prev - idsToDelete.length));
             setIsSelectionMode(false);
             setSelectedIds(new Set());
@@ -1087,7 +1091,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             
             // --- Bulk Sync Delete ---
             for (const t of transactionsToDelete) {
-                await syncTransactionDelete(user, t.id, t.profile_id);
+                await syncTransactionDelete(user, t.id, t.profile_id, nextList);
             }
 
             addToast(`${idsToDelete.length} transactions deleted.`, 'success');

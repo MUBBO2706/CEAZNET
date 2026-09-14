@@ -478,13 +478,13 @@ export const getProfileName = async (user: User | null, profileId: string | null
 
 // --- PUBLIC API ---
 
-export const syncAllTransactionsToNote = async (user: User | null, profileId: string | null, profileName: string): Promise<boolean> => {
+export const syncAllTransactionsToNote = async (user: User | null, profileId: string | null, profileName: string, transactionsList?: Transaction[]): Promise<boolean> => {
     try {
         const note = await fetchLinkedNote(user, profileId);
         if (!note) return false;
 
-        // Fetch ALL transactions for this profile
-        const allTransactions = await getTransactions(user, profileId);
+        // Use the passed-in transaction list directly, or fall back to fetching if not provided
+        const allTransactions = transactionsList || await getTransactions(user, profileId);
         
         // Rebuild entire note content
         const newContent = rebuildNoteContent(allTransactions, profileName, note.content);
@@ -497,17 +497,17 @@ export const syncAllTransactionsToNote = async (user: User | null, profileId: st
     }
 };
 
-export const syncTransactionAdd = async (user: User | null, transaction: Transaction): Promise<boolean> => {
+export const syncTransactionAdd = async (user: User | null, transaction: Transaction, transactionsList?: Transaction[]): Promise<boolean> => {
     const profileName = await getProfileName(user, transaction.profile_id);
-    return syncAllTransactionsToNote(user, transaction.profile_id || null, profileName);
+    return syncAllTransactionsToNote(user, transaction.profile_id || null, profileName, transactionsList);
 };
 
-export const syncTransactionDelete = async (user: User | null, transactionId: string, profileId: string | undefined | null): Promise<boolean> => {
+export const syncTransactionDelete = async (user: User | null, transactionId: string, profileId: string | undefined | null, transactionsList?: Transaction[]): Promise<boolean> => {
     const profileName = await getProfileName(user, profileId);
-    return syncAllTransactionsToNote(user, profileId || null, profileName);
+    return syncAllTransactionsToNote(user, profileId || null, profileName, transactionsList);
 };
 
-export const syncTransactionUpdate = async (user: User | null, transaction: Transaction): Promise<boolean> => {
+export const syncTransactionUpdate = async (user: User | null, transaction: Transaction, transactionsList?: Transaction[]): Promise<boolean> => {
     const profileName = await getProfileName(user, transaction.profile_id);
-    return syncAllTransactionsToNote(user, transaction.profile_id || null, profileName);
+    return syncAllTransactionsToNote(user, transaction.profile_id || null, profileName, transactionsList);
 };

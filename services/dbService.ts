@@ -647,6 +647,7 @@ interface CachedSingleNote {
 }
 const singleNoteCache = new Map<string, CachedSingleNote>();
 const SINGLE_NOTE_TTL = 10 * 60 * 1000; // 10 minutes TTL
+const pendingSingleNotePromises = new Map<string, Promise<Note | null>>();
 
 export const clearNotesCache = () => {
     cachedNotesPromise = null;
@@ -656,8 +657,10 @@ export const invalidateNoteCache = (id?: string) => {
     cachedNotesPromise = null;
     if (id) {
         singleNoteCache.delete(id);
+        pendingSingleNotePromises.delete(id);
     } else {
         singleNoteCache.clear();
+        pendingSingleNotePromises.clear();
     }
 };
 
@@ -747,23 +750,40 @@ export const getNoteById = async (id: string, user: User | null, forceRefresh = 
             if (cached && (Date.now() - cached.timestamp < SINGLE_NOTE_TTL)) {
                 return cached.note;
             }
+
+            const pending = pendingSingleNotePromises.get(id);
+            if (pending) {
+                return pending;
+            }
         }
 
-        const { data, error } = await supabase.from('notes').select('*').eq('id', id).single();
-        if (error || !data) return null;
-        const note: Note = {
-            id: data.id,
-            user_id: data.user_id,
-            title: data.title,
-            content: data.content,
-            tags: data.tags || [],
-            isPinned: data.is_pinned,
-            colorTheme: data.color_theme,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-        };
-        singleNoteCache.set(id, { note, timestamp: Date.now() });
-        return note;
+        const promise = (async () => {
+            try {
+                const { data, error } = await supabase.from('notes').select('*').eq('id', id).single();
+                if (error || !data) return null;
+                const note: Note = {
+                    id: data.id,
+                    user_id: data.user_id,
+                    title: data.title,
+                    content: data.content,
+                    tags: data.tags || [],
+                    isPinned: data.is_pinned,
+                    colorTheme: data.color_theme,
+                    createdAt: data.created_at,
+                    updatedAt: data.updated_at,
+                };
+                singleNoteCache.set(id, { note, timestamp: Date.now() });
+                return note;
+            } catch (err) {
+                console.error("Error in getNoteById:", err);
+                return null;
+            } finally {
+                pendingSingleNotePromises.delete(id);
+            }
+        })();
+
+        pendingSingleNotePromises.set(id, promise);
+        return promise;
     }
     return getFromLocalDB<Note>(STORES.NOTES, id);
 };
@@ -853,7 +873,7 @@ export const deleteNote = async (id: string, user: User | null) => {
 };
 
 // --- IN-MEMORY CACHES & PROMISE COALESCING ---
-const CACHE_TTL_30S = 30000;
+const CACHE_TTL_30S = 180000; // 3 minutes TTL
 
 let financeProfilesCache: { user_id: string; data: FinanceProfile[]; timestamp: number } | null = null;
 const financeProfilesPending = new Map<string, Promise<FinanceProfile[]>>();
@@ -2246,6 +2266,98 @@ export const getTransactionsForDate = async (
     return res.data;
 };
 
+const updateTransactionCacheOnSave = (transaction: Transaction, user: User) => {
+    const userId = user.id;
+    const txProfileId = transaction.profile_id || null;
+    const isTxDefault = !txProfileId || txProfileId === 'default';
+
+    for (const [key, cacheEntry] of financeTransactionsCache.entries()) {
+        if (!key.startsWith(`${userId}:`)) continue;
+
+        const parts = key.split(':');
+        if (parts.length < 8) continue;
+
+        const keyProfileId = parts[1];
+        const searchQuery = parts[3];
+        const typeFilter = parts[4];
+        const categoryFilter = parts[5];
+        const startDate = parts[6];
+        const endDate = parts[7];
+
+        let profileMatches = false;
+        if (keyProfileId === 'ALL') {
+            profileMatches = true;
+        } else if (keyProfileId === 'DEFAULT') {
+            profileMatches = isTxDefault;
+        } else {
+            profileMatches = keyProfileId === txProfileId;
+        }
+
+        if (!profileMatches) continue;
+
+        const result = cacheEntry.data as PaginatedTransactionsResult;
+        if (!result || !Array.isArray(result.data)) continue;
+
+        if (typeFilter && typeFilter !== 'all' && transaction.type !== typeFilter) continue;
+        if (categoryFilter && categoryFilter !== 'all' && transaction.category !== categoryFilter) continue;
+
+        if (searchQuery && searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            const desc = (transaction.description || '').toLowerCase();
+            const cat = (transaction.category || '').toLowerCase();
+            const pm = (transaction.payment_method || '').toLowerCase();
+            const amt = String(transaction.amount || '');
+            if (!desc.includes(q) && !cat.includes(q) && !pm.includes(q) && !amt.includes(q)) {
+                continue;
+            }
+        }
+
+        if (startDate) {
+            const startStr = startDate.includes('T') ? startDate : `${startDate}T00:00:00.000Z`;
+            const startMs = new Date(startStr).getTime();
+            const txMs = new Date(transaction.transaction_date).getTime();
+            if (txMs < startMs) continue;
+        }
+        if (endDate) {
+            const endStr = endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`;
+            const endMs = new Date(endStr).getTime();
+            const txMs = new Date(transaction.transaction_date).getTime();
+            if (txMs > endMs) continue;
+        }
+
+        const existingIndex = result.data.findIndex(t => t.id === transaction.id);
+        if (existingIndex >= 0) {
+            result.data[existingIndex] = { ...result.data[existingIndex], ...transaction };
+        } else {
+            result.data = [transaction, ...result.data];
+            result.totalCount += 1;
+            result.totalPages = Math.max(1, Math.ceil(result.totalCount / result.pageSize));
+        }
+
+        result.data.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+        cacheEntry.timestamp = Date.now();
+    }
+};
+
+const updateTransactionCacheOnDelete = (id: string, user: User) => {
+    const userId = user.id;
+
+    for (const [key, cacheEntry] of financeTransactionsCache.entries()) {
+        if (!key.startsWith(`${userId}:`)) continue;
+
+        const result = cacheEntry.data as PaginatedTransactionsResult;
+        if (!result || !Array.isArray(result.data)) continue;
+
+        const existingIndex = result.data.findIndex(t => t.id === id);
+        if (existingIndex >= 0) {
+            result.data.splice(existingIndex, 1);
+            result.totalCount = Math.max(0, result.totalCount - 1);
+            result.totalPages = Math.max(1, Math.ceil(result.totalCount / result.pageSize));
+            cacheEntry.timestamp = Date.now();
+        }
+    }
+};
+
 export const saveTransactionsBulk = async (transactions: Transaction[], user: User | null) => {
     if (user) {
         const payload = transactions.map(t => ({
@@ -2262,7 +2374,21 @@ export const saveTransactionsBulk = async (transactions: Transaction[], user: Us
             metadata: t.metadata
         }));
         const { error } = await supabase.from('finance_transactions').upsert(payload, { onConflict: 'id' });
-        if (error) logSupabaseError("Error bulk saving transactions", error);
+        if (error) {
+            logSupabaseError("Error bulk saving transactions", error);
+        } else {
+            for (const t of transactions) {
+                updateTransactionCacheOnSave(t, user);
+            }
+            walletCountsCache.clear();
+            walletCountsPending.clear();
+            financeSummaryCache.clear();
+            financeSummaryPending.clear();
+            financeStatsCache.clear();
+            financeStatsPending.clear();
+            financeAnalyticsCache.clear();
+            financeAnalyticsPending.clear();
+        }
     } else {
         for (const t of transactions) {
             await saveToLocalDB(STORES.FINANCE, t, t.id);
@@ -2295,7 +2421,20 @@ export const saveTransaction = async (transaction: Transaction, user: User | nul
             created_at: transaction.created_at,
             metadata: transaction.metadata // Save metadata
         }, { onConflict: 'id' });
-        if (error) logSupabaseError("Error saving transaction", error);
+        
+        if (error) {
+            logSupabaseError("Error saving transaction", error);
+        } else {
+            updateTransactionCacheOnSave(transaction, user);
+            walletCountsCache.clear();
+            walletCountsPending.clear();
+            financeSummaryCache.clear();
+            financeSummaryPending.clear();
+            financeStatsCache.clear();
+            financeStatsPending.clear();
+            financeAnalyticsCache.clear();
+            financeAnalyticsPending.clear();
+        }
     } else {
         await saveToLocalDB(STORES.FINANCE, transaction, transaction.id);
     }
@@ -2304,7 +2443,20 @@ export const saveTransaction = async (transaction: Transaction, user: User | nul
 export const deleteTransaction = async (id: string, user: User | null) => {
     if (user) {
         const { error } = await supabase.from('finance_transactions').delete().eq('id', id);
-        if (error) logSupabaseError("Error deleting transaction", error);
+        
+        if (error) {
+            logSupabaseError("Error deleting transaction", error);
+        } else {
+            updateTransactionCacheOnDelete(id, user);
+            walletCountsCache.clear();
+            walletCountsPending.clear();
+            financeSummaryCache.clear();
+            financeSummaryPending.clear();
+            financeStatsCache.clear();
+            financeStatsPending.clear();
+            financeAnalyticsCache.clear();
+            financeAnalyticsPending.clear();
+        }
     } else {
         await deleteFromLocalDB(STORES.FINANCE, id);
     }
