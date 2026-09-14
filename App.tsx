@@ -20,6 +20,7 @@ import { initializeAiClient } from "./services/aiClient";
 import { useChargingMode } from "./hooks/useChargingMode";
 import ChargingOverlay from "./components/ChargingOverlay";
 import FloatingHeader from "./components/FloatingHeader";
+import ScrollDrawerHandle from "./components/ScrollDrawerHandle";
 import ApiKeyModal from "./components/ApiKeyModal";
 import ViewRenderer from "./components/ViewRenderer";
 import { TranslatorStatsModal } from "./components/TranslatorStatsModal";
@@ -1524,6 +1525,7 @@ const App: React.FC = () => {
         isPreview={isChargingPreview}
         onClose={closeChargingPreview}
       />
+      <ScrollDrawerHandle />
     </>
   );
 };

@@ -294,6 +294,14 @@
         --vertical-scrollbar-thumb: #1f2937;
         --vertical-scrollbar-thumb-hover: #111827;
         --vertical-scrollbar-track: transparent;
+
+        /* Scroll Drawer Theme Variables */
+        --scroll-drawer-bg: #111827;
+        --scroll-drawer-text: #ffffff;
+        --scroll-drawer-border: rgba(0, 0, 0, 0.15);
+        --scroll-drawer-shadow: rgba(0, 0, 0, 0.25);
+        --scroll-drawer-dot: #ffffff;
+        --scroll-drawer-active-bg: #4f46e5;
       }
       html {
 
@@ -460,6 +468,14 @@
         --vertical-scrollbar-thumb: #f4f4f5;
         --vertical-scrollbar-thumb-hover: #ffffff;
         --vertical-scrollbar-track: transparent;
+
+        /* Scroll Drawer Theme Variables */
+        --scroll-drawer-bg: #f3f4f6;
+        --scroll-drawer-text: #111827;
+        --scroll-drawer-border: rgba(255, 255, 255, 0.2);
+        --scroll-drawer-shadow: rgba(0, 0, 0, 0.5);
+        --scroll-drawer-dot: #111827;
+        --scroll-drawer-active-bg: #6366f1;
       }
       
       /* --- Dynamic Border Radius Overrides --- */
@@ -587,6 +603,69 @@
       .overflow-auto::-webkit-scrollbar-thumb:vertical:hover,
       [class*="overflow-auto"]::-webkit-scrollbar-thumb:vertical:hover {
         background-color: var(--vertical-scrollbar-thumb-hover) !important;
+      }
+
+      /* ==========================================================================
+         Desktop Interactive Scrollbar Hover Drawer & Expansion System
+         ========================================================================== */
+      @media (hover: hover) and (pointer: fine) {
+        /* When hovering over any scrollable element or scrollbar on desktop, expand width for easy mouse grabbing */
+        *:hover::-webkit-scrollbar:vertical,
+        ::-webkit-scrollbar:vertical:hover,
+        [class*="overflow-y"]:hover::-webkit-scrollbar:vertical,
+        .overflow-y-auto:hover::-webkit-scrollbar:vertical {
+          width: 12px !important;
+        }
+
+        *:hover::-webkit-scrollbar-track:vertical,
+        ::-webkit-scrollbar-track:vertical:hover {
+          background: rgba(0, 0, 0, 0.06) !important;
+          border-radius: 9999px !important;
+        }
+        html.dark *:hover::-webkit-scrollbar-track:vertical,
+        html.dark ::-webkit-scrollbar-track:vertical:hover {
+          background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* Thumb expansion & Grip Drawer styling */
+        *:hover::-webkit-scrollbar-thumb:vertical,
+        ::-webkit-scrollbar-thumb:vertical:hover {
+          background-color: var(--vertical-scrollbar-thumb-hover) !important;
+          border-radius: 9999px !important;
+          box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18) !important;
+        }
+
+        /* Hovering directly on the thumb expands to 14px with a drawer knob dots pattern */
+        ::-webkit-scrollbar-thumb:vertical:hover,
+        *::-webkit-scrollbar-thumb:vertical:hover {
+          width: 14px !important;
+          background-color: var(--vertical-scrollbar-thumb-hover) !important;
+          box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3) !important;
+          background-image: radial-gradient(circle, rgba(255, 255, 255, 0.6) 1.2px, transparent 1.2px) !important;
+          background-size: 4px 6px !important;
+          background-position: center !important;
+          background-repeat: repeat-y !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb:vertical:hover,
+        html.dark *::-webkit-scrollbar-thumb:vertical:hover {
+          background-image: radial-gradient(circle, rgba(0, 0, 0, 0.7) 1.2px, transparent 1.2px) !important;
+        }
+
+        /* Horizontal scrollbars desktop hover expansion */
+        *:hover::-webkit-scrollbar:horizontal,
+        ::-webkit-scrollbar:horizontal:hover {
+          height: 12px !important;
+        }
+        ::-webkit-scrollbar-thumb:horizontal:hover,
+        *::-webkit-scrollbar-thumb:horizontal:hover {
+          height: 14px !important;
+          background-color: var(--horizontal-scrollbar-thumb-hover) !important;
+          box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3) !important;
+          background-image: radial-gradient(circle, rgba(255, 255, 255, 0.6) 1.2px, transparent 1.2px) !important;
+          background-size: 6px 4px !important;
+          background-position: center !important;
+          background-repeat: repeat-x !important;
+        }
       }
 
       @supports (-moz-appearance: none) {
