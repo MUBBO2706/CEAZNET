@@ -68,6 +68,7 @@ interface FinanceViewProps {
     onBack: () => void;
     searchQuery?: string;
     isSuspended?: boolean;
+    onViewModeChange?: (mode: ViewMode) => void;
 }
 
 type DateFilter = 'all' | 'this-month' | string;
@@ -122,7 +123,7 @@ const StatSkeleton: React.FC<{
     );
 };
 
-const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '', isSuspended }) => {
+const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '', isSuspended, onViewModeChange }) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -130,6 +131,10 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [totalTransactionsCount, setTotalTransactionsCount] = useState(0);
     const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+    useEffect(() => {
+        onViewModeChange?.(viewMode);
+    }, [viewMode, onViewModeChange]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
     const { addToast } = useToast();

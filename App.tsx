@@ -219,6 +219,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notesSearchQuery, setNotesSearchQuery] = useState("");
   const [financeSearchQuery, setFinanceSearchQuery] = useState("");
+  const [financeViewMode, setFinanceViewMode] = useState<'list' | 'analytics' | 'calendar'>('list');
   const [voiceHistorySearchQuery, setVoiceHistorySearchQuery] = useState("");
   const [voiceHistoryVersion, setVoiceHistoryVersion] = useState(0);
 
@@ -1373,6 +1374,7 @@ const App: React.FC = () => {
                 setNotesSearchQuery={setNotesSearchQuery}
                 financeSearchQuery={financeSearchQuery}
                 setFinanceSearchQuery={setFinanceSearchQuery}
+                financeViewMode={financeViewMode}
                 voiceHistorySearchQuery={voiceHistorySearchQuery}
                 setVoiceHistorySearchQuery={setVoiceHistorySearchQuery}
                 articleTitle={articleForReading?.title}
@@ -1443,6 +1445,7 @@ const App: React.FC = () => {
                 notesSearchQuery={notesSearchQuery}
                 setNotesSearchQuery={setNotesSearchQuery}
                 financeSearchQuery={financeSearchQuery}
+                onFinanceViewModeChange={setFinanceViewMode}
                 voiceHistorySearchQuery={voiceHistorySearchQuery}
                 isVoiceConversationSaving={isVoiceConversationSaving}
                 isAudioRecordingEnabled={isAudioRecordingEnabled}

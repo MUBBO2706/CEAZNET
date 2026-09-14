@@ -3,7 +3,7 @@ import {
     X, Edit2, Trash2, Tag, AlertTriangle, ArrowRight, Check, Loader, 
     Calendar, ArrowUpRight, ArrowDownLeft, ShieldAlert, Sparkles, 
     ChevronDown, ChevronUp, Search, CheckCircle2, RotateCcw, Palette,
-    ArrowLeft
+    ArrowLeft, ChevronLeft
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { Transaction } from '../../types';
@@ -146,17 +146,20 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
     }, [categoryId, categoryType, customCategories]);
 
     const matchingTransactions = useMemo(() => {
+        if (impact?.transactions) {
+            return impact.transactions;
+        }
         if (!categoryId) return [];
         const target = categoryId.toLowerCase().trim();
         return transactions.filter(t => (t.category || '').toLowerCase().trim() === target);
-    }, [categoryId, transactions]);
+    }, [categoryId, transactions, impact]);
 
     const categoryStats = useMemo(() => {
-        const count = matchingTransactions.length;
-        const total = matchingTransactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        const count = impact?.count ?? matchingTransactions.length;
+        const total = impact?.totalAmount ?? matchingTransactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
         const avg = count > 0 ? total / count : 0;
         return { count, total, avg };
-    }, [matchingTransactions]);
+    }, [impact, matchingTransactions]);
 
     // Available target categories for reassignment (exclude current category)
     const availableReplacementCategories = useMemo(() => {
@@ -355,20 +358,22 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                         <button
                             type="button"
                             onClick={() => setMode('view')}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            className="flex items-center gap-1 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
-                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <ChevronLeft className="w-4 h-4" />
                             <span>Back</span>
                         </button>
                     )}
                     
-                    <button 
-                        onClick={onClose} 
-                        className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
-                        title="Close"
-                    >
-                        <X className="w-3.5 h-3.5" />
-                    </button>
+                    {mode === 'view' && (
+                        <button 
+                            onClick={onClose} 
+                            className="p-1 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+                            title="Close"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Modal Body */}
@@ -469,11 +474,11 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                             </div>
 
                             {/* Primary Actions - Sleek & Containerless */}
-                            <div className="pt-2 flex items-center gap-2.5">
+                            <div className="pt-2 flex items-center justify-end gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setMode('edit')}
-                                    className="flex-1 py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.98]"
+                                    className="w-auto py-1.5 px-3.5 rounded-xl bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-[0.98]"
                                 >
                                     <Edit2 className="w-3.5 h-3.5" />
                                     <span>Edit Category</span>
@@ -483,7 +488,7 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                                     type="button"
                                     onClick={handleInitiateDelete}
                                     disabled={isExecutingDelete || isImpactLoading}
-                                    className="py-2.5 px-4 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50"
+                                    className="w-auto py-1.5 px-3.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50"
                                     title="Delete category"
                                 >
                                     {isExecutingDelete ? (
@@ -618,7 +623,7 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                                     type="button"
                                     onClick={() => setMode('view')}
                                     disabled={isSavingEdit}
-                                    className="px-4 py-2 rounded-xl text-gray-500 hover:text-gray-800 dark:hover:text-white font-semibold text-xs transition-colors"
+                                    className="w-auto px-3 py-1.5 rounded-xl text-gray-500 hover:text-gray-800 dark:hover:text-white font-semibold text-xs transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -627,7 +632,7 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                                     type="button"
                                     onClick={handleSaveEdit}
                                     disabled={isSavingEdit || !editLabel.trim()}
-                                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
+                                    className="w-auto px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
                                 >
                                     {isSavingEdit ? (
                                         <Loader className="w-3.5 h-3.5 animate-spin" />
@@ -718,7 +723,7 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                                     type="button"
                                     onClick={() => setMode('view')}
                                     disabled={isExecutingDelete}
-                                    className="px-4 py-2 rounded-xl text-gray-500 hover:text-gray-800 dark:hover:text-white font-semibold text-xs transition-colors"
+                                    className="w-auto px-3 py-1.5 rounded-xl text-gray-500 hover:text-gray-800 dark:hover:text-white font-semibold text-xs transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -727,7 +732,7 @@ const CategoryDetailModalComponent: React.FC<CategoryDetailModalProps> = ({
                                     type="button"
                                     onClick={handleExecuteReassignAndDelete}
                                     disabled={isExecutingDelete || !replacementCategory}
-                                    className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
+                                    className="w-auto px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
                                 >
                                     {isExecutingDelete ? (
                                         <Loader className="w-3.5 h-3.5 animate-spin" />

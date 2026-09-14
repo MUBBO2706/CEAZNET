@@ -23,6 +23,7 @@ interface FloatingHeaderProps {
     setNotesSearchQuery?: (query: string) => void;
     financeSearchQuery?: string;
     setFinanceSearchQuery?: (query: string) => void;
+    financeViewMode?: 'list' | 'analytics' | 'calendar';
     voiceHistorySearchQuery?: string;
     setVoiceHistorySearchQuery?: (query: string) => void;
     previousView?: View | null;
@@ -241,12 +242,15 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
       }
   }, [isSearchExpanded]);
 
-  // Reset search state when navigating away from Notes, Finance, or Voice History view
+  // Reset search state when navigating away from Notes, Finance, or Voice History view (or if Finance view is not list mode)
   useEffect(() => {
       if (!isNotesView && !isFinanceView && !isVoiceHistoryView) {
           setIsSearchExpanded(false);
       }
-  }, [isNotesView, isFinanceView, isVoiceHistoryView]);
+      if (isFinanceView && props.financeViewMode && props.financeViewMode !== 'list') {
+          closeSearch();
+      }
+  }, [isNotesView, isFinanceView, isVoiceHistoryView, props.financeViewMode]);
 
   const handleMobileNavClick = () => {
       if (isNotesEditorOpen && props.notesHeaderState?.onBack) {
@@ -435,8 +439,8 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
             {(isRootView || isExploreView || isNotesView || isFinanceView || isDairyView || isGalleryView || isTranslatorView || isSettingsView || isMoleculeView || isVoiceHistoryView || isVoiceSettingsView || props.currentView === 'article-reader') && (
                 <div className={`pointer-events-auto flex items-center gap-1 p-1 bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-full shadow-sm transition-all duration-300 ${isSearchExpanded ? 'w-full flex-1' : ''}`}>
                     
-                    {/* Search Bar (Notes, Finance, & Voice History View) */}
-                    {(isNotesView || isFinanceView || (isVoiceHistoryView && !props.expandedVoiceTitle)) && (
+                    {/* Search Bar (Notes, Finance list mode, & Voice History View) */}
+                    {(isNotesView || (isFinanceView && (props.financeViewMode === 'list' || !props.financeViewMode)) || (isVoiceHistoryView && !props.expandedVoiceTitle)) && (
                         <div className={`flex items-center transition-all duration-300 ease-in-out ${isSearchExpanded ? 'flex-1 pl-3 pr-1 w-full' : ''}`}>
                             {isSearchExpanded ? (
                                 <div className="flex items-center w-full px-2 py-0.5 transition-all duration-300">

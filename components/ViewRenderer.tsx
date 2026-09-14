@@ -74,6 +74,7 @@ interface ViewRendererProps {
     notesSearchQuery?: string;
     setNotesSearchQuery?: (q: string) => void;
     financeSearchQuery?: string;
+    onFinanceViewModeChange?: (mode: 'list' | 'analytics' | 'calendar') => void;
     voiceHistorySearchQuery?: string;
     isVoiceConversationSaving: boolean;
     voiceHistoryVersion: number;
@@ -176,6 +177,7 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
     notesSearchQuery,
     setNotesSearchQuery,
     financeSearchQuery,
+    onFinanceViewModeChange,
     voiceHistorySearchQuery,
     isVoiceConversationSaving,
     voiceHistoryVersion,
@@ -283,6 +285,7 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
                         onBack={() => setCurrentView('home')}
                         searchQuery={financeSearchQuery || ''}
                         isSuspended={isSuspended}
+                        onViewModeChange={onFinanceViewModeChange}
                     />
                 );
             case 'dairy':
