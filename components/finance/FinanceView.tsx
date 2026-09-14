@@ -325,7 +325,19 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         profileId: string | null;
     }
 
+    interface StashedInitialAllState {
+        profileId: string | null;
+        dateFilter: string;
+        typeFilter: TypeFilter;
+        transactions: Transaction[];
+        page: number;
+        hasMore: boolean;
+        totalTransactionsCount: number;
+        dbStats: FinancePeriodStats;
+    }
+
     const preSearchStateRef = useRef<PreSearchState | null>(null);
+    const stashedInitialAllStateRef = useRef<StashedInitialAllState | null>(null);
     const prevFetchKeyRef = useRef<string | undefined>(undefined);
     const prevUserIdRef = useRef<string | undefined>(undefined);
     const prevProfileIdRef = useRef<string | null | undefined>(undefined);
@@ -385,6 +397,76 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             
             if (resetPage === 1) {
                 setTransactions(res.data || []);
+                if (effectiveCategoryFilter !== 'all') {
+                    const txs = res.data || [];
+                    let income = 0;
+                    let expense = 0;
+                    let incomeCount = 0;
+                    let expenseCount = 0;
+                    let highestIncome = 0;
+                    let highestExpense = 0;
+                    const activeExpenseDaysSet = new Set<string>();
+
+                    txs.forEach(t => {
+                        const amt = Number(t.amount || 0);
+                        const dateStr = t.transaction_date ? t.transaction_date.split('T')[0] : '';
+                        if (t.type === 'income') {
+                            income += amt;
+                            incomeCount++;
+                            if (amt > highestIncome) highestIncome = amt;
+                        } else if (t.type === 'expense') {
+                            expense += amt;
+                            expenseCount++;
+                            if (amt > highestExpense) highestExpense = amt;
+                            if (dateStr) activeExpenseDaysSet.add(dateStr);
+                        }
+                    });
+
+                    const balance = income - expense;
+                    const daysInPeriod = 30;
+                    const activeExpenseDays = activeExpenseDaysSet.size;
+                    const dailyAverage = expense > 0 ? expense / Math.max(1, activeExpenseDays) : 0;
+                    const avgIncome = incomeCount > 0 ? income / Math.max(1, incomeCount) : 0;
+                    const avgExpense = expenseCount > 0 ? expense / Math.max(1, expenseCount) : 0;
+                    const zeroSpendDays = Math.max(0, daysInPeriod - activeExpenseDays);
+                    const savingsRatio = income > 0 ? (Math.max(0, balance) / income) * 100 : 0;
+
+                    const calcStats: FinancePeriodStats = {
+                        balance,
+                        income,
+                        expense,
+                        count: res.totalCount !== undefined ? res.totalCount : txs.length,
+                        incomeCount,
+                        expenseCount,
+                        highestIncome,
+                        highestExpense,
+                        avgIncome,
+                        avgExpense,
+                        activeExpenseDays,
+                        dailyAverage,
+                        zeroSpendDays,
+                        daysInPeriod,
+                        savingsRatio,
+                        topCategories: [{
+                            name: effectiveCategoryFilter,
+                            value: expense,
+                            percentage: 100
+                        }]
+                    };
+                    setDbStats(calcStats);
+                    setIsStatsLoading(false);
+                } else if (effectiveSearch === '' && effectiveTypeFilter === 'all') {
+                    stashedInitialAllStateRef.current = {
+                        profileId: activeProfile.id,
+                        dateFilter: effectiveDateFilter,
+                        typeFilter: effectiveTypeFilter,
+                        transactions: res.data || [],
+                        page: 1,
+                        hasMore: res.hasMore || false,
+                        totalTransactionsCount: res.totalCount || 0,
+                        dbStats: dbStats
+                    };
+                }
             } else {
                 setTransactions(prev => {
                     const existingIds = new Set(prev.map(t => t.id));
@@ -440,6 +522,11 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         const typeFilterChanged = prevTypeFilterRef.current !== typeFilter;
         const searchChanged = prevTrimmedSearch !== currentTrimmedSearch;
 
+        // If user or profile changed, invalidate stash
+        if (userChanged || profileChanged) {
+            stashedInitialAllStateRef.current = null;
+        }
+
         // If nothing changed, do nothing
         if (!userChanged && !profileChanged && !dateFilterChanged && !categoryFilterChanged && !typeFilterChanged && !searchChanged) {
             return;
@@ -449,6 +536,36 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         const currentFetchKey = `${user.id}:${activeProfile.id || 'default'}:${dateFilter}:${categoryFilter}:${typeFilter}:${currentTrimmedSearch.toLowerCase()}`;
         if (!userChanged && prevFetchKeyRef.current === currentFetchKey) {
             return;
+        }
+
+        // Instant restore when returning from a category filter to 'all' with no search
+        if (categoryFilterChanged && categoryFilter === 'all' && currentTrimmedSearch === '' && typeFilter === 'all') {
+            const stashed = stashedInitialAllStateRef.current;
+            if (
+                stashed &&
+                stashed.profileId === activeProfile.id &&
+                stashed.dateFilter === dateFilter &&
+                stashed.typeFilter === typeFilter
+            ) {
+                setTransactions(stashed.transactions);
+                setPage(stashed.page);
+                setHasMore(stashed.hasMore);
+                setTotalTransactionsCount(stashed.totalTransactionsCount);
+                if (stashed.dbStats) {
+                    setDbStats(stashed.dbStats);
+                    setIsStatsLoading(false);
+                }
+
+                prevUserIdRef.current = user.id;
+                prevProfileIdRef.current = activeProfile.id;
+                prevDateFilterRef.current = dateFilter;
+                prevCategoryFilterRef.current = categoryFilter;
+                prevTypeFilterRef.current = typeFilter;
+                prevSearchQueryRef.current = searchQuery;
+                prevFetchKeyRef.current = currentFetchKey;
+                setIsLoading(false);
+                return;
+            }
         }
 
         // Handle instant restore when search is cleared without hitting database again
@@ -530,6 +647,10 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const [isLoadingDateTransactions, setIsLoadingDateTransactions] = useState(false);
 
     const loadStats = useCallback(async () => {
+        if (categoryFilter !== 'all') {
+            // Skip 2nd DB stats query for category filter - stats are computed locally in loadData
+            return;
+        }
         setIsStatsLoading(true);
         try {
             const periodStats = await getFinancePeriodStats(user, {
@@ -539,6 +660,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                 categoryFilter
             });
             setDbStats(periodStats);
+            if (stashedInitialAllStateRef.current && typeFilter === 'all') {
+                stashedInitialAllStateRef.current.dbStats = periodStats;
+            }
         } catch (e) {
             console.error("Failed to load finance stats", e);
         } finally {
@@ -955,6 +1079,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             });
             return next;
         });
+
+        stashedInitialAllStateRef.current = null;
     };
 
     const handleSave = async (transaction: Transaction) => {

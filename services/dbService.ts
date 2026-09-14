@@ -1157,9 +1157,25 @@ export interface CategoryUsageImpact {
     uniqueProfilesCount: number;
 }
 
+const categoryUsageImpactCache = new Map<string, { data: CategoryUsageImpact; timestamp: number }>();
+
+export const clearCategoryUsageImpactCache = (categoryId?: string) => {
+    if (categoryId) {
+        categoryUsageImpactCache.delete(categoryId.toLowerCase().trim());
+    } else {
+        categoryUsageImpactCache.clear();
+    }
+};
+
 export const getCategoryUsageImpact = async (categoryId: string, user: User | null): Promise<CategoryUsageImpact> => {
     try {
         const targetLower = categoryId.toLowerCase().trim();
+        const cacheKey = `${user ? user.id : 'ANON'}:${targetLower}`;
+        const cached = categoryUsageImpactCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < CACHE_TTL_30S)) {
+            return cached.data;
+        }
+
         let affected: Transaction[] = [];
 
         if (user) {
@@ -1195,13 +1211,16 @@ export const getCategoryUsageImpact = async (categoryId: string, user: User | nu
         const totalAmount = affected.reduce((sum, t) => sum + Number(t.amount || 0), 0);
         const uniqueProfiles = new Set(affected.map(t => t.profile_id || 'default')).size;
 
-        return {
+        const result: CategoryUsageImpact = {
             categoryId,
             count,
             totalAmount,
             transactions: affected,
             uniqueProfilesCount: uniqueProfiles
         };
+
+        categoryUsageImpactCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
     } catch (e) {
         console.error("Error getting category usage impact:", e);
         return {
@@ -1259,6 +1278,7 @@ export const reassignCategoryTransactions = async (
 
         await saveTransactionsBulk(updatedTransactions, user);
         invalidateFinanceTransactionsCache();
+        clearCategoryUsageImpactCache();
 
         return {
             updatedCount: updatedTransactions.length,
@@ -2440,6 +2460,7 @@ export const saveTransactionsBulk = async (transactions: Transaction[], user: Us
             financeStatsPending.clear();
             financeAnalyticsCache.clear();
             financeAnalyticsPending.clear();
+            clearCategoryUsageImpactCache();
         }
     } else {
         for (const t of transactions) {
@@ -2486,6 +2507,7 @@ export const saveTransaction = async (transaction: Transaction, user: User | nul
             financeStatsPending.clear();
             financeAnalyticsCache.clear();
             financeAnalyticsPending.clear();
+            clearCategoryUsageImpactCache();
         }
     } else {
         await saveToLocalDB(STORES.FINANCE, transaction, transaction.id);
@@ -2508,6 +2530,7 @@ export const deleteTransaction = async (id: string, user: User | null) => {
             financeStatsPending.clear();
             financeAnalyticsCache.clear();
             financeAnalyticsPending.clear();
+            clearCategoryUsageImpactCache();
         }
     } else {
         await deleteFromLocalDB(STORES.FINANCE, id);
