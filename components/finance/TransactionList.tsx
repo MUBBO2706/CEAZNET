@@ -11,6 +11,7 @@ import { InlineConfirmDelete } from '../core/InlineConfirmDelete';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORY_CONFIG, getCategoryConfig } from './categories';
 import { getCustomCategories, CustomCategoryItem } from '../../services/dbService';
+import DescriptionModal from './DescriptionModal';
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -389,35 +390,12 @@ export const TransactionItem = React.memo<{
                 )}
             </AnimatePresence>
 
-            {/* Full Description Modal (Instant appearance, no fade-in animation) */}
-            {isDescModalOpen && (
-                <div 
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-text"
-                    onClick={(e) => { e.stopPropagation(); setIsDescModalOpen(false); }}
-                >
-                    <div 
-                        className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl p-5 max-w-md w-full shadow-2xl relative flex flex-col gap-4 text-left"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
-                            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Transaction Description</h4>
-                            <button
-                                type="button"
-                                onClick={() => setIsDescModalOpen(false)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Direct Description Display */}
-                        <div className="max-h-60 overflow-y-auto text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words leading-relaxed select-text py-1">
-                            {t.description || "No description provided."}
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Full Description Modal */}
+            <DescriptionModal
+                isOpen={isDescModalOpen}
+                onClose={() => setIsDescModalOpen(false)}
+                description={t.description || "No description provided."}
+            />
         </div>
     );
 });
