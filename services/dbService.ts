@@ -1159,10 +1159,38 @@ export interface CategoryUsageImpact {
 
 export const getCategoryUsageImpact = async (categoryId: string, user: User | null): Promise<CategoryUsageImpact> => {
     try {
-        const allTransactions = await getTransactions(user, undefined);
         const targetLower = categoryId.toLowerCase().trim();
-        const affected = allTransactions.filter(t => (t.category || '').toLowerCase().trim() === targetLower);
-        
+        let affected: Transaction[] = [];
+
+        if (user) {
+            const { data, error } = await supabase
+                .from('finance_transactions')
+                .select('*')
+                .eq('user_id', user.id)
+                .ilike('category', targetLower);
+
+            if (error) {
+                logSupabaseError("Error fetching category transactions", error);
+                const localTxs = await getAllFromLocalDB<Transaction>(STORES.FINANCE);
+                affected = localTxs.filter(t => (t.category || '').toLowerCase().trim() === targetLower);
+            } else {
+                affected = (data || []).map((t): Transaction => ({
+                    id: t.id,
+                    user_id: t.user_id,
+                    amount: Number(t.amount),
+                    type: t.type,
+                    category: t.category,
+                    description: t.description || '',
+                    payment_method: t.payment_method || 'Cash',
+                    transaction_date: t.transaction_date,
+                    profile_id: t.profile_id
+                }));
+            }
+        } else {
+            const localTxs = await getAllFromLocalDB<Transaction>(STORES.FINANCE);
+            affected = localTxs.filter(t => (t.category || '').toLowerCase().trim() === targetLower);
+        }
+
         const count = affected.length;
         const totalAmount = affected.reduce((sum, t) => sum + Number(t.amount || 0), 0);
         const uniqueProfiles = new Set(affected.map(t => t.profile_id || 'default')).size;
@@ -1192,9 +1220,33 @@ export const reassignCategoryTransactions = async (
     user: User | null
 ): Promise<{ updatedCount: number; affectedTransactions: Transaction[] }> => {
     try {
-        const allTransactions = await getTransactions(user, undefined);
         const targetLower = fromCategory.toLowerCase().trim();
-        const affected = allTransactions.filter(t => (t.category || '').toLowerCase().trim() === targetLower);
+        let affected: Transaction[] = [];
+
+        if (user) {
+            const { data, error } = await supabase
+                .from('finance_transactions')
+                .select('*')
+                .eq('user_id', user.id)
+                .ilike('category', targetLower);
+
+            if (!error && data) {
+                affected = data.map((t): Transaction => ({
+                    id: t.id,
+                    user_id: t.user_id,
+                    amount: Number(t.amount),
+                    type: t.type,
+                    category: t.category,
+                    description: t.description || '',
+                    payment_method: t.payment_method || 'Cash',
+                    transaction_date: t.transaction_date,
+                    profile_id: t.profile_id
+                }));
+            }
+        } else {
+            const localTxs = await getAllFromLocalDB<Transaction>(STORES.FINANCE);
+            affected = localTxs.filter(t => (t.category || '').toLowerCase().trim() === targetLower);
+        }
 
         if (affected.length === 0) {
             return { updatedCount: 0, affectedTransactions: [] };
