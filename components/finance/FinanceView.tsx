@@ -98,6 +98,30 @@ const DEFAULT_STATS: FinancePeriodStats = {
     topCategories: []
 };
 
+const StatSkeleton: React.FC<{
+    className?: string;
+    style?: React.CSSProperties;
+    variant?: 'default' | 'dark' | 'emerald' | 'rose' | 'indigo' | 'amber';
+}> = ({ className = 'w-16 h-3', style, variant = 'default' }) => {
+    const bgVar = variant === 'dark' 
+        ? 'var(--finance-skeleton-dark-card-bg)' 
+        : variant === 'emerald' 
+            ? 'var(--finance-skeleton-emerald-bg)' 
+            : variant === 'rose' 
+                ? 'var(--finance-skeleton-rose-bg)' 
+                : variant === 'indigo' 
+                    ? 'var(--finance-skeleton-indigo-bg)' 
+                    : variant === 'amber' 
+                        ? 'var(--finance-skeleton-amber-bg)' 
+                        : 'var(--finance-skeleton-bg)';
+    return (
+        <span 
+            className={`inline-block rounded animate-pulse ${className}`} 
+            style={{ backgroundColor: bgVar, ...style }} 
+        />
+    );
+};
+
 const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '', isSuspended }) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -487,9 +511,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
 
     // Database aggregated stats state (representing 100% of transactions without loading full list)
     const [dbStats, setDbStats] = useState<FinancePeriodStats>(DEFAULT_STATS);
-    const [isStatsLoading, setIsStatsLoading] = useState(false);
+    const [isStatsLoading, setIsStatsLoading] = useState(true);
     const [analyticsData, setAnalyticsData] = useState<FinanceAnalyticsData | null>(null);
-    const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
+    const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
 
     const [calendarMonth, setCalendarMonth] = useState<{ year: number; month: number }>(() => {
         const now = new Date();
@@ -1683,6 +1707,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         return dbStats;
     }, [searchQuery, transactionsForList, dateFilter, dbStats]);
 
+    const isStatsDataLoading = searchQuery ? isLoading : (isStatsLoading || isLoading);
+
     return (
         <>
             <main 
@@ -1717,7 +1743,11 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         {/* Header Count Badge */}
                                         <div className="hidden xs:flex items-center justify-center px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-gray-800 text-neutral-500 dark:text-neutral-400 border border-neutral-200/50 dark:border-white/5 transition-all">
                                             <span className="text-[10px] font-bold tabular-nums">
-                                                {walletCounts[activeProfile.id || 'default'] || 0}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-3.5 h-2" />
+                                                ) : (
+                                                    walletCounts[activeProfile.id || 'default'] || 0
+                                                )}
                                             </span>
                                         </div>
                                         <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-neutral-400 group-hover:text-indigo-500 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
@@ -2376,22 +2406,34 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Income</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">
-                                                {stats.incomeCount} {stats.incomeCount === 1 ? 'record' : 'records'}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-12 h-2.5" variant="emerald" />
+                                                ) : (
+                                                    `${stats.incomeCount} ${stats.incomeCount === 1 ? 'record' : 'records'}`
+                                                )}
                                             </span>
                                         </div>
 
                                         <div className="my-1 py-0">
                                             <p className="text-xl sm:text-2xl font-black text-emerald-950 dark:text-emerald-100 tracking-tight truncate">
-                                                +₹{stats.income.toLocaleString('en-IN')}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-28 h-6 sm:h-7" variant="emerald" />
+                                                ) : (
+                                                    `+₹${stats.income.toLocaleString('en-IN')}`
+                                                )}
                                             </p>
                                             <p className="text-[10px] sm:text-[11px] font-medium text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 truncate">
-                                                {stats.incomeCount > 0 ? 'Total inflow received' : 'No income this period'}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-24 h-2.5" variant="emerald" />
+                                                ) : (
+                                                    stats.incomeCount > 0 ? 'Total inflow received' : 'No income this period'
+                                                )}
                                             </p>
                                         </div>
 
                                         <div className="pt-2 border-t border-emerald-200/50 dark:border-emerald-800/30 flex justify-between items-center text-[10px] sm:text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
-                                            <span>Highest: <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{stats.highestIncome.toLocaleString('en-IN')}</strong></span>
-                                            <span>Avg: <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{Math.round(stats.avgIncome).toLocaleString('en-IN')}</strong></span>
+                                            <span>Highest: {isStatsDataLoading ? <StatSkeleton className="w-10 h-2.5 align-middle ml-1" variant="emerald" /> : <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{stats.highestIncome.toLocaleString('en-IN')}</strong>}</span>
+                                            <span>Avg: {isStatsDataLoading ? <StatSkeleton className="w-10 h-2.5 align-middle ml-1" variant="emerald" /> : <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{Math.round(stats.avgIncome).toLocaleString('en-IN')}</strong>}</span>
                                         </div>
                                     </div>
 
@@ -2405,22 +2447,34 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Expense</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100/80 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 truncate max-w-[110px]">
-                                                {stats.topCategories[0] ? stats.topCategories[0].name : `${stats.expenseCount} entries`}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-12 h-2.5" variant="rose" />
+                                                ) : (
+                                                    stats.topCategories[0] ? stats.topCategories[0].name : `${stats.expenseCount} entries`
+                                                )}
                                             </span>
                                         </div>
 
                                         <div className="my-1 py-0">
                                             <p className="text-xl sm:text-2xl font-black text-rose-950 dark:text-rose-100 tracking-tight truncate">
-                                                -₹{stats.expense.toLocaleString('en-IN')}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-28 h-6 sm:h-7" variant="rose" />
+                                                ) : (
+                                                    `-₹${stats.expense.toLocaleString('en-IN')}`
+                                                )}
                                             </p>
                                             <p className="text-[10px] sm:text-[11px] font-medium text-rose-700/80 dark:text-rose-400/80 mt-0.5 truncate">
-                                                {stats.expenseCount > 0 ? 'Total outflow spent' : 'No expenses this period'}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-24 h-2.5" variant="rose" />
+                                                ) : (
+                                                    stats.expenseCount > 0 ? 'Total outflow spent' : 'No expenses this period'
+                                                )}
                                             </p>
                                         </div>
 
                                         <div className="pt-2 border-t border-rose-200/50 dark:border-rose-800/30 flex justify-between items-center text-[10px] sm:text-[11px] text-rose-700/80 dark:text-rose-400/80">
-                                            <span>Highest: <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{stats.highestExpense.toLocaleString('en-IN')}</strong></span>
-                                            <span>Avg: <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{Math.round(stats.avgExpense).toLocaleString('en-IN')}</strong></span>
+                                            <span>Highest: {isStatsDataLoading ? <StatSkeleton className="w-10 h-2.5 align-middle ml-1" variant="rose" /> : <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{stats.highestExpense.toLocaleString('en-IN')}</strong>}</span>
+                                            <span>Avg: {isStatsDataLoading ? <StatSkeleton className="w-10 h-2.5 align-middle ml-1" variant="rose" /> : <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{Math.round(stats.avgExpense).toLocaleString('en-IN')}</strong>}</span>
                                         </div>
                                     </div>
 
@@ -2434,13 +2488,21 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Daily Avg</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300">
-                                                {stats.activeExpenseDays} active {stats.activeExpenseDays === 1 ? 'day' : 'days'}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-12 h-2.5" variant="indigo" />
+                                                ) : (
+                                                    `${stats.activeExpenseDays} active ${stats.activeExpenseDays === 1 ? 'day' : 'days'}`
+                                                )}
                                             </span>
                                         </div>
 
                                         <div className="my-1 py-0">
                                             <p className="text-xl sm:text-2xl font-black text-indigo-950 dark:text-indigo-100 tracking-tight truncate">
-                                                ₹{Math.round(stats.dailyAverage).toLocaleString('en-IN')}
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-28 h-6 sm:h-7" variant="indigo" />
+                                                ) : (
+                                                    `₹${Math.round(stats.dailyAverage).toLocaleString('en-IN')}`
+                                                )}
                                             </p>
                                             <p className="text-[10px] sm:text-[11px] font-medium text-indigo-700/80 dark:text-indigo-400/80 mt-0.5 truncate">
                                                 Average spend on active days
@@ -2448,8 +2510,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         </div>
 
                                         <div className="pt-2 border-t border-indigo-200/50 dark:border-indigo-800/30 flex justify-between items-center text-[10px] sm:text-[11px] text-indigo-700/80 dark:text-indigo-400/80">
-                                            <span>Active: <strong className="font-bold text-indigo-950 dark:text-indigo-200">{stats.activeExpenseDays}d</strong></span>
-                                            <span>Pacing: <strong className="font-bold text-indigo-950 dark:text-indigo-200">₹{Math.round(stats.dailyAverage * stats.daysInPeriod).toLocaleString('en-IN')}</strong></span>
+                                            <span>Active: {isStatsDataLoading ? <StatSkeleton className="w-6 h-2.5 align-middle ml-1" variant="indigo" /> : <strong className="font-bold text-indigo-950 dark:text-indigo-200">{stats.activeExpenseDays}d</strong>}</span>
+                                            <span>Pacing: {isStatsDataLoading ? <StatSkeleton className="w-12 h-2.5 align-middle ml-1" variant="indigo" /> : <strong className="font-bold text-indigo-950 dark:text-indigo-200">₹{Math.round(stats.dailyAverage * stats.daysInPeriod).toLocaleString('en-IN')}</strong>}</span>
                                         </div>
                                     </div>
 
@@ -2463,13 +2525,21 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Zero Spend</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/80 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
-                                                {Math.round((stats.zeroSpendDays / stats.daysInPeriod) * 100)}% free
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-12 h-2.5" variant="amber" />
+                                                ) : (
+                                                    `${Math.round((stats.zeroSpendDays / stats.daysInPeriod) * 100)}% free`
+                                                )}
                                             </span>
                                         </div>
 
                                         <div className="my-1 py-0">
                                             <p className="text-xl sm:text-2xl font-black text-amber-950 dark:text-amber-100 tracking-tight truncate">
-                                                {stats.zeroSpendDays} <span className="text-xs font-semibold opacity-80">Days</span>
+                                                {isStatsDataLoading ? (
+                                                    <StatSkeleton className="w-24 h-6 sm:h-7" variant="amber" />
+                                                ) : (
+                                                    <>{stats.zeroSpendDays} <span className="text-xs font-semibold opacity-80">Days</span></>
+                                                )}
                                             </p>
                                             <p className="text-[10px] sm:text-[11px] font-medium text-amber-700/80 dark:text-amber-400/80 mt-0.5 truncate">
                                                 Days without any expense
@@ -2477,8 +2547,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         </div>
 
                                         <div className="pt-2 border-t border-amber-200/50 dark:border-amber-800/30 flex justify-between items-center text-[10px] sm:text-[11px] text-amber-700/80 dark:text-amber-400/80">
-                                            <span>Cycle: <strong className="font-bold text-amber-950 dark:text-amber-200">{Math.round((stats.zeroSpendDays / stats.daysInPeriod) * 100)}%</strong></span>
-                                            <span>Period: <strong className="font-bold text-amber-950 dark:text-amber-200">{stats.daysInPeriod}d</strong></span>
+                                            <span>Cycle: {isStatsDataLoading ? <StatSkeleton className="w-8 h-2.5 align-middle ml-1" variant="amber" /> : <strong className="font-bold text-amber-950 dark:text-amber-200">{Math.round((stats.zeroSpendDays / stats.daysInPeriod) * 100)}%</strong>}</span>
+                                            <span>Period: {isStatsDataLoading ? <StatSkeleton className="w-6 h-2.5 align-middle ml-1" variant="amber" /> : <strong className="font-bold text-amber-950 dark:text-amber-200">{stats.daysInPeriod}d</strong>}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -2507,7 +2577,13 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                             : 'text-gray-400'
                                                 }`}>
                                                     <PiggyBank className="w-3.5 h-3.5 flex-shrink-0" />
-                                                    <span>{stats.savingsRatio.toFixed(1)}% Saved</span>
+                                                    <span>
+                                                        {isStatsDataLoading ? (
+                                                            <StatSkeleton className="w-14 h-2.5" variant="dark" />
+                                                        ) : (
+                                                            `${stats.savingsRatio.toFixed(1)}% Saved`
+                                                        )}
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -2515,29 +2591,45 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                             <div className="my-0.5 py-0">
                                                 <div className="flex items-baseline justify-between gap-2">
                                                     <h2 className="text-2xl sm:text-3xl font-black tracking-tight truncate">
-                                                        {stats.balance >= 0 ? '+' : '-'}₹{Math.abs(stats.balance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                        {isStatsDataLoading ? (
+                                                            <StatSkeleton className="w-36 sm:w-44 h-7 sm:h-8" variant="dark" />
+                                                        ) : (
+                                                            `${stats.balance >= 0 ? '+' : '-'}₹${Math.abs(stats.balance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                                                        )}
                                                     </h2>
                                                     <div className="text-right flex-shrink-0">
-                                                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${
-                                                            stats.balance >= 0 
-                                                                ? 'text-emerald-400' 
-                                                                : 'text-rose-400'
-                                                        }`}>
-                                                            {stats.balance >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                                            <span>
-                                                                {stats.income > 0 
-                                                                    ? `${((stats.balance / stats.income) * 100).toFixed(0)}% Margin` 
-                                                                    : (stats.balance >= 0 ? 'Surplus' : 'Deficit')}
+                                                        {isStatsDataLoading ? (
+                                                            <StatSkeleton className="w-16 h-3" variant="dark" />
+                                                        ) : (
+                                                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${
+                                                                stats.balance >= 0 
+                                                                    ? 'text-emerald-400' 
+                                                                    : 'text-rose-400'
+                                                            }`}>
+                                                                {stats.balance >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                                                <span>
+                                                                    {stats.income > 0 
+                                                                        ? `${((stats.balance / stats.income) * 100).toFixed(0)}% Margin` 
+                                                                        : (stats.balance >= 0 ? 'Surplus' : 'Deficit')}
+                                                                </span>
                                                             </span>
-                                                        </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-between text-[10.5px] text-gray-400 mt-0.5">
                                                     <span className="truncate">
-                                                        {stats.balance >= 0 ? 'Net surplus retained' : 'Net deficit spent'}
+                                                        {isStatsDataLoading ? (
+                                                            <StatSkeleton className="w-24 h-2.5" variant="dark" />
+                                                        ) : (
+                                                            stats.balance >= 0 ? 'Net surplus retained' : 'Net deficit spent'
+                                                        )}
                                                     </span>
                                                     <span className="font-semibold text-gray-300 flex-shrink-0 ml-2">
-                                                        {stats.incomeCount + stats.expenseCount} {stats.incomeCount + stats.expenseCount === 1 ? 'transaction' : 'transactions'}
+                                                        {isStatsDataLoading ? (
+                                                            <StatSkeleton className="w-16 h-2.5" variant="dark" />
+                                                        ) : (
+                                                            `${stats.incomeCount + stats.expenseCount} ${stats.incomeCount + stats.expenseCount === 1 ? 'transaction' : 'transactions'}`
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
@@ -2545,10 +2637,12 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                             {/* Bottom Divider & Metrics */}
                                             <div className="pt-2 mt-1 border-t border-white/10">
                                                 <div className="flex justify-between items-center text-[10.5px] text-gray-300 mb-1">
-                                                    <span>Inflow: <strong className="text-emerald-400 font-bold">+₹{stats.income.toLocaleString('en-IN')}</strong></span>
-                                                    <span>Outflow: <strong className="text-rose-400 font-bold">-₹{stats.expense.toLocaleString('en-IN')}</strong></span>
+                                                    <span>Inflow: {isStatsDataLoading ? <StatSkeleton className="w-14 h-2.5 align-middle ml-1" variant="dark" /> : <strong className="text-emerald-400 font-bold">+₹{stats.income.toLocaleString('en-IN')}</strong>}</span>
+                                                    <span>Outflow: {isStatsDataLoading ? <StatSkeleton className="w-14 h-2.5 align-middle ml-1" variant="dark" /> : <strong className="text-rose-400 font-bold">-₹{stats.expense.toLocaleString('en-IN')}</strong>}</span>
                                                 </div>
-                                                {stats.expense > 0 ? (
+                                                {isStatsDataLoading ? (
+                                                    <div className="h-1.5 w-full rounded-full animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-dark-card-bg)' }} />
+                                                ) : stats.expense > 0 ? (
                                                     <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-white/10">
                                                         {stats.topCategories.map((cat, i) => (
                                                             <Tooltip 
@@ -2580,6 +2674,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                             daysInPeriod={stats.daysInPeriod}
                                             activeExpenseDays={stats.activeExpenseDays}
                                             className="h-full" 
+                                            isLoading={isStatsDataLoading}
                                         />
                                     </div>
 
@@ -2595,19 +2690,27 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                     <span className="text-[10px] font-extrabold uppercase tracking-wider">Income</span>
                                                 </div>
                                                 <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">
-                                                    {stats.incomeCount} {stats.incomeCount === 1 ? 'record' : 'records'}
+                                                    {isStatsDataLoading ? (
+                                                        <StatSkeleton className="w-10 h-2" variant="emerald" />
+                                                    ) : (
+                                                        `${stats.incomeCount} ${stats.incomeCount === 1 ? 'record' : 'records'}`
+                                                    )}
                                                 </span>
                                             </div>
                                             
                                             <div>
                                                 <p className="text-lg sm:text-xl font-black text-emerald-950 dark:text-emerald-100 tracking-tight truncate">
-                                                    +₹{stats.income.toLocaleString('en-IN')}
+                                                    {isStatsDataLoading ? (
+                                                        <StatSkeleton className="w-24 h-5 sm:h-6" variant="emerald" />
+                                                    ) : (
+                                                        `+₹${stats.income.toLocaleString('en-IN')}`
+                                                    )}
                                                 </p>
                                             </div>
 
                                             <div className="mt-auto pt-1.5 border-t border-emerald-200/50 dark:border-emerald-800/30 flex justify-between items-center text-[10px] sm:text-[10.5px] text-emerald-700/80 dark:text-emerald-400/80">
-                                                <span>Highest: <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{stats.highestIncome.toLocaleString('en-IN')}</strong></span>
-                                                <span>Avg: <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{Math.round(stats.avgIncome).toLocaleString('en-IN')}</strong></span>
+                                                <span>Highest: {isStatsDataLoading ? <StatSkeleton className="w-8 h-2 align-middle ml-1" variant="emerald" /> : <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{stats.highestIncome.toLocaleString('en-IN')}</strong>}</span>
+                                                <span>Avg: {isStatsDataLoading ? <StatSkeleton className="w-8 h-2 align-middle ml-1" variant="emerald" /> : <strong className="font-bold text-emerald-950 dark:text-emerald-200">+₹{Math.round(stats.avgIncome).toLocaleString('en-IN')}</strong>}</span>
                                             </div>
                                         </div>
 
@@ -2621,19 +2724,27 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                     <span className="text-[10px] font-extrabold uppercase tracking-wider">Expense</span>
                                                 </div>
                                                 <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-100/80 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 truncate max-w-[100px]">
-                                                    {stats.topCategories[0] ? stats.topCategories[0].name : `${stats.expenseCount} entries`}
+                                                    {isStatsDataLoading ? (
+                                                        <StatSkeleton className="w-10 h-2" variant="rose" />
+                                                    ) : (
+                                                        stats.topCategories[0] ? stats.topCategories[0].name : `${stats.expenseCount} entries`
+                                                    )}
                                                 </span>
                                             </div>
                                             
                                             <div>
                                                 <p className="text-lg sm:text-xl font-black text-rose-950 dark:text-rose-100 tracking-tight truncate">
-                                                    -₹{stats.expense.toLocaleString('en-IN')}
+                                                    {isStatsDataLoading ? (
+                                                        <StatSkeleton className="w-24 h-5 sm:h-6" variant="rose" />
+                                                    ) : (
+                                                        `-₹${stats.expense.toLocaleString('en-IN')}`
+                                                    )}
                                                 </p>
                                             </div>
 
                                             <div className="mt-auto pt-1.5 border-t border-rose-200/50 dark:border-rose-800/30 flex justify-between items-center text-[10px] sm:text-[10.5px] text-rose-700/80 dark:text-rose-400/80">
-                                                <span>Highest: <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{stats.highestExpense.toLocaleString('en-IN')}</strong></span>
-                                                <span>Avg: <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{Math.round(stats.avgExpense).toLocaleString('en-IN')}</strong></span>
+                                                <span>Highest: {isStatsDataLoading ? <StatSkeleton className="w-8 h-2 align-middle ml-1" variant="rose" /> : <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{stats.highestExpense.toLocaleString('en-IN')}</strong>}</span>
+                                                <span>Avg: {isStatsDataLoading ? <StatSkeleton className="w-8 h-2 align-middle ml-1" variant="rose" /> : <strong className="font-bold text-rose-950 dark:text-rose-200">-₹{Math.round(stats.avgExpense).toLocaleString('en-IN')}</strong>}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2657,10 +2768,16 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                             transactions={transactionsByDate} 
                                             period={dateFilter} 
                                             analyticsData={analyticsData}
+                                            isLoading={isAnalyticsLoading || isLoading}
                                             onCategoryClick={(catName, type) => {
                                                 setCategoryDetailModalId(catName);
                                                 setCategoryDetailType(type);
                                             }}
+                                            onDelete={handleDeleteInline}
+                                            onEdit={handleEdit}
+                                            onView={handleView}
+                                            onDuplicate={handleDuplicate}
+                                            customCategories={customCategories}
                                         />
                                     </div>
                                     <div className={viewMode === 'calendar' ? '' : 'hidden'}>

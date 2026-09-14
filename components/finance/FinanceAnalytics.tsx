@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, memo } from 'react';
 import { Transaction } from '../../types';
-import { FinanceAnalyticsData } from '../../services/dbService';
+import { FinanceAnalyticsData, CustomCategoryItem } from '../../services/dbService';
 import { TrendingDown, TrendingUp, Wallet, ArrowUp, ChevronDown, PieChart as PieChartIcon, Activity, CreditCard } from 'lucide-react';
 import Tooltip from '../Tooltip';
 import {
@@ -35,10 +35,27 @@ interface FinanceAnalyticsProps {
     transactions?: Transaction[];
     period: 'this-month' | 'all' | string;
     analyticsData?: FinanceAnalyticsData | null;
+    isLoading?: boolean;
     onCategoryClick?: (categoryName: string, type: 'expense' | 'income') => void;
+    onDelete?: (id: string) => void;
+    onEdit?: (t: Transaction) => void;
+    onView?: (t: Transaction) => void;
+    onDuplicate?: (t: Transaction) => void;
+    customCategories?: CustomCategoryItem[];
 }
 
-const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({ transactions = [], period, analyticsData, onCategoryClick }) => {
+const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({ 
+    transactions = [], 
+    period, 
+    analyticsData, 
+    isLoading = false,
+    onCategoryClick,
+    onDelete,
+    onEdit,
+    onView,
+    onDuplicate,
+    customCategories = []
+}) => {
     const [isBreakdownExpanded, setIsBreakdownExpanded] = useState(false);
 
     const analytics = useMemo(() => {
@@ -190,7 +207,7 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({ transactions = [], 
         // 4. Top Expenses
         const topExpenses = [...expenseTransactions]
             .sort((a, b) => Number(b.amount) - Number(a.amount))
-            .slice(0, 5);
+            .slice(0, 15);
 
         return { 
             totalExpense, totalIncome, netBalance, 
@@ -371,7 +388,11 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({ transactions = [], 
                             Expenses
                         </h3>
                         <div className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300">
-                            Total: ₹{analytics.totalExpense >= 1000 ? (analytics.totalExpense/1000).toFixed(1) + 'k' : analytics.totalExpense}
+                            Total: {isLoading ? (
+                                <span className="inline-block w-14 h-3 rounded animate-pulse align-middle ml-1" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                            ) : (
+                                `₹${analytics.totalExpense >= 1000 ? (analytics.totalExpense/1000).toFixed(1) + 'k' : analytics.totalExpense}`
+                            )}
                         </div>
                     </div>
                     
@@ -416,7 +437,11 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({ transactions = [], 
                             Income
                         </h3>
                         <div className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300">
-                            Total: ₹{analytics.totalIncome >= 1000 ? (analytics.totalIncome/1000).toFixed(1) + 'k' : analytics.totalIncome}
+                            Total: {isLoading ? (
+                                <span className="inline-block w-14 h-3 rounded animate-pulse align-middle ml-1" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                            ) : (
+                                `₹${analytics.totalIncome >= 1000 ? (analytics.totalIncome/1000).toFixed(1) + 'k' : analytics.totalIncome}`
+                            )}
                         </div>
                     </div>
                     
@@ -457,7 +482,15 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({ transactions = [], 
             <hr className="border-t border-gray-200 dark:border-white/10" />
 
             {/* Top Expenses List */}
-            <TopExpenses transactions={analytics.topExpenses && analytics.topExpenses.length > 0 ? (analytics.topExpenses as any) : transactions} />
+            <TopExpenses 
+                transactions={analytics.topExpenses && analytics.topExpenses.length > 0 ? (analytics.topExpenses as any) : transactions} 
+                isLoading={isLoading}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onView={onView}
+                onDuplicate={onDuplicate}
+                customCategories={customCategories}
+            />
 
         </div>
     );

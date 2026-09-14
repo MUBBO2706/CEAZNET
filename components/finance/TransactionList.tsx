@@ -43,7 +43,7 @@ const CategoryIcon: React.FC<{ categoryId: string, type: string, className?: str
     return <HelpCircle className={className} />;
 }
 
-const TransactionItem = React.memo<{
+export const TransactionItem = React.memo<{
     t: Transaction;
     isSelectionMode?: boolean;
     isSelected?: boolean;
@@ -57,6 +57,8 @@ const TransactionItem = React.memo<{
     onDelete: (id: string) => void;
     onDuplicate?: (t: Transaction) => void;
     onView?: (t: Transaction) => void;
+    rank?: number;
+    showDate?: boolean;
 }>(({ 
     t, 
     isSelectionMode, 
@@ -70,7 +72,9 @@ const TransactionItem = React.memo<{
     onEdit,
     onDelete,
     onDuplicate,
-    onView
+    onView,
+    rank,
+    showDate
 }) => {
     const isIncome = t.type === 'income';
     const isExpense = t.type === 'expense';
@@ -117,19 +121,26 @@ const TransactionItem = React.memo<{
             >
                 <div className="flex items-center gap-4 lg:gap-3 min-w-0 flex-1">
                     {/* Icon or Checkbox */}
-                    <div className={`w-12 h-12 lg:w-9 lg:h-9 flex items-center justify-center flex-shrink-0 transition-transform ${isSelectionMode ? 'rounded-xl lg:rounded-lg' : 'group-hover:scale-105'} 
-                        ${isSelected ? 'bg-indigo-500 text-white rounded-xl lg:rounded-lg' : 
-                            isSelectionMode ? 'bg-gray-100 dark:bg-neutral-800 rounded-xl lg:rounded-lg' : ''
-                        }
-                        ${!isSelected ? (
-                            isIncome ? 'text-emerald-600 dark:text-emerald-400' :
-                            isExpense ? 'text-rose-600 dark:text-rose-400' :
-                            'text-indigo-600 dark:text-indigo-400'
-                        ) : ''}`}>
-                        {isSelectionMode ? (
-                            isSelected ? <Check className="w-6 h-6 lg:w-4 lg:h-4" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
-                        ) : (
-                            <CategoryIcon categoryId={t.category} type={t.type} className="w-6 h-6 lg:w-5 lg:h-5" customCategories={customCategories} />
+                    <div className="relative shrink-0">
+                        <div className={`w-12 h-12 lg:w-9 lg:h-9 flex items-center justify-center flex-shrink-0 transition-transform ${isSelectionMode ? 'rounded-xl lg:rounded-lg' : 'group-hover:scale-105'} 
+                            ${isSelected ? 'bg-indigo-500 text-white rounded-xl lg:rounded-lg' : 
+                                isSelectionMode ? 'bg-gray-100 dark:bg-neutral-800 rounded-xl lg:rounded-lg' : ''
+                            }
+                            ${!isSelected ? (
+                                isIncome ? 'text-emerald-600 dark:text-emerald-400' :
+                                isExpense ? 'text-rose-600 dark:text-rose-400' :
+                                'text-indigo-600 dark:text-indigo-400'
+                            ) : ''}`}>
+                            {isSelectionMode ? (
+                                isSelected ? <Check className="w-6 h-6 lg:w-4 lg:h-4" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                            ) : (
+                                <CategoryIcon categoryId={t.category} type={t.type} className="w-6 h-6 lg:w-5 lg:h-5" customCategories={customCategories} />
+                            )}
+                        </div>
+                        {rank !== undefined && (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-[9px] md:text-[10px] shadow-sm border-2 border-white dark:border-gray-900 transition-transform group-hover:scale-110">
+                                {rank}
+                            </div>
                         )}
                     </div>
                     
@@ -165,7 +176,11 @@ const TransactionItem = React.memo<{
                             {isExpense ? '-' : '+'}₹{Number(t.amount).toLocaleString('en-IN')}
                         </span>
                         <span className="text-[10px] lg:text-[9px] font-medium text-gray-400 dark:text-gray-600">
-                            {new Date(t.transaction_date).toLocaleTimeString(undefined, {hour: 'numeric', minute:'2-digit', hour12: true})}
+                            {showDate || rank !== undefined ? (
+                                <>{dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {timeStr}</>
+                            ) : (
+                                timeStr
+                            )}
                         </span>
                     </div>
 

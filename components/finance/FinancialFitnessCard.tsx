@@ -12,6 +12,7 @@ interface FinancialFitnessCardProps {
     daysInPeriod?: number; // Passed from global stats
     activeExpenseDays?: number; // Passed from global stats
     className?: string;
+    isLoading?: boolean;
 }
 
 const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({ 
@@ -22,7 +23,8 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
     expense: expenseProp, 
     daysInPeriod: daysInPeriodProp,
     activeExpenseDays: activeExpenseDaysProp,
-    className 
+    className,
+    isLoading = false
 }) => {
     const stats = useMemo(() => {
         const now = new Date();
@@ -141,76 +143,109 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">{stats.dailyMetricLabel}</span>
                     </div>
                     <div className="flex items-baseline gap-1 mt-0.5">
-                        <span className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                            ₹{Math.floor(stats.dailyMetric).toLocaleString('en-IN')}
-                        </span>
-                        <span className="text-xs font-semibold text-gray-500">/ day</span>
+                        {isLoading ? (
+                            <span className="inline-block w-28 h-6 rounded-md animate-pulse my-0.5" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                        ) : (
+                            <>
+                                <span className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                                    ₹{Math.floor(stats.dailyMetric).toLocaleString('en-IN')}
+                                </span>
+                                <span className="text-xs font-semibold text-gray-500">/ day</span>
+                            </>
+                        )}
                     </div>
                     <p className="text-[10.5px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                        {stats.isCurrentPeriod 
-                            ? `To last remaining ${stats.daysRemaining} days`
-                            : `Avg spending over ${period === 'all' ? 'all time' : 'the month'}`
-                        }
+                        {isLoading ? (
+                            <span className="inline-block w-36 h-2.5 rounded animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                        ) : (
+                            stats.isCurrentPeriod 
+                                ? `To last remaining ${stats.daysRemaining} days`
+                                : `Avg spending over ${period === 'all' ? 'all time' : 'the month'}`
+                        )}
                     </p>
                 </div>
 
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${
-                    stats.isUnderBudget 
-                        ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/50 dark:text-emerald-400' 
-                        : 'bg-rose-50 border-rose-100 text-rose-700 dark:bg-rose-900/20 dark:border-rose-900/50 dark:text-rose-400'
-                }`}>
-                    {stats.isUnderBudget ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    <span className="text-[9.5px] font-bold uppercase tracking-wider">
-                        {stats.isUnderBudget ? 'Under Budget' : 'Over Budget'}
-                    </span>
-                </div>
+                {isLoading ? (
+                    <div className="w-20 h-5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                ) : (
+                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${
+                        stats.isUnderBudget 
+                            ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/50 dark:text-emerald-400' 
+                            : 'bg-rose-50 border-rose-100 text-rose-700 dark:bg-rose-900/20 dark:border-rose-900/50 dark:text-rose-400'
+                    }`}>
+                        {stats.isUnderBudget ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        <span className="text-[9.5px] font-bold uppercase tracking-wider">
+                            {stats.isUnderBudget ? 'Under Budget' : 'Over Budget'}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Middle Row: Progress Bar */}
             <div>
                 <div className="flex justify-between text-[10.5px] font-medium mb-1">
                     <span className="text-gray-500">
-                        {stats.isCurrentPeriod ? `Month Progress (${Math.round(stats.timeProgress)}%)` : 'Period Complete'}
+                        {isLoading ? (
+                            <span className="inline-block w-28 h-2.5 rounded animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                        ) : (
+                            stats.isCurrentPeriod ? `Month Progress (${Math.round(stats.timeProgress)}%)` : 'Period Complete'
+                        )}
                     </span>
                     <span className={`${stats.isUnderBudget ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        Budget Used ({Math.round(stats.budgetProgress)}%)
+                        {isLoading ? (
+                            <span className="inline-block w-24 h-2.5 rounded animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                        ) : (
+                            `Budget Used (${Math.round(stats.budgetProgress)}%)`
+                        )}
                     </span>
                 </div>
                 
-                <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                    {/* Background Bar (Time Passed) */}
-                    <div 
-                        className="absolute top-0 bottom-0 left-0 bg-gray-200 dark:bg-gray-700 border-r-2 border-white dark:border-[#050505] z-0" 
-                        style={{ width: `${stats.timeProgress}%` }}
-                    />
-                    
-                    {/* Foreground Bar (Money Spent) */}
-                    <div 
-                        className={`absolute top-0 bottom-0 left-0 h-full rounded-full transition-all duration-1000 ease-out z-10 ${
-                            stats.budgetProgress > 100 ? 'bg-red-600' :
-                            stats.isUnderBudget ? 'bg-emerald-500' : 'bg-rose-500'
-                        }`}
-                        style={{ width: `${Math.min(stats.budgetProgress, 100)}%` }}
-                    />
-                </div>
+                {isLoading ? (
+                    <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full w-2/3 rounded-full animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                    </div>
+                ) : (
+                    <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        {/* Background Bar (Time Passed) */}
+                        <div 
+                            className="absolute top-0 bottom-0 left-0 bg-gray-200 dark:bg-gray-700 border-r-2 border-white dark:border-[#050505] z-0" 
+                            style={{ width: `${stats.timeProgress}%` }}
+                        />
+                        
+                        {/* Foreground Bar (Money Spent) */}
+                        <div 
+                            className={`absolute top-0 bottom-0 left-0 h-full rounded-full transition-all duration-1000 ease-out z-10 ${
+                                stats.budgetProgress > 100 ? 'bg-red-600' :
+                                stats.isUnderBudget ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`}
+                            style={{ width: `${Math.min(stats.budgetProgress, 100)}%` }}
+                        />
+                    </div>
+                )}
                 
                 {/* Insight Text */}
                 <div className="mt-1.5 flex items-start gap-1.5 text-[10.5px] text-gray-500 dark:text-gray-400">
-                    {stats.isUnderBudget ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    {isLoading ? (
+                        <div className="h-3 w-4/5 rounded animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
                     ) : (
-                        <AlertCircle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
+                        <>
+                            {stats.isUnderBudget ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                                <AlertCircle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
+                            )}
+                            <p className="line-clamp-2">
+                                {stats.isCurrentPeriod
+                                    ? (stats.isUnderBudget 
+                                        ? `You are spending ${stats.diffPercent.toFixed(0)}% slower than time passing. Great job!` 
+                                        : `You are spending ${stats.diffPercent.toFixed(0)}% faster than time passing. Slow down slightly.`)
+                                    : (stats.isUnderBudget
+                                        ? `You saved ₹${(stats.activeLimit - stats.expense).toLocaleString('en-IN')} this period!`
+                                        : `You overspent by ₹${(stats.expense - stats.activeLimit).toLocaleString('en-IN')} this period.`)
+                                }
+                            </p>
+                        </>
                     )}
-                    <p className="line-clamp-2">
-                        {stats.isCurrentPeriod
-                            ? (stats.isUnderBudget 
-                                ? `You are spending ${stats.diffPercent.toFixed(0)}% slower than time passing. Great job!` 
-                                : `You are spending ${stats.diffPercent.toFixed(0)}% faster than time passing. Slow down slightly.`)
-                            : (stats.isUnderBudget
-                                ? `You saved ₹${(stats.activeLimit - stats.expense).toLocaleString('en-IN')} this period!`
-                                : `You overspent by ₹${(stats.expense - stats.activeLimit).toLocaleString('en-IN')} this period.`)
-                        }
-                    </p>
                 </div>
             </div>
             
@@ -220,15 +255,23 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
                     <p className="text-[9px] uppercase font-bold text-gray-400">
                         {stats.isUnderBudget ? 'Savings' : 'Overspend'}
                     </p>
-                    <p className={`text-xs font-bold ${stats.isUnderBudget ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        ₹{Math.abs(stats.remaining).toLocaleString('en-IN')}
-                    </p>
+                    {isLoading ? (
+                        <span className="inline-block w-16 h-3 rounded animate-pulse mt-0.5" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                    ) : (
+                        <p className={`text-xs font-bold ${stats.isUnderBudget ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            ₹{Math.abs(stats.remaining).toLocaleString('en-IN')}
+                        </p>
+                    )}
                 </div>
                 <div className="text-right">
                     <p className="text-[9px] uppercase font-bold text-gray-400">
                         {period === 'all' ? 'Total Income' : 'Monthly Limit'}
                     </p>
-                    <p className="text-xs font-bold text-gray-900 dark:text-white">₹{stats.activeLimit.toLocaleString('en-IN')}</p>
+                    {isLoading ? (
+                        <span className="inline-block w-16 h-3 rounded animate-pulse mt-0.5" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
+                    ) : (
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">₹{stats.activeLimit.toLocaleString('en-IN')}</p>
+                    )}
                 </div>
             </div>
 
