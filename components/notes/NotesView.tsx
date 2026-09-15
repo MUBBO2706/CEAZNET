@@ -1146,18 +1146,39 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
     
     const isWalletLinked = selectedNote?.tags?.some(t => t.startsWith('wallet:'));
 
+    const handleCloseNoteRef = useRef(handleCloseNote);
     useEffect(() => {
-        if (selectedNote) {
+        handleCloseNoteRef.current = handleCloseNote;
+    }, [handleCloseNote]);
+
+    const handleSyncWalletRef = useRef(handleSyncWallet);
+    useEffect(() => {
+        handleSyncWalletRef.current = handleSyncWallet;
+    }, [handleSyncWallet]);
+
+    const stableBack = useCallback(() => {
+        handleCloseNoteRef.current();
+    }, []);
+
+    const stableSync = useCallback(() => {
+        handleSyncWalletRef.current();
+    }, []);
+
+    const selectedNoteId = selectedNote?.id;
+    const selectedNoteTitle = selectedNote?.title;
+
+    useEffect(() => {
+        if (selectedNoteId) {
             setNotesHeaderState({
-                title: selectedNote.title || 'Untitled Note',
+                title: selectedNoteTitle || 'Untitled Note',
                 isReadOnly,
                 isWalletLinked: !!isWalletLinked,
                 isSyncing,
                 isSaving,
-                onBack: handleCloseNote,
+                onBack: stableBack,
                 onEdit: () => setIsReadOnly(false),
-                onSave: handleCloseNote,
-                onSync: handleSyncWallet
+                onSave: stableBack,
+                onSync: stableSync
             });
         } else {
             setNotesHeaderState({
@@ -1168,7 +1189,19 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                 isSaving: false
             });
         }
-    }, [selectedNote?.title, selectedNote?.updatedAt, isReadOnly, isWalletLinked, isSyncing, isSaving, selectedNote, handleCloseNote]);
+    }, [selectedNoteId, selectedNoteTitle, isReadOnly, isWalletLinked, isSyncing, isSaving, stableBack, stableSync, setNotesHeaderState]);
+
+    useEffect(() => {
+        return () => {
+            setNotesHeaderState({
+                title: null,
+                isReadOnly: false,
+                isWalletLinked: false,
+                isSyncing: false,
+                isSaving: false
+            });
+        };
+    }, [setNotesHeaderState]);
 
     return (
         <main className="relative z-10 h-full overflow-y-auto bg-[#F2F4F7] dark:bg-black transition-colors scrollbar-hide pt-20 md:pt-16 dev-console-spacing-pb flex flex-col">

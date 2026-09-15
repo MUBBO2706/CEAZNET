@@ -59,6 +59,11 @@ interface FloatingHeaderProps {
         title: string | null;
         onBack?: () => void;
     };
+    categoryHeaderState?: {
+        title: string | null;
+        onBack?: () => void;
+        isDetail?: boolean;
+    };
     onOpenTranslatorStats?: () => void;
 }
 
@@ -210,7 +215,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
     ? props.userProfile.avatar_url 
     : `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(props.userProfile.full_name || props.user?.email || 'A')}`;
 
-    const rootViews: View[] = ['home', 'explore', 'notes', 'finance', 'dairy', 'gallery', 'translator', 'features', 'about', 'settings', 'profile', 'support', 'privacy-policy', 'terms-of-service'];
+    const rootViews: View[] = ['home', 'explore', 'notes', 'finance', 'finance-categories', 'dairy', 'gallery', 'translator', 'features', 'about', 'settings', 'profile', 'support', 'privacy-policy', 'terms-of-service'];
     const isRootView = rootViews.includes(props.currentView);
     const isHomeView = props.currentView === 'home';
     
@@ -218,6 +223,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
     const isNotesView = props.currentView === 'notes';
     const isNotesEditorOpen = isNotesView && props.notesHeaderState?.title != null;
     const isFinanceView = props.currentView === 'finance';
+    const isFinanceCategoriesView = props.currentView === 'finance-categories';
     const isDairyView = props.currentView === 'dairy';
     const isGalleryView = props.currentView === 'gallery';
     const isTranslatorView = props.currentView === 'translator';
@@ -234,7 +240,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
     const isTermsOfServiceView = props.currentView === 'terms-of-service';
 
     const isVoiceHistoryFromSidebar = props.currentView === 'voice-history' && props.previousView !== 'live-conversation';
-    const showHamburger = (isRootView || isVoiceHistoryFromSidebar) && !props.dairyTitle && !props.expandedVoiceTitle && !isNotesEditorOpen && !props.supportHeaderState?.title;
+    const showHamburger = (isRootView || isVoiceHistoryFromSidebar) && !props.dairyTitle && !props.expandedVoiceTitle && !isNotesEditorOpen && !props.supportHeaderState?.title && !isFinanceCategoriesView;
 
   useEffect(() => {
       if (isSearchExpanded && searchInputRef.current) {
@@ -274,6 +280,16 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
       if (props.supportHeaderState?.title && props.supportHeaderState.onBack) {
           closeSearch();
           props.supportHeaderState.onBack();
+          return;
+      }
+
+      if (isFinanceCategoriesView) {
+          closeSearch();
+          if (props.categoryHeaderState?.onBack) {
+              props.categoryHeaderState.onBack();
+          } else {
+              props.onNavigate('finance');
+          }
           return;
       }
 
@@ -326,7 +342,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                         <line x1="3" x2="15" y1="12" y2="12" />
                         <line x1="3" x2="9" y1="18" y2="18" />
                     </svg>
-                ) : (props.dairyTitle || props.expandedVoiceTitle || isNotesEditorOpen || props.supportHeaderState?.title) ? (
+                ) : (props.dairyTitle || props.expandedVoiceTitle || isNotesEditorOpen || props.supportHeaderState?.title || isFinanceCategoriesView) ? (
                     <ArrowLeft className="h-5 w-5" />
                 ) : (
                     <X className="h-5 w-5" />
@@ -334,7 +350,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                 </button>
             </div>
             
-            {(!isSearchExpanded && (isHomeView || isExploreView || isNotesView || isFinanceView || isDairyView || isGalleryView || isTranslatorView || isSettingsView || isProfileView || isMoleculeView || isVoiceHistoryView || isVoiceSettingsView || isFeaturesView || isAboutView || isArticleReaderView || isSupportView || isPrivacyPolicyView || isTermsOfServiceView)) && (
+            {(!isSearchExpanded && (isHomeView || isExploreView || isNotesView || isFinanceView || isFinanceCategoriesView || isDairyView || isGalleryView || isTranslatorView || isSettingsView || isProfileView || isMoleculeView || isVoiceHistoryView || isVoiceSettingsView || isFeaturesView || isAboutView || isArticleReaderView || isSupportView || isPrivacyPolicyView || isTermsOfServiceView)) && (
                 <div className={`flex items-center justify-center bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-full shadow-sm relative z-20 min-w-0 max-w-[75vw] md:max-w-none w-fit ${(!isNotesEditorOpen) ? 'px-5 md:px-5 h-12 md:h-10' : 'px-4 md:px-4 h-11 md:h-10'}`}>
                     <div className="flex items-baseline gap-2 truncate w-full justify-center">
                         <h1 
@@ -345,6 +361,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                             {isExploreView && "Explore"}
                             {isNotesView && (isNotesEditorOpen ? props.notesHeaderState?.title : "Notes")}
                             {isFinanceView && "Finance"}
+                            {isFinanceCategoriesView && (props.categoryHeaderState?.title || "Categories")}
                             {isDairyView && (props.dairyTitle ? `Daily ${props.dairyTitle} Khata` : "Daily Khata")}
                             {isGalleryView && "Gallery"}
                             {isTranslatorView && "Translator"}

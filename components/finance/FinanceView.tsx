@@ -19,7 +19,6 @@ import FinancialFitnessCard from './FinancialFitnessCard';
 import ConfirmationModal from '../ConfirmationModal';
 import FileRenameModal from './FileRenameModal';
 import NotePickerModal from '../NotePickerModal';
-import CategoryDetailModal from './CategoryDetailModal';
 import { InlineConfirmDelete } from '../core/InlineConfirmDelete';
 import type { User } from '@supabase/supabase-js';
 import { useToast } from '../ToastSystem';
@@ -69,6 +68,7 @@ interface FinanceViewProps {
     searchQuery?: string;
     isSuspended?: boolean;
     onViewModeChange?: (mode: ViewMode) => void;
+    onNavigateToCategories?: (catId?: string) => void;
 }
 
 type DateFilter = 'all' | 'this-month' | string;
@@ -123,7 +123,7 @@ const StatSkeleton: React.FC<{
     );
 };
 
-const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '', isSuspended, onViewModeChange }) => {
+const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '', isSuspended, onViewModeChange, onNavigateToCategories }) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -239,8 +239,6 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [categorySearch, setCategorySearch] = useState('');
     const [customCategories, setCustomCategories] = useState<CustomCategoryItem[]>([]);
-    const [categoryDetailModalId, setCategoryDetailModalId] = useState<string | null>(null);
-    const [categoryDetailType, setCategoryDetailType] = useState<'expense' | 'income' | 'transfer'>('expense');
     const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -1986,7 +1984,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                     </button>
                                     
                                     {isProfileDropdownOpen && (
-                                        <div className="absolute top-full left-0 mt-3 w-80 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5">
+                                        <div className="absolute top-full left-0 mt-3 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5">
                                             <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5 rounded-t-2xl">
                                                 <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Select Wallet</span>
                                                 <span className="text-[10px] font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">{profiles.length + 1}</span>
@@ -2329,7 +2327,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                     {!isSelectionMode && !searchQuery && (
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 mb-6 relative z-30">
                             {/* Mobile Row 1 / Desktop Left Group: Time & Type Selectors */}
-                            <div className="flex items-center gap-2 sm:gap-2.5">
+                            <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-0.5 max-w-full">
                                 {/* Time Selector */}
                                 <div className="bg-white dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-gray-800 flex shadow-sm w-fit relative flex-shrink-0" ref={monthDropdownRef}>
                                     {/* All Time Button */}
@@ -2399,7 +2397,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 6, scale: 0.95 }}
                                                 transition={{ duration: 0.15 }}
-                                                className="absolute top-[calc(100%+8px)] left-0 w-52 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
+                                                className="absolute top-[calc(100%+8px)] left-0 w-52 max-w-[calc(100vw-2rem)] bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
                                             >
                                                 <div className="max-h-60 overflow-y-auto scrollbar-hide py-0">
                                                     {availableMonths.map((month) => {
@@ -2579,13 +2577,14 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                         
                                                                         <div className="flex items-center gap-1 shrink-0">
                                                                             {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
-                                                                             <button
+                                                                            <button
                                                                                 type="button"
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
                                                                                     setIsCategoryDropdownOpen(false);
-                                                                                    setCategoryDetailModalId(cat.id);
-                                                                                    setCategoryDetailType(((cat as any).type) || 'expense');
+                                                                                    if (onNavigateToCategories) {
+                                                                                        onNavigateToCategories(cat.id);
+                                                                                    }
                                                                                 }}
                                                                                 className="p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors opacity-70 group-hover:opacity-100"
                                                                                 title={`Category details, impact & settings for ${cat.label}`}
@@ -2610,10 +2609,11 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 type="button"
                                                                 onClick={() => {
                                                                     setIsCategoryDropdownOpen(false);
-                                                                    setCategoryDetailModalId(filteredCategoriesList[0]?.id || 'Food & Dining');
-                                                                    setCategoryDetailType('expense');
+                                                                    if (onNavigateToCategories) {
+                                                                        onNavigateToCategories();
+                                                                    }
                                                                 }}
-                                                                className="w-full py-1.5 px-3 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center gap-1.5"
+                                                                className="w-full py-1.5 px-3 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                                             >
                                                                 <Tag className="w-3.5 h-3.5" />
                                                                 <span>Manage & Edit Categories</span>
@@ -2646,7 +2646,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 6, scale: 0.95 }}
                                                 transition={{ duration: 0.15 }}
-                                                className="absolute top-[calc(100%+8px)] right-0 w-36 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
+                                                className="absolute top-[calc(100%+8px)] right-0 w-36 max-w-[calc(100vw-2rem)] bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden py-1"
                                             >
                                                 <div className="py-0.5 divide-y divide-gray-100/60 dark:divide-gray-800/60">
                                                      {[10, 20, 30, 50, 100].map((option) => {
@@ -3055,8 +3055,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                             analyticsData={analyticsData}
                                             isLoading={isAnalyticsLoading || isLoading}
                                             onCategoryClick={(catName, type) => {
-                                                setCategoryDetailModalId(catName);
-                                                setCategoryDetailType(type);
+                                                if (onNavigateToCategories) {
+                                                    onNavigateToCategories(catName);
+                                                }
                                             }}
                                             onDelete={handleDeleteInline}
                                             onEdit={handleEdit}
@@ -3339,26 +3340,6 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                 isSaving={isSaving}
                 recentCategoryIds={recentCategoryIds}
                 transactions={transactions}
-            />
-
-            <CategoryDetailModal 
-                isOpen={!!categoryDetailModalId}
-                onClose={() => setCategoryDetailModalId(null)}
-                categoryId={categoryDetailModalId}
-                categoryType={categoryDetailType}
-                user={user}
-                transactions={transactions}
-                onCategoryUpdated={() => {
-                    loadData();
-                    loadCustomCategoriesData();
-                }}
-                onCategoryDeleted={(deletedId) => {
-                    if (categoryFilter.toLowerCase() === deletedId.toLowerCase()) {
-                        setCategoryFilter('all');
-                    }
-                    loadData();
-                    loadCustomCategoriesData();
-                }}
             />
 
             {isImporting && (

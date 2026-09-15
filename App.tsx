@@ -108,6 +108,7 @@ const viewToPath: Record<View, string> = {
   "article-reader": "/explore/reader",
   notes: "/notes",
   finance: "/finance",
+  "finance-categories": "/finance/categories",
   dairy: "/dairy",
   gallery: "/gallery",
   translator: "/translator",
@@ -191,6 +192,7 @@ const App: React.FC = () => {
     if (currentPath.startsWith("/explore")) return "explore";
     if (currentPath.startsWith("/notes/share/") || currentPath.startsWith("/share/") || currentPath.startsWith("/notes/s/")) return "shared-note";
     if (currentPath.startsWith("/notes")) return "notes";
+    if (currentPath.startsWith("/finance/categories")) return "finance-categories";
     if (currentPath.startsWith("/finance")) return "finance";
     if (currentPath.startsWith("/dairy")) return "dairy";
     if (currentPath.startsWith("/gallery")) return "gallery";
@@ -224,29 +226,31 @@ const App: React.FC = () => {
   const [voiceHistorySearchQuery, setVoiceHistorySearchQuery] = useState("");
   const [voiceHistoryVersion, setVoiceHistoryVersion] = useState(0);
 
-  // Synchronously update previous view and clear search queries during render when path changes
-  if (prevPathRef.current !== currentPath) {
-    const oldPath = prevPathRef.current;
-    prevPathRef.current = currentPath;
+  // Synchronously update previous view and clear search queries when path changes
+  useEffect(() => {
+    if (prevPathRef.current !== currentPath) {
+      const oldPath = prevPathRef.current;
+      prevPathRef.current = currentPath;
 
-    let prevV: View = "home";
-    if (oldPath.startsWith("/explore/reader")) prevV = "article-reader";
-    else if (oldPath.startsWith("/explore")) prevV = "explore";
-    else if (oldPath.startsWith("/notes")) prevV = "notes";
-    else if (oldPath.startsWith("/finance")) prevV = "finance";
-    else if (oldPath.startsWith("/dairy")) prevV = "dairy";
-    else if (oldPath.startsWith("/gallery")) prevV = "gallery";
-    else if (oldPath.startsWith("/translator")) prevV = "translator";
-    else if (oldPath.startsWith("/molecule")) prevV = "molecule-viewer";
-    else if (oldPath.startsWith("/live")) prevV = "live-conversation";
-    else if (oldPath.startsWith("/settings")) prevV = "settings";
-    else if (oldPath.startsWith("/profile")) prevV = "profile";
+      let prevV: View = "home";
+      if (oldPath.startsWith("/explore/reader")) prevV = "article-reader";
+      else if (oldPath.startsWith("/explore")) prevV = "explore";
+      else if (oldPath.startsWith("/notes")) prevV = "notes";
+      else if (oldPath.startsWith("/finance")) prevV = "finance";
+      else if (oldPath.startsWith("/dairy")) prevV = "dairy";
+      else if (oldPath.startsWith("/gallery")) prevV = "gallery";
+      else if (oldPath.startsWith("/translator")) prevV = "translator";
+      else if (oldPath.startsWith("/molecule")) prevV = "molecule-viewer";
+      else if (oldPath.startsWith("/live")) prevV = "live-conversation";
+      else if (oldPath.startsWith("/settings")) prevV = "settings";
+      else if (oldPath.startsWith("/profile")) prevV = "profile";
 
-    setPreviousView(prevV);
-    setNotesSearchQuery("");
-    setFinanceSearchQuery("");
-    setVoiceHistorySearchQuery("");
-  }
+      setPreviousView(prevV);
+      setNotesSearchQuery("");
+      setFinanceSearchQuery("");
+      setVoiceHistorySearchQuery("");
+    }
+  }, [currentPath]);
 
   const [uiPreferences, setUiPreferences] = useState<UIPreferences>(() => {
     try {
@@ -407,10 +411,12 @@ const App: React.FC = () => {
     return null;
   }, [currentPath]);
 
-  if (urlExploreCategory && exploreActiveCategory !== urlExploreCategory) {
-    setExploreActiveCategory(urlExploreCategory);
-    setExploreCurrentIndex(0);
-  }
+  useEffect(() => {
+    if (urlExploreCategory && exploreActiveCategory !== urlExploreCategory) {
+      setExploreActiveCategory(urlExploreCategory);
+      setExploreCurrentIndex(0);
+    }
+  }, [urlExploreCategory, exploreActiveCategory]);
 
   const urlReaderId = useMemo(() => {
     const parts = currentPath.split("/");
@@ -420,25 +426,13 @@ const App: React.FC = () => {
     return null;
   }, [currentPath]);
 
-  const prevUrlReaderIdRef = useRef<string | null>(urlReaderId);
-  if (prevUrlReaderIdRef.current !== urlReaderId) {
-    prevUrlReaderIdRef.current = urlReaderId;
+  useEffect(() => {
     if (!urlReaderId) {
       if (articleForReading !== null) {
         setArticleForReading(null);
       }
-    } else {
-      try {
-        const decodedUrl = atob(urlReaderId.replace(/-/g, "+").replace(/_/g, "/"));
-        const found = exploreArticles.find((a) => a.url === decodedUrl);
-        if (found && articleForReading?.url !== decodedUrl) {
-          setArticleForReading(found);
-        }
-      } catch (e) {
-        // ignore
-      }
     }
-  }
+  }, [urlReaderId, articleForReading]);
 
   useEffect(() => {
     if (!urlReaderId) return;
@@ -840,7 +834,7 @@ const App: React.FC = () => {
                }
                setTerminationInfo(parsed);
             } else {
-               setTerminationInfo({ by: 'Administrator', from: 'System', location: 'Unknown Location', time: new Date().toISOString() });
+               setTerminationInfo({ deviceName: 'Administrator', location: 'Unknown Location', time: new Date().toISOString() });
             }
             addToast("Your session was terminated remotely.", "warning");
             setIsSessionTerminatedModalOpen(true);
@@ -1275,6 +1269,12 @@ const App: React.FC = () => {
     onBack?: () => void;
   }>({ title: null });
 
+  const [categoryHeaderState, setCategoryHeaderState] = useState<{
+    title: string | null;
+    onBack?: () => void;
+    isDetail?: boolean;
+  }>({ title: null });
+
   const [isSavingVoiceSettings, setIsSavingVoiceSettings] = useState(false);
 
   const handleVoiceSettingChange = async (key: string, value: any) => {
@@ -1399,13 +1399,14 @@ const App: React.FC = () => {
                 isGalleryUploading={galleryHeaderState.isUploading}
                 uiPreferences={uiPreferences}
                 supportHeaderState={supportHeaderState}
+                categoryHeaderState={categoryHeaderState}
                 onOpenTranslatorStats={() => setIsTranslatorStatsOpen(true)}
               />
             )}
 
             <div
               ref={scrollContainerRef}
-              className={`flex-1 min-h-0 scrollbar-hide ${currentView === "not-found" ? "flex flex-col overflow-hidden" : ["live-conversation", "reading", "explore", "article-reader", "settings", "profile", "finance", "notes", "shared-note", "about", "features", "privacy-policy", "terms-of-service", "molecule-viewer", "gallery"].includes(currentView) ? "overflow-hidden" : "overflow-y-auto"}`}
+              className={`flex-1 min-h-0 scrollbar-hide ${currentView === "not-found" ? "flex flex-col overflow-hidden" : ["live-conversation", "reading", "explore", "article-reader", "settings", "profile", "finance", "finance-categories", "notes", "shared-note", "about", "features", "privacy-policy", "terms-of-service", "molecule-viewer", "gallery"].includes(currentView) ? "overflow-hidden" : "overflow-y-auto"}`}
             >
               <ViewRenderer
                 currentView={currentView}
@@ -1469,6 +1470,7 @@ const App: React.FC = () => {
                 setNotesHeaderState={setNotesHeaderState}
                 setGalleryHeaderState={setGalleryHeaderState}
                 setSupportHeaderState={setSupportHeaderState}
+                setCategoryHeaderState={setCategoryHeaderState}
                 isSuspended={userProfile?.is_suspended}
                 voicePersonas={voicePersonas}
                 activeVoicePersona={activeVoicePersona}

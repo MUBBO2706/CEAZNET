@@ -6,6 +6,7 @@ import {
     ArrowLeft, Save, Filter, Loader, Sparkles 
 } from 'lucide-react';
 import { Transaction } from '../../types';
+import { CustomSelect, CustomSelectOption } from './CustomSelect';
 
 export interface ImportDiffModalProps {
     isOpen: boolean;
@@ -340,43 +341,35 @@ const ImportDiffModal: React.FC<ImportDiffModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Search Bar and Adjacent Filter Dropdown */}
-                        <div className="flex items-center gap-2">
+                        {/* Search Bar and Adjacent Filter Dropdown (Responsive stack on mobile) */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             {/* Search bar */}
                             <div className="relative flex-1">
-                                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Filter by field, description, category, or ID..."
-                                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all min-h-[36px] sm:min-h-[32px]"
                                 />
                             </div>
 
                             {/* Adjacent Filter Dropdown */}
-                            <div className="relative shrink-0">
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black/50 text-xs font-semibold text-gray-800 dark:text-gray-200 shadow-2xs">
-                                    <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                                    <select
-                                        value={filterMode}
-                                        onChange={(e) => setFilterMode(e.target.value as any)}
-                                        className="bg-transparent text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
-                                    >
-                                        <option value="changes" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-                                            Changes Only ({summary.modifiedCount + summary.addedCount})
-                                        </option>
-                                        <option value="modified" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-                                            Modified ({summary.modifiedCount})
-                                        </option>
-                                        <option value="added" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-                                            Added ({summary.addedCount})
-                                        </option>
-                                        <option value="all" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-                                            All ({summary.totalImported})
-                                        </option>
-                                    </select>
-                                </div>
+                            <div className="w-full sm:w-56 shrink-0">
+                                <CustomSelect
+                                    value={filterMode}
+                                    onChange={(val) => setFilterMode(val as any)}
+                                    options={[
+                                        { value: 'changes', label: `Changes Only (${summary.modifiedCount + summary.addedCount})`, icon: <Filter className="w-3 h-3 text-indigo-500" /> },
+                                        { value: 'modified', label: `Modified (${summary.modifiedCount})` },
+                                        { value: 'added', label: `Added (${summary.addedCount})` },
+                                        { value: 'all', label: `All (${summary.totalImported})` }
+                                    ]}
+                                    id="import-diff-filter-mode"
+                                    size="sm"
+                                    align="right"
+                                />
                             </div>
                         </div>
                     </div>

@@ -10,6 +10,7 @@ import SettingsView from './SettingsView';
 import NotesView from './notes/NotesView';
 import SharedNoteView from './notes/SharedNoteView';
 import FinanceView from './finance/FinanceView';
+import CategoryManagerView from './finance/CategoryManagerView';
 import DairyView from './dairy/DairyView';
 import GalleryView from './gallery/GalleryView';
 import AboutView from './AboutView';
@@ -25,6 +26,7 @@ import NotFoundView from './NotFoundView';
 import { SupportView } from './SupportView';
 import { ProfileView } from './ProfileView';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 interface ViewRendererProps {
     currentView: View;
@@ -107,6 +109,7 @@ interface ViewRendererProps {
     }) => void;
     setGalleryHeaderState: (state: { onUpload?: () => void; isUploading?: boolean }) => void;
     setSupportHeaderState: (state: { title: string | null; onBack?: () => void }) => void;
+    setCategoryHeaderState?: (state: { title: string | null; onBack?: () => void; isDetail?: boolean }) => void;
     isSuspended?: boolean;
     voicePersonas: VoicePersona[];
     activeVoicePersona?: string | null;
@@ -194,6 +197,7 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
     setNotesHeaderState,
     setGalleryHeaderState,
     setSupportHeaderState,
+    setCategoryHeaderState,
     isSuspended,
     voicePersonas,
     activeVoicePersona,
@@ -203,6 +207,10 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
     isChargingSupported,
     onPreviewCharging,
 }) => {
+    const navigate = useNavigate();
+    const handleFinanceCategoriesBack = React.useCallback(() => {
+        navigate('/finance');
+    }, [navigate]);
 
     const renderView = () => {
         switch (currentView) {
@@ -286,6 +294,21 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({
                         searchQuery={financeSearchQuery || ''}
                         isSuspended={isSuspended}
                         onViewModeChange={onFinanceViewModeChange}
+                        onNavigateToCategories={(catId) => {
+                            if (catId) {
+                                navigate(`/finance/categories?id=${encodeURIComponent(catId)}&edit=true`);
+                            } else {
+                                navigate('/finance/categories');
+                            }
+                        }}
+                    />
+                );
+            case 'finance-categories':
+                return (
+                    <CategoryManagerView
+                        user={user}
+                        onBack={handleFinanceCategoriesBack}
+                        setCategoryHeaderState={setCategoryHeaderState}
                     />
                 );
             case 'dairy':

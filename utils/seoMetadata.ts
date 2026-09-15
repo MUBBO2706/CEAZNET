@@ -56,6 +56,15 @@ export const seoMetadataMap: Record<View, PageSeoMetadata> = {
     twitterTitle: "Smart Finance Tracker & Budget Planner | Ceaznet",
     twitterDescription: "Monitor your spending patterns, analyze budgets with visual charts, and take control of your financial freedom on Ceaznet."
   },
+  "finance-categories": {
+    title: "Category Management",
+    description: "Manage, customize, and organize your financial categories with hybrid Lucide icon search and AI-powered recommendations.",
+    keywords: "categories, finance categories, expense categories, income categories, icons, lucide icons, budget tags",
+    ogTitle: "Finance Category Management | Ceaznet",
+    ogDescription: "Customize expense and income categories with full Lucide icon search and AI suggestions.",
+    twitterTitle: "Finance Category Management | Ceaznet",
+    twitterDescription: "Customize expense and income categories with full Lucide icon search and AI suggestions."
+  },
   dairy: {
     title: "Dairy",
     description: "Your safe personal dairy and daily journal space. Reflect on your days, capture memories, track moods, and secure your thoughts.",

@@ -19,6 +19,7 @@ import { enhanceDescriptionWithAi } from '../../services/descriptionAiService';
 import { useGlobalModal } from '../core/GlobalModalProvider';
 import VehicleManagerModal from './VehicleManagerModal';
 import { CustomAiSparkleIcon } from '../SupportView';
+import { CustomSelect, CustomSelectOption } from './CustomSelect';
 
 interface TransactionModalProps {
     isOpen: boolean;
@@ -242,6 +243,7 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
     const categorySearchRef = useRef<HTMLInputElement>(null);
     const paymentDropdownRef = useRef<HTMLDivElement>(null);
     const paymentButtonRef = useRef<HTMLButtonElement>(null);
+    const categoryListRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -267,10 +269,10 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
     }, [showAllCategories]);
     
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && category === 'Fuel') {
             loadVehicles();
         }
-    }, [isOpen, user]);
+    }, [isOpen, category, user]);
 
     useEffect(() => {
         if (initialData) {
@@ -336,7 +338,6 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            loadVehicles();
             loadCustomCategoriesData();
         }
     }, [isOpen, user?.id]);
@@ -655,7 +656,12 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
                     setCategory(cat.id); 
                     setIsCustomCategory(false); 
                     setShowAllCategories(false); 
-                    setCategorySearchQuery(''); 
+                    setCategorySearchQuery('');
+                    setTimeout(() => {
+                        if (categoryListRef.current) {
+                            categoryListRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                        }
+                    }, 50);
                 }}
                 className={`flex flex-col items-center justify-center gap-1 p-1.5 rounded-2xl transition-all duration-150 group cursor-pointer relative ${
                     isGrid 
@@ -1005,7 +1011,7 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex overflow-x-auto gap-2 py-1 px-1 no-scrollbar">
+                                    <div ref={categoryListRef} className="flex overflow-x-auto gap-2 py-1 px-1 no-scrollbar">
                                         {visibleCategories.map(cat => renderCategoryButton(cat))}
 
                                         {/* More Categories Button */}
@@ -1039,23 +1045,27 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
                                     </div>
 
                                     {/* Vehicle Selector */}
-                                    <div className="relative">
-                                        <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-rose-500" />
-                                        <select
+                                    <div className="relative w-full">
+                                        <CustomSelect
                                             value={selectedVehicleId}
-                                            onChange={(e) => {
-                                                setSelectedVehicleId(e.target.value);
-                                                const v = vehicles.find(veh => veh.id === e.target.value);
-                                                if(v) setOdometer(v.current_odometer.toString());
+                                            onChange={(val) => {
+                                                setSelectedVehicleId(val);
+                                                const v = vehicles.find(veh => veh.id === val);
+                                                if (v) setOdometer(v.current_odometer.toString());
                                             }}
-                                            className="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-rose-200/80 dark:border-rose-900/40 text-xs font-semibold text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500/50 appearance-none cursor-pointer"
-                                        >
-                                            <option value="">Select Vehicle (Optional)...</option>
-                                            {vehicles.map(v => (
-                                                <option key={v.id} value={v.id}>{v.name} ({v.number_plate})</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-rose-500 pointer-events-none" />
+                                            options={[
+                                                { value: '', label: 'Select Vehicle (Optional)...', icon: <Car className="w-3.5 h-3.5 text-rose-500" /> },
+                                                ...vehicles.map(v => ({
+                                                    value: v.id,
+                                                    label: `${v.name} (${v.number_plate})`,
+                                                    icon: <Car className="w-3.5 h-3.5 text-rose-500" />
+                                                }))
+                                            ]}
+                                            placeholder="Select Vehicle (Optional)..."
+                                            id="transaction-vehicle-select"
+                                            size="sm"
+                                            align="left"
+                                        />
                                     </div>
 
                                     {/* Inputs: Odometer & Liters */}
@@ -1208,7 +1218,12 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
             {/* Category Full Grid Modal Overlay */}
             {showAllCategories && (
-                <div className="fixed inset-0 z-[70] bg-[#F9F6F2] dark:bg-black flex flex-col animate-fade-in-up">
+                <div 
+                    className="fixed inset-0 z-[70] bg-[#F9F6F2] dark:bg-black flex flex-col animate-fade-in-up"
+                    style={{ 
+                        paddingBottom: isDevToolsOpen ? 'calc(45vh + 30px)' : '0px' 
+                    }}
+                >
                     <div className="px-5 py-4 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between bg-white/70 dark:bg-white/[0.03] backdrop-blur-md">
                         <div>
                             <h3 className="font-extrabold text-base sm:text-lg text-neutral-900 dark:text-white">All Categories</h3>
