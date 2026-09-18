@@ -724,18 +724,83 @@ async function startServer() {
     }
   });
 
-  // AI-powered Icon Suggestion for Daily Khata
-  app.post("/api/dairy/suggest-icon", async (req, res) => {
-    try {
-      const { name, existingItems, existingCategories } = req.body;
-      if (!name || typeof name !== 'string') {
-        return res.status(400).json({ error: "Missing or invalid name parameter" });
+  // Helper for Iconify Search with sanitized response schema
+  async function handleIconifySearch(query: string, limit: number = 192, start: number = 0, prefixes: string = 'solar,ph,hugeicons,tabler,ri,heroicons,lucide') {
+    const iconifyHosts = [
+      'https://api.iconify.design',
+      'https://api.simplesvg.com',
+      'https://api.unisvg.com'
+    ];
+    let lastError: any = null;
+    for (const host of iconifyHosts) {
+      try {
+        const params = new URLSearchParams({
+          query: query.trim(),
+          limit: String(limit),
+          compact: '1',
+          prefixes: prefixes || 'solar,ph,hugeicons,tabler,ri,heroicons,lucide'
+        });
+        if (start > 0) {
+          params.set('start', String(start));
+        }
+        const response = await fetch(`${host}/search?${params.toString()}`);
+        if (!response.ok) continue;
+        const data: any = await response.json();
+        return {
+          icons: Array.isArray(data.icons) ? data.icons : [],
+          total: typeof data.total === 'number' ? data.total : (Array.isArray(data.icons) ? data.icons.length : 0),
+          limit: Number(data.limit) || limit,
+          start: Number(data.start) || start
+        };
+      } catch (err) {
+        lastError = err;
+        continue;
       }
+    }
+    throw lastError || new Error("Failed to search Iconify across mirrors");
+  }
 
-      console.log(`[Dairy AI Icon] Request received for item name: "${name}"`);
+  // Unified Icons API (Iconify Search Proxy + AI Icon Suggestion)
+  const iconsHandler = async (req: any, res: any) => {
+    const { action, query, q, limit, start, prefixes } = req.query || {};
 
-      const resultText = await executeWithGeminiRotation("suggest_dairy_icon", async (ai) => {
-        const systemPrompt = `Suggest the single best icon ID for a daily ledger/diary tracker item named "${name}".
+    // 1. Search Mode (Iconify Search Proxy with Clean Response)
+    if (req.method === 'GET' || (req.method === 'POST' && (action === 'search' || req.body?.action === 'search'))) {
+      const searchQuery = String(query || q || req.body?.query || req.body?.q || '').trim();
+      if (!searchQuery) {
+        return res.status(400).json({ error: "Missing 'query' parameter for search" });
+      }
+      const searchLimit = Number(limit || req.body?.limit) || 192;
+      const searchStart = Number(start || req.body?.start) || 0;
+      const searchPrefixes = String(prefixes || req.body?.prefixes || 'solar,ph,hugeicons,tabler,ri,heroicons,lucide');
+
+      try {
+        const cleanResult = await handleIconifySearch(searchQuery, searchLimit, searchStart, searchPrefixes);
+        return res.status(200).json(cleanResult);
+      } catch (err: any) {
+        console.error("[Icons API] Search error:", err);
+        return res.status(500).json({ 
+          error: err.message || "Failed to search icons",
+          icons: [],
+          total: 0,
+          limit: searchLimit,
+          start: searchStart
+        });
+      }
+    }
+
+    // 2. Suggest Mode (AI Smart Icon Suggestion with Gemini + Google Search Grounding)
+    if (req.method === 'POST') {
+      try {
+        const { name, existingItems, existingCategories } = req.body || {};
+        if (!name || typeof name !== 'string') {
+          return res.status(400).json({ error: "Missing or invalid name parameter" });
+        }
+
+        console.log(`[Icons AI Suggest] Request received for item name: "${name}"`);
+
+        const resultText = await executeWithGeminiRotation("suggest_icon", async (ai) => {
+          const systemPrompt = `Suggest the single best icon ID for an item, category, or ledger entry named "${name}".
 
 Choose ONLY from the following allowed list of icon IDs:
 - "milk" (for milk, dairy, dudh, cheese, butter, tiffin, breakfast, dairy products)
@@ -750,7 +815,7 @@ Choose ONLY from the following allowed list of icon IDs:
 - "car" (for petrol, diesel, fuel, car ride, cab, transport, travel, vehicle)
 - "bike" (for bike ride, scooter, fuel, delivery bike, motorcycle)
 - "heart" (for medicine, doctor, health, yoga, gym, care)
-- "coffee" (for tea, chai, coffee, cafe, beverages)
+- "coffee" (for tea, chai, coffee, cafe, beverages, bun maska, pav, breakfast, bakery items)
 - "apple" (for fruits, vegetables, sabzi, grocery, food, snacks)
 - "utensils" (for cook, tiffin service, dinner, lunch, maid, food, restaurant)
 - "book" (for tuition fee, classes, book purchase, library, studies, school)
@@ -759,8 +824,8 @@ Choose ONLY from the following allowed list of icon IDs:
 - "wrench" (for home repair, maintenance, mechanic, services)
 - "shield" (for insurance, security guard, protection)
 
-${existingItems && existingItems.length > 0 ? `Existing daily items already tracked in user's Daily Khata ledger:\n${JSON.stringify(existingItems)}\n` : ''}
-${existingCategories && existingCategories.length > 0 ? `Existing transaction categories in user's general account:\n${JSON.stringify(existingCategories)}\n` : ''}
+${existingItems && existingItems.length > 0 ? `Existing items already tracked in user's records:\n${JSON.stringify(existingItems)}\n` : ''}
+${existingCategories && existingCategories.length > 0 ? `Existing transaction categories in user's account:\n${JSON.stringify(existingCategories)}\n` : ''}
 
 CRITICAL DIRECTIVES:
 1. Try to find if any of the existing transaction categories is a perfect fit for "${name}". If a highly specific category already exists (e.g., if "Airtel" is typed and there is an existing "Internet" or "WiFi" category), set "createNewCategory": false, "matchedCategory": "<matching_category_id_or_label>", and "icon": "<that_category_icon>".
@@ -778,56 +843,63 @@ CRITICAL DIRECTIVES:
 }
 Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in Hindi", "createNewCategory": false, "suggestedCategoryName": "", "matchedCategory": "Groceries"}`;
 
-        try {
-          const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `${systemPrompt}\n\nCRITICAL DIRECTIVE:\nIf you are confused, uncertain, or encounter any brand name, product, medicine, company, app, or regional Hinglish term (e.g., 'Swiggy', 'Blinkit', 'Zepto', 'Cultfit', 'Fastag', 'Dolo 650', 'Challan', 'Netmeds', 'Zomato', 'Airtel', 'Dudh', 'Kiraya'), USE GOOGLE SEARCH to look up what the product, brand, or service is before selecting the icon!`,
-            config: {
-              tools: [{ googleSearch: {} }],
-              temperature: 0.2,
-            }
-          });
-          return response.text;
-        } catch (searchError) {
-          console.warn("[Dairy AI Icon Server] Failed with Google Search, falling back to standard content generation:", searchError);
-          const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: systemPrompt,
-            config: {
-              temperature: 0.2,
-            }
-          });
-          return response.text;
-        }
-      });
-
-      if (resultText) {
-        let cleanText = resultText.trim();
-        if (cleanText.includes('```')) {
-          const match = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-          if (match && match[1]) {
-            cleanText = match[1].trim();
+          try {
+            const response = await ai.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: `${systemPrompt}\n\nCRITICAL DIRECTIVE:\nIf you are confused, uncertain, or encounter any brand name, product, medicine, company, app, or regional Hinglish term (e.g., 'Swiggy', 'Blinkit', 'Zepto', 'Cultfit', 'Fastag', 'Dolo 650', 'Challan', 'Netmeds', 'Zomato', 'Airtel', 'Dudh', 'Kiraya', 'Bun Maska', 'Brun Pav', 'Burun Pav'), USE GOOGLE SEARCH to look up what the product, brand, or service is before selecting the icon!`,
+              config: {
+                tools: [{ googleSearch: {} }],
+                temperature: 0.2,
+              }
+            });
+            return response.text;
+          } catch (searchError) {
+            console.warn("[Icons AI Suggest] Failed with Google Search, falling back to standard content generation:", searchError);
+            const response = await ai.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: systemPrompt,
+              config: {
+                temperature: 0.2,
+              }
+            });
+            return response.text;
           }
-        }
-        const parsed = JSON.parse(cleanText);
-        console.log(`[Dairy AI Icon] AI response for "${name}":`, parsed);
-        return res.json({ 
-          success: true, 
-          icon: parsed.icon, 
-          confidence: parsed.confidence, 
-          reason: parsed.reason,
-          createNewCategory: !!parsed.createNewCategory,
-          suggestedCategoryName: parsed.suggestedCategoryName || "",
-          matchedCategory: parsed.matchedCategory || ""
         });
-      } else {
-        return res.status(500).json({ error: "Empty response from Gemini API" });
+
+        if (resultText) {
+          let cleanText = resultText.trim();
+          if (cleanText.includes('```')) {
+            const match = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (match && match[1]) {
+              cleanText = match[1].trim();
+            }
+          }
+          const parsed = JSON.parse(cleanText);
+          console.log(`[Icons AI Suggest] AI response for "${name}":`, parsed);
+          return res.json({ 
+            success: true, 
+            icon: parsed.icon, 
+            confidence: parsed.confidence, 
+            reason: parsed.reason,
+            createNewCategory: !!parsed.createNewCategory,
+            suggestedCategoryName: parsed.suggestedCategoryName || "",
+            matchedCategory: parsed.matchedCategory || ""
+          });
+        } else {
+          return res.status(500).json({ error: "Empty response from Gemini API" });
+        }
+      } catch (err: any) {
+        console.error("[Icons AI Suggest] Error during icon suggestion:", err);
+        return res.status(500).json({ error: err.message || "Failed to generate icon suggestion" });
       }
-    } catch (err: any) {
-      console.error("[Dairy AI Icon] Error during icon suggestion:", err);
-      return res.status(500).json({ error: err.message || "Failed to generate icon suggestion" });
     }
-  });
+
+    return res.status(405).json({ error: 'Method not allowed. Use GET or POST.' });
+  };
+
+  app.get("/api/icons", iconsHandler);
+  app.post("/api/icons", iconsHandler);
+  app.post("/api/dairy/suggest-icon", iconsHandler);
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });

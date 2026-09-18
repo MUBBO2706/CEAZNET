@@ -569,7 +569,7 @@ export const getEnhancedRequestName = (rawUrl: string, requestBody?: any): strin
             return 'Fetch URL Content';
         }
         if (pathname.includes('/api/version-control') || pathname.includes('/api/version/check')) return 'Check App Version';
-        if (pathname.includes('/api/dairy/suggest-icon')) return 'Suggest Icon AI';
+        if (pathname.includes('/api/icons') || pathname.includes('/api/dairy/suggest-icon')) return 'Icons Service';
         if (pathname.includes('/api/health')) return 'Health Check';
         if (pathname.includes('/api/db/clear-cache')) return 'Clear DB Cache';
         if (pathname.includes('/api/debug-triggers')) return 'Debug DB Triggers';

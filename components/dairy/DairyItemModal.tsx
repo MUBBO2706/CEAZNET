@@ -127,11 +127,12 @@ const DairyItemModal: React.FC<DairyItemModalProps> = ({ isOpen, onClose, onSave
                 ...(CATEGORY_CONFIG.transfer || [])
             ].map(c => ({ id: c.id, label: c.label }));
 
-            const res = await fetchApi('/api/dairy/suggest-icon', {
+            const res = await fetchApi('/api/icons', {
                 method: 'POST',
                 credentials: 'omit',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
+                    action: 'suggest',
                     name: itemName,
                     existingItems: existingItems?.map(item => ({ name: item.name, icon: item.icon })) || [],
                     existingCategories: [

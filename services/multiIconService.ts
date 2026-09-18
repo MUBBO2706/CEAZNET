@@ -321,7 +321,7 @@ export const fetchLibraryCollection = async (libraryPrefix: string): Promise<Ico
 };
 
 /**
- * Async online search using Iconify API with caching and error resilience
+ * Async online search using unified /api/icons API with sanitized response, caching and error resilience
  */
 export const searchOnlineIconify = async (
     query: string, 
@@ -335,19 +335,44 @@ export const searchOnlineIconify = async (
         return searchCache.get(cacheKey)!;
     }
 
-    let prefixFilter = '';
-    if (library === 'solar') prefixFilter = '&prefixes=solar';
-    else if (library === 'ph') prefixFilter = '&prefixes=ph';
-    else if (library === 'hugeicons') prefixFilter = '&prefixes=hugeicons';
-    else if (library === 'tabler') prefixFilter = '&prefixes=tabler';
-    else if (library === 'ri') prefixFilter = '&prefixes=ri';
-    else if (library === 'heroicons') prefixFilter = '&prefixes=heroicons';
-    else if (library === 'lucide') prefixFilter = '&prefixes=lucide';
-    else prefixFilter = '&prefixes=solar,ph,hugeicons,tabler,ri,heroicons,lucide';
+    let prefixFilter = 'solar,ph,hugeicons,tabler,ri,heroicons,lucide';
+    if (library === 'solar') prefixFilter = 'solar';
+    else if (library === 'ph') prefixFilter = 'ph';
+    else if (library === 'hugeicons') prefixFilter = 'hugeicons';
+    else if (library === 'tabler') prefixFilter = 'tabler';
+    else if (library === 'ri') prefixFilter = 'ri';
+    else if (library === 'heroicons') prefixFilter = 'heroicons';
+    else if (library === 'lucide') prefixFilter = 'lucide';
 
+    // 1. Primary: Use our sanitized /api/icons endpoint (clean schema, no unwanted collections/request fields)
+    try {
+        const url = `/api/icons?query=${encodeURIComponent(trimmed)}&limit=192&prefixes=${prefixFilter}`;
+        const res = await fetchApi(url);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.icons)) {
+                const items: IconItem[] = data.icons.map((iconStr: string): IconItem => {
+                    const [prefix, iconName] = iconStr.includes(':') ? iconStr.split(':') : ['solar', iconStr];
+                    return {
+                        id: iconStr,
+                        name: (iconName || iconStr).replace(/[-_]/g, ' '),
+                        library: prefix || 'solar',
+                        keywords: [trimmed]
+                    };
+                });
+
+                searchCache.set(cacheKey, items);
+                return items;
+            }
+        }
+    } catch (e) {
+        console.warn('Proxy /api/icons search error, falling back to direct mirror:', e);
+    }
+
+    // 2. Direct fallback to Iconify mirrors if proxy is unavailable
     for (const host of ICONIFY_API_HOSTS) {
         try {
-            const url = `${host}/search?query=${encodeURIComponent(trimmed)}&limit=192&compact=1${prefixFilter}`;
+            const url = `${host}/search?query=${encodeURIComponent(trimmed)}&limit=192&compact=1&prefixes=${prefixFilter}`;
             const res = await fetchApi(url);
             if (!res.ok) continue;
 
