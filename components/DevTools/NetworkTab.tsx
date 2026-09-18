@@ -8,6 +8,7 @@ import {
     formatSize, formatTimestamp, isAutoFireRequest, 
     safeStringifyWithTruncation, getEnhancedRequestName 
 } from './utils';
+import { InteractivePayloadViewer } from './InteractivePayloadViewer';
 
 export type NetHistoryEntry = {
     id: string;
@@ -718,24 +719,20 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             )}
 
                             {netDetailTab === 'payload' && (
-                                <div className="text-[12px]">
+                                <div className="text-[12px] h-full flex flex-col">
                                     {!selectedNet.requestBody ? (
                                         <div className="text-neutral-500 italic p-4 text-center">No payload for this request.</div>
                                     ) : (
-                                        <div>
-                                            <div className="flex justify-between items-end mb-2 border-b border-[var(--dev-console-border)] pb-1">
-                                                <h3 className="text-[var(--dev-console-text)] font-bold uppercase text-[10px] tracking-wider">Request Payload <span className="text-[var(--dev-console-text-muted)] font-normal ml-2">({formatSize(selectedNet.requestSize || 0)})</span></h3>
-                                                <button 
-                                                    onClick={() => handleCopy(safeStringifyWithTruncation(selectedNet.requestBody, 2), 'payload-copy')}
-                                                    className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 text-[10px] uppercase font-mono border-0 bg-transparent"
-                                                >
-                                                    {copiedId === 'payload-copy' ? <><Check size={10} className="text-green-400" /> Copied</> : <><Copy size={10} /> Copy</>}
-                                                </button>
-                                            </div>
-                                            <pre className="font-mono text-[var(--dev-console-syntax-string)] text-[11px] whitespace-pre-wrap break-all max-w-full overflow-x-auto bg-[var(--dev-console-bg-active)] p-2.5 rounded ml-2 mt-2">
-                                                {safeStringifyWithTruncation(selectedNet.requestBody, 2)}
-                                            </pre>
-                                        </div>
+                                        <InteractivePayloadViewer
+                                            data={selectedNet.requestBody}
+                                            title="Request Payload"
+                                            size={selectedNet.requestSize || 0}
+                                            syntaxColorClass="text-[var(--dev-console-syntax-string)]"
+                                            copiedId={copiedId}
+                                            handleCopy={handleCopy}
+                                            copyIdPrefix="payload-copy"
+                                            isMobile={false}
+                                        />
                                     )}
                                 </div>
                             )}
@@ -749,22 +746,16 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                     ) : selectedNet.responseBody === undefined ? (
                                         <div className="text-neutral-500 italic p-4 text-center">No response body.</div>
                                     ) : (
-                                        <div className="flex flex-col h-full">
-                                            <div className="flex justify-between items-end mb-2 border-b border-[var(--dev-console-border)] pb-1 flex-none">
-                                                <h3 className="text-[var(--dev-console-text)] font-bold uppercase text-[10px] tracking-wider">Response Body <span className="text-[var(--dev-console-text-muted)] font-normal ml-2">({formatSize(selectedNet.responseSize || 0)})</span></h3>
-                                                <button 
-                                                    onClick={() => handleCopy(safeStringifyWithTruncation(selectedNet.responseBody, 2), 'response-copy')}
-                                                    className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 text-[10px] uppercase font-mono border-0 bg-transparent"
-                                                >
-                                                    {copiedId === 'response-copy' ? <><Check size={10} className="text-green-400" /> Copied</> : <><Copy size={10} /> Copy</>}
-                                                </button>
-                                            </div>
-                                            <div className="flex-1 overflow-auto">
-                                                <pre className="font-mono text-[var(--dev-console-syntax-response)] text-[11px] whitespace-pre-wrap break-all max-w-full overflow-x-auto bg-[var(--dev-console-bg-active)] p-2.5 rounded ml-2 mt-2">
-                                                    {safeStringifyWithTruncation(selectedNet.responseBody, 2)}
-                                                </pre>
-                                            </div>
-                                        </div>
+                                        <InteractivePayloadViewer
+                                            data={selectedNet.responseBody}
+                                            title="Response Body"
+                                            size={selectedNet.responseSize || 0}
+                                            syntaxColorClass="text-[var(--dev-console-syntax-response)]"
+                                            copiedId={copiedId}
+                                            handleCopy={handleCopy}
+                                            copyIdPrefix="response-copy"
+                                            isMobile={false}
+                                        />
                                     )}
                                 </div>
                             )}
@@ -827,46 +818,38 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 </div>
                             )}
                             {netDetailTab === 'payload' && (
-                                <div className="text-[12px]">
+                                <div className="text-[12px] h-full flex flex-col">
                                     {!selectedNet.requestBody ? (
                                         <div className="text-neutral-500 italic p-4 text-center">No payload.</div>
                                     ) : (
-                                        <div>
-                                            <div className="flex justify-between items-center mb-2 border-b border-[var(--dev-console-border)] pb-1.5">
-                                                <span className="text-[10.5px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-bold">Request Payload</span>
-                                                <button 
-                                                    onClick={() => handleCopy(safeStringifyWithTruncation(selectedNet.requestBody, 2), 'payload-copy-mobile')}
-                                                    className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 text-[11px] uppercase font-semibold transition-colors border-0 bg-transparent"
-                                                >
-                                                    {copiedId === 'payload-copy-mobile' ? <><Check size={11} className="text-green-400" /> Copied</> : <><Copy size={11} /> Copy</>}
-                                                </button>
-                                            </div>
-                                            <pre className="font-mono text-[var(--dev-console-syntax-string)] text-[11px] whitespace-pre-wrap break-all bg-[var(--dev-console-bg-active)] p-3 rounded max-w-full overflow-x-auto">
-                                                {safeStringifyWithTruncation(selectedNet.requestBody, 2)}
-                                            </pre>
-                                        </div>
+                                        <InteractivePayloadViewer
+                                            data={selectedNet.requestBody}
+                                            title="Request Payload"
+                                            size={selectedNet.requestSize || 0}
+                                            syntaxColorClass="text-[var(--dev-console-syntax-string)]"
+                                            copiedId={copiedId}
+                                            handleCopy={handleCopy}
+                                            copyIdPrefix="payload-copy-mobile"
+                                            isMobile={true}
+                                        />
                                     )}
                                 </div>
                             )}
                             {netDetailTab === 'response' && (
-                                <div className="text-[12px]">
+                                <div className="text-[12px] h-full flex flex-col">
                                     {selectedNet.responseBody === undefined ? (
                                         <div className="text-neutral-500 italic p-4 text-center">No response.</div>
                                     ) : (
-                                        <div>
-                                            <div className="flex justify-between items-center mb-2 border-b border-[var(--dev-console-border)] pb-1.5">
-                                                <span className="text-[10.5px] text-[var(--dev-console-text-muted)] uppercase tracking-widest font-bold">Response Body</span>
-                                                <button 
-                                                    onClick={() => handleCopy(safeStringifyWithTruncation(selectedNet.responseBody, 2), 'response-copy-mobile')}
-                                                    className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 text-[11px] uppercase font-semibold transition-colors border-0 bg-transparent"
-                                                >
-                                                    {copiedId === 'response-copy-mobile' ? <><Check size={11} className="text-green-400" /> Copied</> : <><Copy size={11} /> Copy</>}
-                                                </button>
-                                            </div>
-                                            <pre className="font-mono text-[var(--dev-console-syntax-response)] text-[11px] whitespace-pre-wrap break-all bg-[var(--dev-console-bg-active)] p-3 rounded max-w-full overflow-x-auto">
-                                                {safeStringifyWithTruncation(selectedNet.responseBody, 2)}
-                                            </pre>
-                                        </div>
+                                        <InteractivePayloadViewer
+                                            data={selectedNet.responseBody}
+                                            title="Response Body"
+                                            size={selectedNet.responseSize || 0}
+                                            syntaxColorClass="text-[var(--dev-console-syntax-response)]"
+                                            copiedId={copiedId}
+                                            handleCopy={handleCopy}
+                                            copyIdPrefix="response-copy-mobile"
+                                            isMobile={true}
+                                        />
                                     )}
                                 </div>
                             )}

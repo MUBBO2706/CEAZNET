@@ -103,7 +103,7 @@ export const getAllUsedCategoryIcons = async (user?: User | null): Promise<UsedC
 
 export const formatUsedIconsForPrompt = (usedIcons: UsedCategoryIconInfo[]): string => {
     return usedIcons
-        .map(u => `- Icon: "${u.iconId}" | Library: "${u.library}" (${u.libraryName}) | Category: "${u.category}" (${u.type || 'category'})`)
+        .map(u => `- "${u.iconId}" -> ${u.category}`)
         .join('\n');
 };
 
@@ -417,49 +417,106 @@ export const suggestMultiLibraryIconsWithAi = async (
     query: string,
     context?: {
         categoryName?: string;
+        searchQuery?: string;
         type?: string;
         description?: string;
         onStatusUpdate?: (status: string) => void;
         user?: User | null;
         usedIcons?: UsedCategoryIconInfo[];
+        maxCandidates?: number;
     }
 ): Promise<{
     suggestions: Array<{ iconId: string; iconName: string; library: string; reason: string; relevance: string }>;
     rationale: string;
     topPick: string;
 }> => {
-    const searchText = (context?.categoryName || query || 'General').trim();
+    const rawQuery = (context?.searchQuery || query || '').trim();
+    const rawCatName = (context?.categoryName || '').trim();
+    const isGenericCat = !rawCatName || ['category', 'new category', 'untitled'].includes(rawCatName.toLowerCase());
+
+    // Priority 1: If user typed in the search bar, that search query is the primary target.
+    // Priority 2: If search bar is empty but a valid (non-generic) category name exists, that is the primary target.
+    // Priority 3: Fallback to General.
+    const isSearchQueryActive = Boolean(rawQuery && (isGenericCat || rawQuery.toLowerCase() !== rawCatName.toLowerCase()));
+    const searchText = isSearchQueryActive 
+        ? rawQuery 
+        : (!isGenericCat ? rawCatName : (rawQuery || 'General'));
+
+    // Category context if both exist and are different
+    const categoryContext = (!isGenericCat && rawCatName.toLowerCase() !== searchText.toLowerCase()) ? rawCatName : '';
     const type = context?.type || 'expense';
     const description = context?.description || '';
     const onStatusUpdate = context?.onStatusUpdate;
+    const maxCandidates = context?.maxCandidates ?? 200;
 
     // Fetch all currently used category icons across standard, custom, and dairy items
     const usedIcons = (context?.usedIcons && context.usedIcons.length > 0)
         ? context.usedIcons
         : await getAllUsedCategoryIcons(context?.user);
-    const usedIconSet = new Set(usedIcons.map(u => u.iconId.toLowerCase().trim()));
+
+    // Build normalized set of used icon IDs (handling prefixes and variations)
+    const normalizedUsedSet = new Set<string>();
+    usedIcons.forEach(u => {
+        const raw = (u.iconId || '').toLowerCase().trim();
+        if (!raw) return;
+        normalizedUsedSet.add(raw);
+        if (raw.startsWith('lucide:')) {
+            normalizedUsedSet.add(raw.replace('lucide:', ''));
+        }
+        if (!raw.includes(':')) {
+            normalizedUsedSet.add(`lucide:${raw}`);
+        }
+    });
+
+    const isIconUsed = (id: string): boolean => {
+        const clean = (id || '').toLowerCase().trim();
+        if (!clean) return false;
+        if (normalizedUsedSet.has(clean)) return true;
+        if (clean.startsWith('lucide:') && normalizedUsedSet.has(clean.replace('lucide:', ''))) return true;
+        if (!clean.includes(':') && normalizedUsedSet.has(`lucide:${clean}`)) return true;
+        return false;
+    };
 
     let generatedSearchTags: string[] = [searchText];
 
     // Step 1: AI Tag & Keyword Generation Pass
-    onStatusUpdate?.('Analyzing category & generating smart tags...');
+    onStatusUpdate?.('Analyzing topic & generating smart tags...');
     try {
         const ai = getAiClient();
-        const tagPrompt = `You are an AI search tool agent for UI icon databases.
-Generate highly relevant, precise search keywords/tags to find relevant icons for category "${searchText}" (Type: ${type}, Description: "${description}").
-Include direct synonyms, actions, related objects, and visual metaphors.
-Do NOT limit yourself to a fixed count like 5. Generate as many highly relevant tags as appropriate for the category name to find the best match.
+        const contextDetail = categoryContext ? ` (Category Context: "${categoryContext}")` : '';
+        const tagPrompt = `You are an AI search tool agent for UI icon databases. Generate highly relevant, precise search keywords/tags for finding the best-matching icons on Iconify for the given input and context.
+
+Input: "${searchText}"${contextDetail}
+Transaction Type: "${type}"${description ? `\nDescription: "${description}"` : ''}
+
+Use your own semantic judgment to determine the most effective Iconify search terms. Consider meaning, intent, context, visual representation, related objects, actions, symbols, and direct/closely related synonyms when relevant.
+
+Do not use hard-coded categories, predefined examples, fixed patterns, assumptions, or a fixed number of tags. Dynamically determine what terms are appropriate for each input. Generate as many or as few tags as necessary, prioritizing relevance, precision, diversity, and actual Iconify search usefulness. Avoid irrelevant, redundant, overly broad, or speculative tags.
 
 Respond strictly in valid JSON array of strings:
-["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", ...]`;
+["tag1", "tag2", "tag3", "tag4", "tag5", ...]`;
 
-        const tagResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: tagPrompt,
-            config: { temperature: 0.3 }
-        });
+        let rawText = '';
+        try {
+            const tagResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: tagPrompt,
+                config: {
+                    tools: [{ googleSearch: {} }],
+                    temperature: 0.2,
+                }
+            });
+            rawText = tagResponse.text || '';
+        } catch (searchErr) {
+            console.warn('AI tag generation with Google Search failed, falling back to standard generation:', searchErr);
+            const tagResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: tagPrompt,
+                config: { temperature: 0.3 }
+            });
+            rawText = tagResponse.text || '';
+        }
 
-        const rawText = tagResponse.text || '';
         let cleanJson = rawText.trim();
         if (cleanJson.includes('```')) {
             const match = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -484,7 +541,7 @@ Respond strictly in valid JSON array of strings:
     // Always include local curated matches (excluding already-used icons)
     const localMatches = searchMultiLibraryIcons(searchText, { limit: 24 });
     localMatches.forEach(item => {
-        if (!usedIconSet.has(item.id.toLowerCase().trim())) {
+        if (!isIconUsed(item.id)) {
             candidateMap.set(item.id, item);
         }
     });
@@ -493,17 +550,38 @@ Respond strictly in valid JSON array of strings:
     const searchPromises = generatedSearchTags.map(tag => searchOnlineIconify(tag, 'all'));
     const onlineSearchResults = await Promise.allSettled(searchPromises);
 
+    // Multi-Tag Round-Robin Interleaving: Ensures every tag gets fair representation
+    const tagResultsBuckets: IconItem[][] = [];
     onlineSearchResults.forEach(result => {
         if (result.status === 'fulfilled' && Array.isArray(result.value)) {
-            result.value.forEach(item => {
-                if (!usedIconSet.has(item.id.toLowerCase().trim()) && !candidateMap.has(item.id)) {
-                    candidateMap.set(item.id, item);
-                }
-            });
+            const validTagIcons = result.value.filter(item => !isIconUsed(item.id));
+            if (validTagIcons.length > 0) {
+                tagResultsBuckets.push(validTagIcons);
+            }
         }
     });
 
-    const liveCandidatePool = Array.from(candidateMap.values()).slice(0, 80);
+    let maxBucketLength = 0;
+    tagResultsBuckets.forEach(b => {
+        if (b.length > maxBucketLength) maxBucketLength = b.length;
+    });
+
+    // Interleave icons round-robin across all tag buckets
+    for (let i = 0; i < maxBucketLength; i++) {
+        for (const bucket of tagResultsBuckets) {
+            if (i < bucket.length) {
+                const item = bucket[i];
+                if (!candidateMap.has(item.id)) {
+                    candidateMap.set(item.id, item);
+                }
+            }
+        }
+        if (candidateMap.size >= maxCandidates) break;
+    }
+
+    const liveCandidatePool = Array.from(candidateMap.values())
+        .filter(item => !isIconUsed(item.id))
+        .slice(0, maxCandidates);
 
     let candidates: Array<{ iconId: string; iconName: string; library: string; reason: string; relevance: string }> = [];
 
@@ -512,30 +590,25 @@ Respond strictly in valid JSON array of strings:
     try {
         const ai = getAiClient();
         const candidateListFormatted = liveCandidatePool
-            .map(c => `- ID: "${c.id}" | Name: "${c.name}" | Library: "${c.library}"`)
-            .join('\n');
+            .map(c => c.id)
+            .join(', ');
 
-        const usedIconsFormatted = formatUsedIconsForPrompt(usedIcons);
+        const contextNote = categoryContext ? ` (Category Context: "${categoryContext}")` : '';
 
-        const rankingPrompt = `You are a chief UI icon designer selecting icons for transaction category: "${searchText}" (Type: ${type}).
-AI Search Tags Used: ${generatedSearchTags.join(', ')}
+        const rankingPrompt = `You are a chief UI icon designer selecting the best icons for: "${searchText}"${contextNote} (Type: ${type}).
+AI Search Tags: ${generatedSearchTags.join(', ')}
 
-CURRENTLY USED ICONS (DO NOT RECOMMEND OR USE ANY OF THESE ICONS):
-The following icons are already assigned to existing categories in the app. Each entry indicates the icon, which library it belongs to, and what category it is used in:
-${usedIconsFormatted}
-
-Here is the live pool of icons retrieved from internet search across 7 libraries (Solar, Phosphor, Hugeicons, Tabler, Remix, Heroicons, Lucide):
+CANDIDATE ICONS POOL (Choose only from these live search results):
 ${candidateListFormatted || 'No live results'}
 
 Your Task:
-1. Select the best visual icons from the live pool above that represent "${searchText}".
-2. STRICT NEGATIVE CONSTRAINT: DO NOT recommend or suggest ANY icon that is in the "CURRENTLY USED ICONS" list above. Every recommended icon MUST be completely unused, fresh, and visually distinct.
-3. Do not restrict the count of suggestions to 5. Recommend as many as are relevant and useful, but set a maximum limit of 15 suggestions (do not suggest more than 15, but feel free to suggest anywhere up to 15 if they are a strong fit).
-4. Classify each suggestion with a recommendation rating in "relevance": "High", "Medium", "Intermediate", or "Low". High and Medium are most recommended and highlighted.
-5. Ensure visual diversity across libraries (e.g. include Solar Duotone, Phosphor, Hugeicons, Tabler if available).
-6. Provide a clear, natural reason for why each icon fits the category.
+1. Select the most visually relevant icons from the candidate pool for "${searchText}"${categoryContext ? ` in the context of "${categoryContext}"` : ''}.
+2. Choose strictly from the provided candidate icons pool above.
+3. Dynamically determine the number of genuinely useful suggestions (up to 15 max) with a "relevance" rating: "High", "Medium", "Intermediate", or "Low".
+4. Prefer meaningful visual diversity across available libraries when multiple strong options exist, but NEVER include a weaker icon solely to increase library diversity.
+5. Provide a concise, natural reason explaining why each selected icon fits the input.
 
-CRITICAL RULE FOR iconId: You MUST copy the EXACT string from the "ID:" field in the list above (e.g. "solar:ticket-bold-duotone" or "ph:dice-five-duotone"). DO NOT use human words or spaced titles in iconId!
+CRITICAL RULE FOR iconId: Copy the EXACT icon ID string from the candidate list (e.g., "tabler:building" or "lucide:shopping-bag"). Never modify, reconstruct, rename, or substitute the ID.
 
 Respond strictly in valid JSON:
 {
@@ -626,7 +699,7 @@ Respond strictly in valid JSON:
             });
 
             // STRICT FILTER: remove any candidate that is in the already-used set
-            candidates = rawCandidates.filter(c => !usedIconSet.has(c.iconId.toLowerCase().trim()));
+            candidates = rawCandidates.filter(c => !isIconUsed(c.iconId));
 
             // Ensure suggestions are sorted by priority: High (4) -> Medium (3) -> Intermediate (2) -> Low (1)
             const relevanceOrder: Record<string, number> = {

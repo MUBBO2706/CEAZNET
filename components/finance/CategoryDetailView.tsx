@@ -611,7 +611,7 @@ export const CategoryDetailView: React.FC<CategoryDetailViewProps> = ({
                     <HybridIconPicker
                         selectedIconName={iconName}
                         onSelectIcon={newIcon => setIconName(newIcon)}
-                        categoryName={label || 'Category'}
+                        categoryName={label.trim()}
                         categoryType={type}
                         colorTextClass={color}
                         user={user}

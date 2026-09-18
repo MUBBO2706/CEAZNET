@@ -174,15 +174,28 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
 
     // Handle AI Suggest Trigger
     const handleTriggerAiSuggest = async () => {
-        const queryToUse = searchQuery.trim() || categoryName.trim() || 'Finance & Expenses';
+        const queryText = searchQuery.trim();
+        const catName = categoryName.trim();
+        const isGenericCat = !catName || ['category', 'new category', 'untitled'].includes(catName.toLowerCase());
+
+        // Guard against completely empty context
+        if (!queryText && isGenericCat) {
+            setHasAiSearched(true);
+            setAiRationale('Please type a keyword in the icon search bar or enter a Category Name above to get AI suggestions.');
+            setAiSuggestions([]);
+            return;
+        }
+
+        const queryToUse = queryText || catName;
         setIsAiLoading(true);
         setHasAiSearched(true);
         setAiRationale(null);
-        setAiLoadingStepText('Analyzing category & generating smart tags...');
+        setAiLoadingStepText(queryText ? `Analyzing "${queryText}" & generating smart tags...` : 'Analyzing category & generating smart tags...');
 
         try {
             const result = await suggestMultiLibraryIconsWithAi(queryToUse, {
-                categoryName: categoryName || queryToUse,
+                categoryName: !isGenericCat ? catName : undefined,
+                searchQuery: queryText || undefined,
                 type: categoryType,
                 description: descriptionContext,
                 user: user,
@@ -276,7 +289,13 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
                         onClick={handleTriggerAiSuggest}
                         disabled={isAiLoading}
                         className="px-3.5 py-2 rounded-xl bg-white hover:bg-gray-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-gray-200/90 dark:border-white/10 text-gray-900 dark:text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 shrink-0 cursor-pointer"
-                        title="AI Icon Matcher across all 7 libraries"
+                        title={
+                            searchQuery.trim()
+                                ? `AI match for "${searchQuery.trim()}"`
+                                : categoryName.trim() && !['category', 'new category', 'untitled'].includes(categoryName.trim().toLowerCase())
+                                    ? `AI match for "${categoryName.trim()}"`
+                                    : 'AI icon suggestions across 7 libraries'
+                        }
                     >
                         {isAiLoading ? (
                             <Loader className="w-3.5 h-3.5 animate-spin text-indigo-500" />
