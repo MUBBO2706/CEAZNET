@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Filter, X, AlertTriangle, AlertCircle, ChevronRight, Terminal, Info as InfoIcon, Check, Copy } from 'lucide-react';
 import { logs, listeners } from './store';
 import { renderLogMessageWithBadges } from './UIComponents';
-import { extractRealtimeFromLogArgs, RealtimeDiffViewer } from './RealtimeDiffViewer';
+import { extractRealtimeFromLogArgs, RealtimeDiffViewer, getUnifiedRealtimeData } from './RealtimeDiffViewer';
 
 interface ConsoleTabProps {
     isOpen: boolean;
@@ -133,7 +133,8 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
     const getLogCopyText = (log: any, realtimeData: any) => {
         if (realtimeData?.isRealtime && realtimeData.payload) {
             const prefix = realtimeData.prefix ? `${realtimeData.prefix} ` : '';
-            return `${prefix}${JSON.stringify(realtimeData.payload, null, 2)}`;
+            const unified = getUnifiedRealtimeData(realtimeData.payload);
+            return `${prefix}${JSON.stringify(unified, null, 2)}`;
         }
         return log.args.join(' ');
     };
