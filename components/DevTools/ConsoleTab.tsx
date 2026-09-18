@@ -175,56 +175,57 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
             </div>
 
             {/* Logs List */}
-            <div className="flex-1 overflow-auto hide-horizontal-scrollbar scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
-                <div className="flex flex-col min-h-full">
-                    {filteredLogs.length === 0 && (
-                        <div className="text-[var(--dev-console-text-muted)] italic p-6 text-center text-xs flex flex-col items-center gap-2">
-                            <Terminal size={32} className="opacity-20 mb-2" />
-                            {logs.length > 0 ? 'No logs match your filter.' : 'Console is clear.'}
-                        </div>
-                    )}
-                    {filteredLogs.map((log) => {
-                        const realtimeData = extractRealtimeFromLogArgs(log.rawArgs, log.args);
-                        const copyText = getLogCopyText(log, realtimeData);
+            <div className="flex-1 overflow-auto hide-horizontal-scrollbar scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent flex flex-col">
+                {filteredLogs.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-xs text-[var(--dev-console-text-muted)] italic gap-2 min-h-full">
+                        <Terminal size={32} className="opacity-20 mb-2" />
+                        <span>{logs.length > 0 ? 'No logs match your filter.' : 'Console is clear.'}</span>
+                    </div>
+                ) : (
+                    <div className="flex flex-col min-h-full">
+                        {filteredLogs.map((log) => {
+                            const realtimeData = extractRealtimeFromLogArgs(log.rawArgs, log.args);
+                            const copyText = getLogCopyText(log, realtimeData);
 
-                        return (
-                            <div key={log.id} className={`group py-2 px-2 sm:px-4 border-b border-[var(--dev-console-border)] break-words whitespace-pre-wrap flex gap-2 sm:gap-3 text-[10px] sm:text-[12px] leading-relaxed ${
-                                log.type === 'error' ? 'bg-[#290000]/10 text-[#ff8080] border-l-[3px] border-l-[#ff8080]' : 
-                                log.type === 'warn' ? 'bg-[#332b00]/10 text-[#ffb86c] border-l-[3px] border-l-[#ffb86c]' : 
-                                log.type === 'info' ? 'text-[#8be9fd] border-l-[3px] border-l-transparent' : 
-                                log.type === 'eval_result' ? 'text-[#a6e22e] font-bold border-l-[3px] border-l-transparent bg-[var(--dev-console-bg-active)]' :
-                                'text-[var(--dev-console-text)] border-l-[3px] border-l-transparent'
-                            } hover:bg-[var(--dev-console-bg-hover)]`}>
-                                {(log.type === 'info' || log.type === 'warn' || log.type === 'error') && (
-                                    <div className="flex-none mt-0.5">
-                                        {log.type === 'info' && <InfoIcon size={14} className="text-[#8be9fd]" />}
-                                        {log.type === 'warn' && <AlertTriangle size={14} className="text-[#ffb86c]" />}
-                                        {log.type === 'error' && <AlertCircle size={14} className="text-[#ff8080]" />}
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0 font-mono">
-                                    {realtimeData.isRealtime ? (
-                                        <RealtimeDiffViewer
-                                            prefix={realtimeData.prefix}
-                                            payload={realtimeData.payload}
-                                            logId={log.id}
-                                        />
-                                    ) : (
-                                        renderLogMessageWithBadges(log.args.join(' '))
+                            return (
+                                <div key={log.id} className={`group py-2 px-2 sm:px-4 border-b border-[var(--dev-console-border)] break-words whitespace-pre-wrap flex gap-2 sm:gap-3 text-[10px] sm:text-[12px] leading-relaxed ${
+                                    log.type === 'error' ? 'bg-[#290000]/10 text-[#ff8080] border-l-[3px] border-l-[#ff8080]' : 
+                                    log.type === 'warn' ? 'bg-[#332b00]/10 text-[#ffb86c] border-l-[3px] border-l-[#ffb86c]' : 
+                                    log.type === 'info' ? 'text-[#8be9fd] border-l-[3px] border-l-transparent' : 
+                                    log.type === 'eval_result' ? 'text-[#a6e22e] font-bold border-l-[3px] border-l-transparent bg-[var(--dev-console-bg-active)]' :
+                                    'text-[var(--dev-console-text)] border-l-[3px] border-l-transparent'
+                                } hover:bg-[var(--dev-console-bg-hover)]`}>
+                                    {(log.type === 'info' || log.type === 'warn' || log.type === 'error') && (
+                                        <div className="flex-none mt-0.5">
+                                            {log.type === 'info' && <InfoIcon size={14} className="text-[#8be9fd]" />}
+                                            {log.type === 'warn' && <AlertTriangle size={14} className="text-[#ffb86c]" />}
+                                            {log.type === 'error' && <AlertCircle size={14} className="text-[#ff8080]" />}
+                                        </div>
                                     )}
+                                    <div className="flex-1 min-w-0 font-mono">
+                                        {realtimeData.isRealtime ? (
+                                            <RealtimeDiffViewer
+                                                prefix={realtimeData.prefix}
+                                                payload={realtimeData.payload}
+                                                logId={log.id}
+                                            />
+                                        ) : (
+                                            renderLogMessageWithBadges(log.args.join(' '))
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={() => handleCopy(copyText, log.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-neutral-700/80 rounded flex-none self-start transition-opacity cursor-pointer"
+                                        title="Copy log text"
+                                    >
+                                        {copiedId === log.id ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-neutral-400" />}
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => handleCopy(copyText, log.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-neutral-700/80 rounded flex-none self-start transition-opacity cursor-pointer"
-                                    title="Copy log text"
-                                >
-                                    {copiedId === log.id ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-neutral-400" />}
-                                </button>
-                            </div>
-                        );
-                    })}
-                    <div ref={logsEndRef} />
-                </div>
+                            );
+                        })}
+                        <div ref={logsEndRef} />
+                    </div>
+                )}
             </div>
 
             {/* Evaluate Panel */}

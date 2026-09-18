@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
     Filter, X, Download, AlertCircle, ChevronLeft, ChevronRight, 
     ChevronUp, ChevronDown, Copy, Check, Activity, Globe, 
     Database, Wifi, MoreHorizontal, EyeOff, Eye, Trash2,
-    CheckSquare, Square, ListChecks, ShieldAlert, Plus
+    CheckSquare, Square, ListChecks, ShieldAlert, Plus,
+    BarChart2, ArrowUpRight, ArrowDownLeft, Layers, Server
 } from 'lucide-react';
 import { 
     formatSize, formatTimestamp, isAutoFireRequest, 
@@ -20,6 +21,139 @@ import {
     deleteNetEntries 
 } from './store';
 import { NetEntry, NetHistoryEntry } from './types';
+
+// Reusable Draggable Mobile Drawer / Desktop Popover or Modal
+interface DraggableMobileDrawerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    children: React.ReactNode;
+    title: React.ReactNode;
+    desktopMode?: 'popover' | 'modal';
+    desktopTail?: boolean;
+    className?: string;
+    footer?: React.ReactNode;
+}
+
+const DraggableMobileDrawer: React.FC<DraggableMobileDrawerProps> = ({
+    isOpen,
+    onClose,
+    children,
+    title,
+    desktopMode = 'popover',
+    desktopTail = false,
+    className = '',
+    footer
+}) => {
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startYRef = useRef(0);
+    const currentYRef = useRef(0);
+
+    if (!isOpen) return null;
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        startYRef.current = e.touches[0].clientY;
+        currentYRef.current = e.touches[0].clientY;
+        setIsDragging(true);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return;
+        const currentY = e.touches[0].clientY;
+        currentYRef.current = currentY;
+        const delta = currentY - startYRef.current;
+        // Strictly only allow downward dragging (delta > 0), clamp upward drag to 0 so it never goes above initial height
+        if (delta > 0) {
+            setDragY(delta);
+        } else {
+            setDragY(0);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        const delta = currentYRef.current - startYRef.current;
+        setIsDragging(false);
+        setDragY(0);
+
+        if (delta > 60) {
+            onClose();
+        }
+    };
+
+    return (
+        <>
+            {/* Backdrop overlay */}
+            <div 
+                className={`fixed inset-0 z-[9998] bg-black/60 dark:bg-black/75 backdrop-blur-xs transition-opacity duration-300 animate-fade-in ${
+                    desktopMode === 'popover' ? 'md:hidden' : 'block'
+                }`}
+                onClick={onClose}
+            />
+
+            {/* Main Drawer / Modal Container */}
+            <div 
+                className={`fixed z-[9999] bg-[var(--dev-console-bg)] border-[var(--dev-console-border)] text-[var(--dev-console-text)] font-sans text-xs select-none shadow-2xl flex flex-col ${
+                    desktopMode === 'popover'
+                        ? 'bottom-0 left-0 right-0 rounded-t-2xl border-t md:border md:rounded-xl md:absolute md:bottom-7 md:right-2 md:left-auto md:w-[380px] max-h-[80vh] md:max-h-[500px]'
+                        : 'bottom-0 left-0 right-0 rounded-t-2xl border-t md:border md:rounded-2xl md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md md:bottom-auto md:right-auto max-h-[80vh] md:max-h-[80vh]'
+                } ${className}`}
+                style={{
+                    transform: isDragging && dragY > 0 ? `translateY(${dragY}px)` : undefined,
+                    transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Mobile Drag Handle Bar Area (No Close 'X' in Mobile Header) */}
+                <div 
+                    className="w-full pt-2.5 pb-1 flex flex-col items-center justify-center shrink-0 md:hidden cursor-grab active:cursor-grabbing touch-none select-none"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    <div className={`w-12 h-1.5 rounded-full transition-all duration-200 ${
+                        isDragging && dragY > 0 ? 'bg-[#007fd4] w-14' : 'bg-[var(--dev-console-border)]'
+                    }`} />
+                </div>
+
+                {/* Downward tail for desktop popover */}
+                {desktopTail && (
+                    <div className="hidden md:block absolute bottom-[-5px] right-3 w-2.5 h-2.5 bg-[var(--dev-console-bg)] border-r border-b border-[var(--dev-console-border)] rotate-45 z-10" />
+                )}
+
+                {/* Header (Close button visible ONLY on desktop, icon highlighting only without background pill) */}
+                <div 
+                    className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--dev-console-border)] shrink-0 select-none"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    <div className="flex items-center gap-2 font-bold text-xs sm:text-sm tracking-tight text-[var(--dev-console-text)]">
+                        {title}
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="hidden md:flex p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] cursor-pointer transition-colors border-0 bg-transparent"
+                        title="Close"
+                    >
+                        <X size={15} />
+                    </button>
+                </div>
+
+                {/* Body Content */}
+                <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 flex flex-col gap-3 scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
+                    {children}
+                </div>
+
+                {/* Optional Footer */}
+                {footer && (
+                    <div className="px-4 py-2.5 border-t border-[var(--dev-console-border)] shrink-0 bg-[var(--dev-console-bg)]">
+                        {footer}
+                    </div>
+                )}
+            </div>
+        </>
+    );
+};
 
 interface NetworkTabProps {
     nets: NetEntry[];
@@ -60,6 +194,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
     // Hidden Rules modal state
     const [showHiddenRulesModal, setShowHiddenRulesModal] = useState(false);
     const [newPatternInput, setNewPatternInput] = useState('');
+    const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'origins' | 'endpoints' | 'status'>('overview');
 
     // Long press touch tracking for mobile
     const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,6 +206,114 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
     // Visible nets filter
     const visibleNets = nets.filter(n => !n.isHidden);
     const hiddenNetsCount = nets.filter(n => n.isHidden).length;
+
+    // Detailed analytics breakdown
+    const analyticsData = useMemo(() => {
+        let total2xx = 0, size2xx = 0;
+        let total3xx = 0, size3xx = 0;
+        let total4xx = 0, size4xx = 0;
+        let total5xx = 0, size5xx = 0;
+        let totalPending = 0;
+
+        const methodStats: Record<string, { count: number; transferred: number }> = {};
+        const endpointMap: Map<string, { url: string; method: string; count: number; transferred: number }> = new Map();
+
+        let localCount = 0;
+        let supabaseCount = 0;
+        let externalCount = 0;
+
+        nets.forEach(net => {
+            const reqCount = net.count || 1;
+            const reqSize = (net.requestSize || 0) * reqCount;
+            const resSize = (net.responseSize || 0) * reqCount;
+            const totalNetSize = reqSize + resSize;
+
+            const urlLower = net.url.toLowerCase();
+            if (urlLower.includes('supabase.co') || urlLower.includes('/rest/v1') || urlLower.includes('/auth/v1') || urlLower.includes('/storage/v1')) {
+                supabaseCount += reqCount;
+            } else if (urlLower.startsWith('/') || (typeof window !== 'undefined' && urlLower.includes(window.location.host)) || urlLower.includes('localhost')) {
+                localCount += reqCount;
+            } else {
+                externalCount += reqCount;
+            }
+
+            if (net.status === 'pending') {
+                totalPending += reqCount;
+            } else if (typeof net.status === 'number') {
+                if (net.status >= 200 && net.status < 300) {
+                    total2xx += reqCount;
+                    size2xx += totalNetSize;
+                } else if (net.status >= 300 && net.status < 400) {
+                    total3xx += reqCount;
+                    size3xx += totalNetSize;
+                } else if (net.status >= 400 && net.status < 500) {
+                    total4xx += reqCount;
+                    size4xx += totalNetSize;
+                } else if (net.status >= 500) {
+                    total5xx += reqCount;
+                    size5xx += totalNetSize;
+                }
+            }
+
+            const m = (net.method || 'GET').toUpperCase();
+            if (!methodStats[m]) methodStats[m] = { count: 0, transferred: 0 };
+            methodStats[m].count += reqCount;
+            methodStats[m].transferred += totalNetSize;
+
+            let endpointKey = net.url;
+            try {
+                if (net.url.startsWith('http')) {
+                    const parsed = new URL(net.url);
+                    endpointKey = parsed.pathname || parsed.hostname;
+                } else {
+                    endpointKey = net.url.split('?')[0];
+                }
+            } catch {
+                endpointKey = net.url.split('?')[0];
+            }
+
+            const existing = endpointMap.get(endpointKey);
+            if (existing) {
+                existing.count += reqCount;
+                existing.transferred += totalNetSize;
+            } else {
+                endpointMap.set(endpointKey, {
+                    url: endpointKey,
+                    method: m,
+                    count: reqCount,
+                    transferred: totalNetSize
+                });
+            }
+        });
+
+        const topEndpoints = Array.from(endpointMap.values())
+            .sort((a, b) => b.transferred - a.transferred)
+            .slice(0, 5);
+
+        const totalRequests = nets.reduce((sum, n) => sum + (n.count || 1), 0);
+        const successfulRequests = total2xx + total3xx;
+        const failedRequests = total4xx + total5xx;
+        const avgSize = totalRequests > 0 ? (totalSent + totalReceived) / totalRequests : 0;
+        const successRate = totalRequests > 0 ? Math.round((successfulRequests / totalRequests) * 100) : 100;
+
+        return {
+            total2xx, size2xx,
+            total3xx, size3xx,
+            total4xx, size4xx,
+            total5xx, size5xx,
+            totalPending,
+            methodStats,
+            topEndpoints,
+            localCount,
+            supabaseCount,
+            externalCount,
+            totalRequests,
+            successfulRequests,
+            failedRequests,
+            avgSize,
+            successRate
+        };
+    }, [nets, totalSent, totalReceived]);
 
     // Auto-scroll logic
     useEffect(() => {
@@ -446,22 +689,22 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 {/* Network List */}
                 <div className={`flex flex-col h-full bg-[var(--dev-console-bg)] border-r border-[var(--dev-console-border)] transition-all duration-300 ${selectedNet ? 'w-full md:w-1/2 shrink-0' : 'w-full'}`}>
                     {(filteredNets.length === 0 && !activeGroupNetId) ? (
-                        <div className="text-[var(--dev-console-text-muted)] italic p-6 text-center text-xs flex flex-col items-center pt-20 h-full gap-2">
+                        <div className="flex-1 flex flex-col items-center justify-center text-[var(--dev-console-text-muted)] italic p-6 text-center text-xs gap-2 min-h-[220px]">
                             <Activity size={32} className="opacity-20 mb-2" />
                             {hiddenNetsCount > 0 ? (
                                 <div className="flex flex-col items-center gap-2">
                                     <span>All requests are currently hidden ({hiddenNetsCount} hidden).</span>
                                     <button 
                                         onClick={() => unhideAllNetEntries()}
-                                        className="mt-1 px-3 py-1 rounded text-[11px] font-semibold bg-[#007fd4] text-white cursor-pointer"
+                                        className="mt-1 px-3 py-1 rounded text-[11px] font-semibold bg-[#007fd4] text-white cursor-pointer hover:bg-[#007fd4]/80 transition-colors"
                                     >
                                         Unhide All Requests
                                     </button>
                                 </div>
                             ) : nets.length > 0 ? (
-                                'No requests match your filter.'
+                                <span>No requests match your filter.</span>
                             ) : (
-                                'Recording network activity...'
+                                <span>Recording network activity...</span>
                             )}
                         </div>
                     ) : (
@@ -913,32 +1156,40 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 <div className="flex flex-col gap-6 text-[12px]">
                                     <div>
                                         <h3 className="text-[var(--dev-console-text)] font-bold mb-3 uppercase text-[10px] tracking-wider border-b border-[var(--dev-console-border)] pb-1">General</h3>
-                                        <div className="grid grid-cols-[120px_1fr] gap-x-2 gap-y-1.5 ml-2">
-                                            <span className="text-[var(--dev-console-text-muted)] font-semibold">Request URL:</span>
-                                            <span className="text-[var(--dev-console-syntax-property)] break-all select-all">{selectedNet.url}</span>
-                                            <span className="text-[var(--dev-console-text-muted)] font-semibold">Request Method:</span>
-                                            <span className="text-[var(--dev-console-syntax-string)] font-bold">{selectedNet.method}</span>
-                                            <span className="text-[var(--dev-console-text-muted)] font-semibold">Status Code:</span>
-                                            <span className={getStatusColor(selectedNet.status)}>{selectedNet.status} {getStatusText(selectedNet.status)}</span>
-                                            <span className="text-[var(--dev-console-text-muted)] font-semibold">Timestamp:</span>
-                                            <span className="text-[var(--dev-console-text)] font-mono">
-                                                {formatTimestamp(selectedNet.timestamp)}
-                                                <span className="text-[10px] text-[var(--dev-console-text-muted)] ml-2 font-sans">
-                                                    ({new Date(selectedNet.timestamp).toLocaleDateString()})
+                                        <div className="flex flex-col gap-2.5 ml-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Request URL:</span>
+                                                <span className="text-[var(--dev-console-syntax-property)] break-all select-all font-mono text-[11px] mt-0.5">{selectedNet.url}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Request Method:</span>
+                                                <span className="text-[var(--dev-console-syntax-string)] font-bold text-[11px] mt-0.5">{selectedNet.method}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Status Code:</span>
+                                                <span className={`${getStatusColor(selectedNet.status)} font-medium text-[11px] mt-0.5`}>{selectedNet.status} {getStatusText(selectedNet.status)}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Timestamp:</span>
+                                                <span className="text-[var(--dev-console-text)] font-mono text-[11px] mt-0.5">
+                                                    {formatTimestamp(selectedNet.timestamp)}
+                                                    <span className="text-[10px] text-[var(--dev-console-text-muted)] ml-2 font-sans">
+                                                        ({new Date(selectedNet.timestamp).toLocaleDateString()})
+                                                    </span>
                                                 </span>
-                                            </span>
+                                            </div>
                                         </div>
                                     </div>
                                     
                                     {selectedNet.responseHeaders && Object.keys(selectedNet.responseHeaders).length > 0 && (
                                         <div>
                                             <h3 className="text-[var(--dev-console-text)] font-bold mb-3 uppercase text-[10px] tracking-wider border-b border-[var(--dev-console-border)] pb-1">Response Headers</h3>
-                                            <div className="grid grid-cols-[160px_1fr] gap-x-2 gap-y-1 ml-2">
+                                            <div className="flex flex-col gap-2 ml-1">
                                                 {Object.entries(selectedNet.responseHeaders).map(([k, v]) => (
-                                                    <React.Fragment key={k}>
-                                                        <span className="text-[var(--dev-console-syntax-property)] capitalize">{k}:</span>
-                                                        <span className="text-[var(--dev-console-syntax-string)] break-all">{v}</span>
-                                                    </React.Fragment>
+                                                    <div key={k} className="flex flex-col">
+                                                        <span className="text-[var(--dev-console-syntax-property)] font-medium text-[10px] capitalize">{k}:</span>
+                                                        <span className="text-[var(--dev-console-syntax-string)] break-all font-mono text-[11px] select-all mt-0.5">{v}</span>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>
@@ -947,12 +1198,12 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                     {selectedNet.requestHeaders && Object.keys(selectedNet.requestHeaders).length > 0 && (
                                         <div>
                                             <h3 className="text-[var(--dev-console-text)] font-bold mb-3 uppercase text-[10px] tracking-wider border-b border-[var(--dev-console-border)] pb-1">Request Headers</h3>
-                                            <div className="grid grid-cols-[160px_1fr] gap-x-2 gap-y-1 ml-2">
+                                            <div className="flex flex-col gap-2 ml-1">
                                                 {Object.entries(selectedNet.requestHeaders).map(([k, v]) => (
-                                                    <React.Fragment key={k}>
-                                                        <span className="text-[var(--dev-console-syntax-property)] capitalize">{k}:</span>
-                                                        <span className="text-[var(--dev-console-syntax-string)] break-all">{v}</span>
-                                                    </React.Fragment>
+                                                    <div key={k} className="flex flex-col">
+                                                        <span className="text-[var(--dev-console-syntax-property)] font-medium text-[10px] capitalize">{k}:</span>
+                                                        <span className="text-[var(--dev-console-syntax-string)] break-all font-mono text-[11px] select-all mt-0.5">{v}</span>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>
@@ -963,7 +1214,9 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             {netDetailTab === 'payload' && (
                                 <div className="text-[12px] h-full flex flex-col">
                                     {!selectedNet.requestBody ? (
-                                        <div className="text-neutral-500 italic p-4 text-center">No payload for this request.</div>
+                                        <div className="flex-1 flex items-center justify-center text-neutral-500 italic p-6 text-center">
+                                            No payload for this request.
+                                        </div>
                                     ) : (
                                         <InteractivePayloadViewer
                                             data={selectedNet.requestBody}
@@ -982,11 +1235,13 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             {netDetailTab === 'response' && (
                                 <div className="text-[12px] h-full flex flex-col">
                                     {selectedNet.status === 'pending' ? (
-                                        <div className="text-neutral-500 italic p-4 text-center flex items-center justify-center gap-2 h-full">
+                                        <div className="flex-1 flex items-center justify-center text-neutral-500 italic p-6 text-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span> Waiting for response...
                                         </div>
                                     ) : selectedNet.responseBody === undefined ? (
-                                        <div className="text-neutral-500 italic p-4 text-center">No response body.</div>
+                                        <div className="flex-1 flex items-center justify-center text-neutral-500 italic p-6 text-center">
+                                            No response body.
+                                        </div>
                                     ) : (
                                         <InteractivePayloadViewer
                                             data={selectedNet.responseBody}
@@ -1005,60 +1260,67 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                     </div>
                 )}
 
-                {/* Network Details Modal/Sheet (Mobile Only) */}
+                {/* Network Details Modal/Sheet (Mobile Only - 2-Row Header Layout) */}
                 {selectedNet && (
-                    <div className="fixed inset-0 z-[9999] bg-[var(--dev-console-bg)] flex flex-col h-full w-full md:hidden">
-                        <div className="flex-none h-10 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] flex items-center px-2 justify-between">
+                    <div className="fixed inset-0 z-[9999] bg-[var(--dev-console-bg)] flex flex-col h-full w-full md:hidden animate-fade-in">
+                        {/* Row 1: Back to Network & Copy URL */}
+                        <div className="flex-none h-11 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg)] flex items-center px-3 justify-between">
                             <button 
                                 onClick={() => setExpandedNetId(null)}
-                                className="flex items-center gap-1.5 text-[var(--dev-console-text)] hover:text-[var(--dev-console-text-muted)] font-medium text-xs border-0 bg-transparent cursor-pointer p-1"
+                                className="flex items-center gap-1.5 text-[var(--dev-console-text)] hover:text-[var(--dev-console-text-muted)] font-medium text-xs border-0 bg-transparent cursor-pointer p-0"
                             >
-                                <ChevronLeft size={16} />
-                                <span>Back</span>
+                                <ChevronLeft size={18} />
+                                <span className="font-sans text-[13px] font-medium tracking-wide">Back to Network</span>
                             </button>
-                            
-                            <div className="flex items-center gap-1">
-                                {(['headers', 'payload', 'response'] as const).map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setNetDetailTab(tab)}
-                                        className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-semibold rounded transition-colors border-0 cursor-pointer ${netDetailTab === tab ? 'bg-[#007fd4] text-white' : 'bg-transparent text-[var(--dev-console-text-muted)]'}`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
 
                             <button 
                                 onClick={() => handleCopy(selectedNet.url, 'url-copy-mobile')}
-                                className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-0 bg-transparent cursor-pointer"
+                                className="p-1.5 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-0 bg-transparent cursor-pointer rounded"
                                 title="Copy Request URL"
                             >
                                 {copiedId === 'url-copy-mobile' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-auto hide-horizontal-scrollbar p-3.5 text-xs">
+                        {/* Row 2: 3 Full-Width Tabs (Headers | Payload | Response) */}
+                        <div className="flex-none h-10 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] flex items-stretch">
+                            {(['headers', 'payload', 'response'] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setNetDetailTab(tab)}
+                                    className={`flex-1 flex items-center justify-center text-[12px] font-semibold capitalize transition-all border-0 cursor-pointer ${
+                                        netDetailTab === tab 
+                                            ? 'text-[var(--dev-console-text)] border-b-2 !border-[#007fd4] bg-[var(--dev-console-bg)] font-bold' 
+                                            : 'text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] bg-transparent'
+                                    }`}
+                                >
+                                    {tab === 'headers' ? 'Headers' : tab === 'payload' ? 'Payload' : 'Response'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Detail Content */}
+                        <div className="flex-1 overflow-auto hide-horizontal-scrollbar p-3.5 text-xs flex flex-col">
                             {netDetailTab === 'headers' && (
                                 <div className="flex flex-col gap-4">
                                     <div>
                                         <h3 className="text-[var(--dev-console-text)] font-bold mb-2 uppercase text-[10px] tracking-wider border-b border-[var(--dev-console-border)] pb-1">General</h3>
-                                        <div className="flex flex-col gap-2 ml-1">
-                                            <div>
-                                                <div className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Request URL:</div>
-                                                <div className="text-[var(--dev-console-syntax-property)] break-all select-all font-mono text-[11px] mt-0.5">{selectedNet.url}</div>
+                                        <div className="flex flex-col gap-2.5 ml-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Request URL:</span>
+                                                <span className="text-[var(--dev-console-syntax-property)] break-all select-all font-mono text-[11px] mt-0.5">{selectedNet.url}</span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--dev-console-text-muted)] font-semibold">Method:</span>
-                                                <span className="text-[var(--dev-console-syntax-string)] font-bold">{selectedNet.method}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Request Method:</span>
+                                                <span className="text-[var(--dev-console-syntax-string)] font-bold text-[11px] mt-0.5">{selectedNet.method}</span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--dev-console-text-muted)] font-semibold">Status:</span>
-                                                <span className={getStatusColor(selectedNet.status)}>{selectedNet.status} {getStatusText(selectedNet.status)}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Status Code:</span>
+                                                <span className={`${getStatusColor(selectedNet.status)} font-medium text-[11px] mt-0.5`}>{selectedNet.status} {getStatusText(selectedNet.status)}</span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--dev-console-text-muted)] font-semibold">Time:</span>
-                                                <span className="text-[var(--dev-console-text)] font-mono">{formatTimestamp(selectedNet.timestamp)}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[var(--dev-console-text-muted)] font-semibold text-[10px]">Timestamp:</span>
+                                                <span className="text-[var(--dev-console-text)] font-mono text-[11px] mt-0.5">{formatTimestamp(selectedNet.timestamp)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1066,11 +1328,11 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                     {selectedNet.responseHeaders && Object.keys(selectedNet.responseHeaders).length > 0 && (
                                         <div>
                                             <h3 className="text-[var(--dev-console-text)] font-bold mb-2 uppercase text-[10px] tracking-wider border-b border-[var(--dev-console-border)] pb-1">Response Headers</h3>
-                                            <div className="flex flex-col gap-1.5 ml-1">
+                                            <div className="flex flex-col gap-2 ml-1">
                                                 {Object.entries(selectedNet.responseHeaders).map(([k, v]) => (
                                                     <div key={k} className="flex flex-col">
                                                         <span className="text-[var(--dev-console-syntax-property)] font-medium text-[10px]">{k}:</span>
-                                                        <span className="text-[var(--dev-console-syntax-string)] break-all font-mono text-[11px]">{v}</span>
+                                                        <span className="text-[var(--dev-console-syntax-string)] break-all font-mono text-[11px] select-all mt-0.5">{v}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1080,11 +1342,11 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                     {selectedNet.requestHeaders && Object.keys(selectedNet.requestHeaders).length > 0 && (
                                         <div>
                                             <h3 className="text-[var(--dev-console-text)] font-bold mb-2 uppercase text-[10px] tracking-wider border-b border-[var(--dev-console-border)] pb-1">Request Headers</h3>
-                                            <div className="flex flex-col gap-1.5 ml-1">
+                                            <div className="flex flex-col gap-2 ml-1">
                                                 {Object.entries(selectedNet.requestHeaders).map(([k, v]) => (
                                                     <div key={k} className="flex flex-col">
                                                         <span className="text-[var(--dev-console-syntax-property)] font-medium text-[10px]">{k}:</span>
-                                                        <span className="text-[var(--dev-console-syntax-string)] break-all font-mono text-[11px]">{v}</span>
+                                                        <span className="text-[var(--dev-console-syntax-string)] break-all font-mono text-[11px] select-all mt-0.5">{v}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1094,9 +1356,11 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             )}
 
                             {netDetailTab === 'payload' && (
-                                <div className="h-full flex flex-col">
+                                <div className="h-full flex-1 flex flex-col">
                                     {!selectedNet.requestBody ? (
-                                        <div className="text-neutral-500 italic p-4 text-center">No payload for this request.</div>
+                                        <div className="flex-1 flex items-center justify-center text-neutral-500 italic p-6 text-center">
+                                            No payload for this request.
+                                        </div>
                                     ) : (
                                         <InteractivePayloadViewer
                                             data={selectedNet.requestBody}
@@ -1113,13 +1377,15 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             )}
 
                             {netDetailTab === 'response' && (
-                                <div className="h-full flex flex-col">
+                                <div className="h-full flex-1 flex flex-col">
                                     {selectedNet.status === 'pending' ? (
-                                        <div className="text-neutral-500 italic p-4 text-center flex items-center justify-center gap-2 h-full">
+                                        <div className="flex-1 flex items-center justify-center text-neutral-500 italic p-6 text-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span> Waiting for response...
                                         </div>
                                     ) : selectedNet.responseBody === undefined ? (
-                                        <div className="text-neutral-500 italic p-4 text-center">No response body.</div>
+                                        <div className="flex-1 flex items-center justify-center text-neutral-500 italic p-6 text-center">
+                                            No response body.
+                                        </div>
                                     ) : (
                                         <InteractivePayloadViewer
                                             data={selectedNet.responseBody}
@@ -1157,41 +1423,72 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                         e.stopPropagation();
                         setShowDetailedTransfers(prev => !prev);
                     }}
-                    className="ml-auto p-1 hover:bg-white/15 active:bg-white/20 rounded cursor-pointer transition-all flex items-center justify-center shrink-0 border-0 bg-transparent"
+                    className="ml-auto p-1 text-white/80 hover:text-white cursor-pointer transition-colors flex items-center justify-center shrink-0 border-0 bg-transparent"
                     title="Show detailed transfer information"
                 >
                     <MoreHorizontal size={14} className="text-white" />
                 </button>
 
-                {showDetailedTransfers && (
-                    <>
-                        {/* Backdrop overlay for mobile */}
-                        <div 
-                            className="fixed inset-0 z-[9998] bg-black/60 dark:bg-black/75 backdrop-blur-xs md:hidden transition-opacity duration-300 animate-fade-in"
-                            onClick={() => setShowDetailedTransfers(false)}
-                        />
-
-                        <div 
-                            className="fixed bottom-0 left-0 right-0 max-h-[90vh] md:max-h-[440px] md:absolute md:bottom-7 md:right-2 md:left-auto bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[var(--dev-console-text)] w-full md:w-[350px] z-[9999] flex flex-col gap-2.5 font-sans text-xs select-none rounded-t-2xl md:rounded-xl p-3.5 sm:p-4 shadow-2xl transition-all duration-300 transform translate-y-0"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Mobile Drawer Handle */}
-                            <div className="w-12 h-1 bg-[var(--dev-console-border)] hover:bg-neutral-500 rounded-full mx-auto mb-0.5 shrink-0 md:hidden cursor-pointer" onClick={() => setShowDetailedTransfers(false)} />
-
-                            {/* Downward tail for desktop */}
-                            <div className="hidden md:block absolute bottom-[-5px] right-3 w-2.5 h-2.5 bg-[var(--dev-console-bg)] border-r border-b border-[var(--dev-console-border)] rotate-45 z-10" />
-
-                            <div className="flex items-center justify-between border-b border-[var(--dev-console-border)] pb-2 shrink-0">
-                                <span className="font-bold text-xs tracking-wider text-[var(--dev-console-text)] flex items-center gap-2">
-                                    <Activity size={14} className="text-blue-500 animate-pulse" /> Network Traffic Analytics
-                                </span>
-                                <button 
-                                    onClick={() => setShowDetailedTransfers(false)}
-                                    className="p-1 hover:bg-[var(--dev-console-bg-active)] rounded-full text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] cursor-pointer transition-colors border-0 bg-transparent"
-                                    title="Close Panel"
+                {/* Network Traffic Analytics Drawer / Popover (Containerless Layout) */}
+                <DraggableMobileDrawer
+                    isOpen={showDetailedTransfers}
+                    onClose={() => setShowDetailedTransfers(false)}
+                    desktopMode="popover"
+                    desktopTail={true}
+                    title={
+                        <span className="flex items-center gap-2">
+                            <Activity size={15} className="text-blue-500 animate-pulse" />
+                            <span>Network Traffic Analytics</span>
+                        </span>
+                    }
+                >
+                    {/* Analytics Sub-tab Selector (Clean containerless tabs with bottom indicator) */}
+                    <div className="flex items-center gap-2 border-b border-[var(--dev-console-border)]/50 shrink-0 pb-1 px-0.5">
+                        {(['overview', 'origins', 'endpoints', 'status'] as const).map(tabKey => {
+                            const label = tabKey === 'overview' ? 'Overview'
+                                : tabKey === 'origins' ? 'Origins'
+                                : tabKey === 'endpoints' ? 'Endpoints'
+                                : 'Status & Methods';
+                            const isActive = analyticsSubTab === tabKey;
+                            return (
+                                <button
+                                    key={tabKey}
+                                    type="button"
+                                    onClick={() => setAnalyticsSubTab(tabKey)}
+                                    className={`py-1 px-1.5 text-xs font-semibold transition-colors border-0 bg-transparent cursor-pointer relative ${
+                                        isActive 
+                                            ? 'text-[#007fd4]' 
+                                            : 'text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]'
+                                    }`}
                                 >
-                                    <X size={14} />
+                                    {label}
+                                    {isActive && (
+                                        <span className="absolute -bottom-1.5 left-1 right-1 h-0.5 bg-[#007fd4] rounded-full" />
+                                    )}
                                 </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Tab 1: Overview (Containerless) */}
+                    {analyticsSubTab === 'overview' && (
+                        <div className="flex flex-col gap-3.5 pt-1">
+                            {/* Sent vs Received Stats (Pure icon highlight, no background boxes) */}
+                            <div className="grid grid-cols-2 gap-4 shrink-0 py-1">
+                                <div className="flex items-center gap-2.5">
+                                    <ChevronUp size={18} className="text-blue-500 stroke-[2.5] shrink-0" />
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--dev-console-text-muted)]">Uploaded</span>
+                                        <span className="text-sm font-mono font-bold text-[var(--dev-console-text)] truncate">{formatSize(totalSent)}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <ChevronDown size={18} className="text-emerald-500 stroke-[2.5] shrink-0" />
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--dev-console-text-muted)]">Downloaded</span>
+                                        <span className="text-sm font-mono font-bold text-[var(--dev-console-text)] truncate">{formatSize(totalReceived)}</span>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Segmented Traffic Distribution Progress Bar */}
@@ -1207,189 +1504,379 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 const externalPct = grandTotal > 0 ? (externalTotal / grandTotal) * 100 : 0;
 
                                 return (
-                                    <div className="flex flex-col gap-1 shrink-0">
+                                    <div className="flex flex-col gap-2 py-2 border-t border-b border-[var(--dev-console-border)]/50 shrink-0">
                                         <div className="flex justify-between items-center text-[10px] font-mono text-[var(--dev-console-text-muted)] font-bold uppercase tracking-wider">
                                             <span>Bandwidth Allocation</span>
                                             <span className="text-[var(--dev-console-text)]">{formatSize(grandTotal)}</span>
                                         </div>
-                                        <div className="flex h-2 w-full bg-[var(--dev-console-border)]/55 rounded-full overflow-hidden shrink-0">
+                                        <div className="flex h-2 w-full bg-[var(--dev-console-border)]/40 rounded-full overflow-hidden shrink-0">
                                             {localTotal === 0 && supabaseTotal === 0 && externalTotal === 0 ? (
                                                 <div className="h-full w-full bg-neutral-600/35 animate-pulse" />
                                             ) : (
                                                 <>
-                                                    {localPct > 0 && <div className="h-full bg-blue-500 hover:brightness-110 transition-all duration-300" style={{ width: `${localPct}%` }} title={`Local: ${formatSize(localTotal)} (${Math.round(localPct)}%)`} />}
-                                                    {supabasePct > 0 && <div className="h-full bg-[#3ecf8e] hover:brightness-110 transition-all duration-300" style={{ width: `${supabasePct}%` }} title={`Supabase: ${formatSize(supabaseTotal)} (${Math.round(supabasePct)}%)`} />}
-                                                    {externalPct > 0 && <div className="h-full bg-amber-500 hover:brightness-110 transition-all duration-300" style={{ width: `${externalPct}%` }} title={`External: ${formatSize(externalTotal)} (${Math.round(externalPct)}%)`} />}
+                                                    {localPct > 0 && <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${localPct}%` }} title={`Local: ${formatSize(localTotal)} (${Math.round(localPct)}%)`} />}
+                                                    {supabasePct > 0 && <div className="h-full bg-[#3ecf8e] transition-all duration-300" style={{ width: `${supabasePct}%` }} title={`Supabase: ${formatSize(supabaseTotal)} (${Math.round(supabasePct)}%)`} />}
+                                                    {externalPct > 0 && <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${externalPct}%` }} title={`External: ${formatSize(externalTotal)} (${Math.round(externalPct)}%)`} />}
                                                 </>
                                             )}
+                                        </div>
+                                        {/* Legend with values */}
+                                        <div className="flex items-center justify-between pt-0.5 text-[10px] font-mono text-[var(--dev-console-text-muted)]">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                                                <span>Local {Math.round(localPct)}%</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-[#3ecf8e] shrink-0"></span>
+                                                <span>Supabase {Math.round(supabasePct)}%</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                                <span>Ext {Math.round(externalPct)}%</span>
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })()}
 
-                            {/* Sent vs Received Comparative cards */}
-                            <div className="grid grid-cols-2 gap-2 shrink-0">
-                                <div className="bg-blue-500/[0.04] dark:bg-blue-500/[0.03] border border-blue-500/10 rounded-lg p-1.5 flex items-center gap-1.5">
-                                    <div className="p-1 rounded-full bg-blue-500/10 text-blue-500 shrink-0">
-                                        <ChevronUp size={12} className="stroke-[3]" />
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="text-[9px] uppercase font-bold text-[var(--dev-console-text-muted)]">Uploaded</span>
-                                        <span className="text-[11px] font-mono font-bold text-[var(--dev-console-text)] truncate">{formatSize(totalSent)}</span>
-                                    </div>
+                            {/* Summary Metrics Grid (Containerless clean items) */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-0.5">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase font-semibold">Total Requests</span>
+                                    <span className="text-sm font-bold text-[var(--dev-console-text)] mt-0.5">{analyticsData.totalRequests}</span>
                                 </div>
-                                <div className="bg-emerald-500/[0.04] dark:bg-emerald-500/[0.03] border border-emerald-500/10 rounded-lg p-1.5 flex items-center gap-1.5">
-                                    <div className="p-1 rounded-full bg-emerald-500/10 text-emerald-500 shrink-0">
-                                        <ChevronDown size={12} className="stroke-[3]" />
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="text-[9px] uppercase font-bold text-[var(--dev-console-text-muted)]">Downloaded</span>
-                                        <span className="text-[11px] font-mono font-bold text-[var(--dev-console-text)] truncate">{formatSize(totalReceived)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {/* Hidden Rules & Unhide Management Modal (Responsive & Containerless) */}
-            {showHiddenRulesModal && (
-                <div 
-                    className="fixed inset-0 z-[10002] bg-black/60 dark:bg-black/75 backdrop-blur-xs flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in"
-                    onClick={() => setShowHiddenRulesModal(false)}
-                >
-                    <div 
-                        className="bg-[var(--dev-console-bg)] border-t md:border border-[var(--dev-console-border)] text-[var(--dev-console-text)] rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-md overflow-hidden flex flex-col font-sans max-h-[90vh] md:max-h-[80vh] transition-all duration-300 transform translate-y-0"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Mobile Drawer Grab Handle */}
-                        <div className="w-12 h-1 bg-[var(--dev-console-border)] hover:bg-neutral-500 rounded-full mx-auto mt-2.5 mb-1 shrink-0 md:hidden cursor-pointer" onClick={() => setShowHiddenRulesModal(false)} />
-
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-[var(--dev-console-border)]">
-                            <div className="flex items-center gap-2">
-                                <EyeOff size={16} className="text-amber-500" />
-                                <span className="font-bold text-xs sm:text-sm tracking-tight text-[var(--dev-console-text)]">Hidden Requests & Rules</span>
-                            </div>
-                            <button 
-                                onClick={() => setShowHiddenRulesModal(false)}
-                                className="p-1 hover:bg-[var(--dev-console-bg-active)] rounded-full text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-0 bg-transparent cursor-pointer transition-colors"
-                                title="Close"
-                            >
-                                <X size={15} />
-                            </button>
-                        </div>
-
-                        {/* Modal Body (Clean, Containerless & Spaced) */}
-                        <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-4 text-xs">
-                            {/* Session Hidden Requests Banner */}
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--dev-console-border)]">
-                                <div className="flex flex-col min-w-0">
-                                    <div className="font-medium text-[var(--dev-console-text)] flex items-center gap-2">
-                                        <span>Current Session Hidden:</span>
-                                        <span className="font-mono font-bold text-amber-500 text-xs px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
-                                            {hiddenNetsCount}
-                                        </span>
-                                    </div>
-                                    <span className="text-[11px] text-[var(--dev-console-text-muted)] mt-0.5">
-                                        Requests hidden from the table and exported logs.
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase font-semibold">Success Rate</span>
+                                    <span className={`text-sm font-bold mt-0.5 ${analyticsData.successRate >= 90 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                        {analyticsData.successRate}%
                                     </span>
                                 </div>
-                                {hiddenNetsCount > 0 && (
-                                    <button
-                                        onClick={() => {
-                                            unhideAllNetEntries();
-                                        }}
-                                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[#007fd4]/10 hover:bg-[#007fd4]/20 text-[#007fd4] border border-[#007fd4]/30 cursor-pointer flex items-center gap-1.5 shrink-0 transition-all shadow-xs"
-                                    >
-                                        <Eye size={12} />
-                                        <span>Unhide All</span>
-                                    </button>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase font-semibold">Avg Request</span>
+                                    <span className="text-sm font-mono font-bold text-[var(--dev-console-text)] mt-0.5">{formatSize(analyticsData.avgSize)}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-[var(--dev-console-text-muted)] uppercase font-semibold">Errors (4xx/5xx)</span>
+                                    <span className={`text-sm font-bold mt-0.5 ${analyticsData.failedRequests > 0 ? 'text-red-500' : 'text-[var(--dev-console-text-muted)]'}`}>
+                                        {analyticsData.failedRequests}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tab 2: Origins Breakdown (Containerless) */}
+                    {analyticsSubTab === 'origins' && (
+                        <div className="flex flex-col divide-y divide-[var(--dev-console-border)]/40 pt-1">
+                            {(() => {
+                                const stats = getEnvironmentStats();
+                                const grandTotal = stats.local.sent + stats.local.received + stats.supabase.sent + stats.supabase.received + stats.external.sent + stats.external.received;
+
+                                const origins = [
+                                    {
+                                        name: 'Local & App Routes',
+                                        icon: <Globe size={15} className="text-blue-500 shrink-0" />,
+                                        sent: stats.local.sent,
+                                        received: stats.local.received,
+                                        count: analyticsData.localCount
+                                    },
+                                    {
+                                        name: 'Supabase & Backend',
+                                        icon: <Database size={15} className="text-[#3ecf8e] shrink-0" />,
+                                        sent: stats.supabase.sent,
+                                        received: stats.supabase.received,
+                                        count: analyticsData.supabaseCount
+                                    },
+                                    {
+                                        name: 'External APIs & CDNs',
+                                        icon: <Wifi size={15} className="text-amber-500 shrink-0" />,
+                                        sent: stats.external.sent,
+                                        received: stats.external.received,
+                                        count: analyticsData.externalCount
+                                    }
+                                ];
+
+                                return origins.map(orig => {
+                                    const total = orig.sent + orig.received;
+                                    const pct = grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0;
+                                    return (
+                                        <div key={orig.name} className="py-3 first:pt-0 last:pb-0 flex flex-col gap-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 font-semibold text-xs text-[var(--dev-console-text)]">
+                                                    {orig.icon}
+                                                    <span>{orig.name}</span>
+                                                </div>
+                                                <span className="text-[11px] font-mono font-semibold text-[var(--dev-console-text-muted)]">
+                                                    {orig.count} reqs <span className="text-[var(--dev-console-text)] font-bold">({pct}%)</span>
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2 pl-6 text-[10px] font-mono">
+                                                <div>
+                                                    <span className="text-[var(--dev-console-text-muted)] block text-[9px] uppercase">Sent</span>
+                                                    <span className="font-bold text-[var(--dev-console-text)]">{formatSize(orig.sent)}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[var(--dev-console-text-muted)] block text-[9px] uppercase">Received</span>
+                                                    <span className="font-bold text-[var(--dev-console-text)]">{formatSize(orig.received)}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[var(--dev-console-text-muted)] block text-[9px] uppercase">Total</span>
+                                                    <span className="font-bold text-[var(--dev-console-text)]">{formatSize(total)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    )}
+
+                    {/* Tab 3: Top Endpoints Breakdown (Containerless) */}
+                    {analyticsSubTab === 'endpoints' && (
+                        <div className="flex flex-col gap-2 pt-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--dev-console-text-muted)]">
+                                Top Bandwidth Consuming Endpoints
+                            </span>
+                            {analyticsData.topEndpoints.length === 0 ? (
+                                <div className="text-center py-6 text-[var(--dev-console-text-muted)] italic text-xs">
+                                    No requests recorded yet.
+                                </div>
+                            ) : (
+                                <div className="flex flex-col divide-y divide-[var(--dev-console-border)]/40">
+                                    {analyticsData.topEndpoints.map((ep, idx) => {
+                                        const maxTransfer = analyticsData.topEndpoints[0]?.transferred || 1;
+                                        const fillPct = Math.round((ep.transferred / maxTransfer) * 100);
+                                        return (
+                                            <div key={ep.url + ep.method} className="py-2.5 first:pt-0 last:pb-0 flex flex-col gap-1.5">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <span className="text-[10px] font-mono font-bold text-[var(--dev-console-text-muted)] w-3.5 text-left">
+                                                            {idx + 1}.
+                                                        </span>
+                                                        <span className="text-[9px] font-mono font-bold text-[#007fd4]">
+                                                            {ep.method}
+                                                        </span>
+                                                        <span className="font-mono text-xs text-[var(--dev-console-text)] truncate" title={ep.url}>
+                                                            {ep.url}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs font-mono font-bold text-[var(--dev-console-text)] shrink-0">
+                                                        {formatSize(ep.transferred)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px] text-[var(--dev-console-text-muted)] pl-5">
+                                                    <span>{ep.count} call{ep.count > 1 ? 's' : ''} ({formatSize(ep.transferred / (ep.count || 1))}/req)</span>
+                                                    <div className="w-20 h-1 bg-[var(--dev-console-border)]/50 rounded-full overflow-hidden shrink-0">
+                                                        <div className="h-full bg-[#007fd4] rounded-full" style={{ width: `${fillPct}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tab 4: Status & Methods Breakdown (Containerless) */}
+                    {analyticsSubTab === 'status' && (
+                        <div className="flex flex-col gap-3.5 pt-1">
+                            {/* HTTP Status Breakdown */}
+                            <div className="flex flex-col gap-2">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--dev-console-text-muted)]">
+                                    HTTP Status Codes
+                                </span>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                    <div className="flex items-center justify-between py-1 border-b border-[var(--dev-console-border)]/35">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                            <span className="text-xs font-semibold text-emerald-500">2xx Success</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-mono font-bold text-xs text-[var(--dev-console-text)]">{analyticsData.total2xx}</span>
+                                            <span className="text-[9px] font-mono text-[var(--dev-console-text-muted)] block">{formatSize(analyticsData.size2xx)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between py-1 border-b border-[var(--dev-console-border)]/35">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                                            <span className="text-xs font-semibold text-blue-500">3xx Redirect</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-mono font-bold text-xs text-[var(--dev-console-text)]">{analyticsData.total3xx}</span>
+                                            <span className="text-[9px] font-mono text-[var(--dev-console-text-muted)] block">{formatSize(analyticsData.size3xx)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between py-1 border-b border-[var(--dev-console-border)]/35">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                            <span className="text-xs font-semibold text-amber-500">4xx Client Err</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-mono font-bold text-xs text-[var(--dev-console-text)]">{analyticsData.total4xx}</span>
+                                            <span className="text-[9px] font-mono text-[var(--dev-console-text-muted)] block">{formatSize(analyticsData.size4xx)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between py-1 border-b border-[var(--dev-console-border)]/35">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
+                                            <span className="text-xs font-semibold text-red-500">5xx Server Err</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-mono font-bold text-xs text-[var(--dev-console-text)]">{analyticsData.total5xx}</span>
+                                            <span className="text-[9px] font-mono text-[var(--dev-console-text-muted)] block">{formatSize(analyticsData.size5xx)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {analyticsData.totalPending > 0 && (
+                                    <div className="flex justify-between items-center py-1.5 text-xs border-b border-[var(--dev-console-border)]/35">
+                                        <span className="font-semibold text-yellow-500 flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse shrink-0"></span>
+                                            Pending Requests
+                                        </span>
+                                        <span className="font-mono font-bold text-[var(--dev-console-text)]">{analyticsData.totalPending}</span>
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Persistent Always-Hide Rules Section */}
-                            <div className="flex flex-col gap-2.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-bold text-[var(--dev-console-text)] flex items-center gap-1.5">
-                                        <ShieldAlert size={14} className="text-purple-400" />
-                                        <span>Persistent Auto-Hide Patterns ({hiddenPatterns.length})</span>
-                                    </span>
-                                </div>
-                                <p className="text-[11px] text-[var(--dev-console-text-muted)] leading-relaxed">
-                                    Requests matching these patterns are automatically hidden and remembered across reloads.
-                                </p>
-
-                                {/* Add rule form */}
-                                <form 
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        if (newPatternInput.trim()) {
-                                            addHiddenPattern(newPatternInput.trim());
-                                            setNewPatternInput('');
-                                        }
-                                    }}
-                                    className="flex items-center gap-2 mt-0.5"
-                                >
-                                    <input 
-                                        type="text"
-                                        placeholder="e.g. /api/device-mapper or heartbeat"
-                                        value={newPatternInput}
-                                        onChange={(e) => setNewPatternInput(e.target.value)}
-                                        className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text)] outline-none text-xs placeholder:text-[var(--dev-console-text-muted)] font-mono transition-all focus:border-[#007fd4]"
-                                    />
-                                    <button 
-                                        type="submit"
-                                        disabled={!newPatternInput.trim()}
-                                        className="px-3 py-1.5 rounded-lg bg-[#007fd4] hover:bg-[#0060a3] disabled:opacity-40 text-white font-medium text-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0 border-0 shadow-xs"
-                                    >
-                                        <Plus size={13} />
-                                        <span>Add</span>
-                                    </button>
-                                </form>
-
-                                {/* Patterns list (Containerless seamless items) */}
-                                <div className="flex flex-col gap-1 max-h-52 overflow-y-auto mt-1 scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
-                                    {hiddenPatterns.length === 0 ? (
-                                        <div className="text-[var(--dev-console-text-muted)] italic text-center py-4 text-[11px]">
-                                            No persistent hide rules configured yet. Right-click any request or type above.
-                                        </div>
-                                    ) : (
-                                        hiddenPatterns.map(pattern => (
-                                            <div 
-                                                key={pattern}
-                                                className="flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-[var(--dev-console-bg-active)] text-xs transition-colors group"
-                                            >
-                                                <span className="font-mono text-[var(--dev-console-syntax-property)] truncate mr-2 text-[11px]" title={pattern}>
-                                                    {pattern}
-                                                </span>
-                                                <button 
-                                                    onClick={() => removeHiddenPattern(pattern)}
-                                                    className="p-1 hover:bg-red-500/10 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors border-0 bg-transparent cursor-pointer shrink-0"
-                                                    title="Remove Rule"
-                                                >
-                                                    <Trash2 size={13} />
-                                                </button>
+                            {/* HTTP Methods Breakdown */}
+                            <div className="flex flex-col gap-2 pt-2 border-t border-[var(--dev-console-border)]/50">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--dev-console-text-muted)]">
+                                    HTTP Methods
+                                </span>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                                    {Object.entries(analyticsData.methodStats).map(([method, data]) => (
+                                        <div key={method} className="flex items-center justify-between py-1 border-b border-[var(--dev-console-border)]/25">
+                                            <span className="font-mono font-bold text-xs text-[#007fd4]">{method}</span>
+                                            <div className="text-right">
+                                                <div className="text-xs font-mono font-bold text-[var(--dev-console-text)]">{data.count}</div>
+                                                <div className="text-[9px] font-mono text-[var(--dev-console-text-muted)]">{formatSize(data.transferred)}</div>
                                             </div>
-                                        ))
-                                    )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
+                    )}
+                </DraggableMobileDrawer>
+            </div>
 
-                        {/* Modal Footer */}
-                        <div className="px-4 sm:px-5 py-3 border-t border-[var(--dev-console-border)] flex justify-end">
-                            <button
-                                onClick={() => setShowHiddenRulesModal(false)}
-                                className="w-full sm:w-auto px-5 py-1.5 rounded-lg bg-[#007fd4] hover:bg-[#0060a3] text-white text-xs font-semibold cursor-pointer transition-colors shadow-xs border-0"
-                            >
-                                Done
-                            </button>
+            {/* Hidden Rules & Unhide Management Modal (Responsive & Draggable) */}
+            <DraggableMobileDrawer
+                isOpen={showHiddenRulesModal}
+                onClose={() => setShowHiddenRulesModal(false)}
+                desktopMode="modal"
+                title={
+                    <span className="flex items-center gap-2">
+                        <EyeOff size={16} className="text-amber-500" />
+                        <span>Hidden Requests & Rules</span>
+                    </span>
+                }
+                footer={
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => setShowHiddenRulesModal(false)}
+                            className="w-full sm:w-auto px-5 py-1.5 rounded-lg bg-[#007fd4] hover:bg-[#0060a3] text-white text-xs font-semibold cursor-pointer transition-colors shadow-xs border-0"
+                        >
+                            Done
+                        </button>
+                    </div>
+                }
+            >
+                {/* Session Hidden Requests Banner */}
+                <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--dev-console-border)]">
+                    <div className="flex flex-col min-w-0">
+                        <div className="font-medium text-[var(--dev-console-text)] flex items-center gap-2">
+                            <span>Current Session Hidden:</span>
+                            <span className="font-mono font-bold text-amber-500 text-xs px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
+                                {hiddenNetsCount}
+                            </span>
                         </div>
+                        <span className="text-[11px] text-[var(--dev-console-text-muted)] mt-0.5">
+                            Requests hidden from the table and exported logs.
+                        </span>
+                    </div>
+                    {hiddenNetsCount > 0 && (
+                        <button
+                            onClick={() => {
+                                unhideAllNetEntries();
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[#007fd4]/10 hover:bg-[#007fd4]/20 text-[#007fd4] border border-[#007fd4]/30 cursor-pointer flex items-center gap-1.5 shrink-0 transition-all shadow-xs"
+                        >
+                            <Eye size={12} />
+                            <span>Unhide All</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Persistent Always-Hide Rules Section */}
+                <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                        <span className="font-bold text-[var(--dev-console-text)] flex items-center gap-1.5">
+                            <ShieldAlert size={14} className="text-purple-400" />
+                            <span>Persistent Auto-Hide Patterns ({hiddenPatterns.length})</span>
+                        </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--dev-console-text-muted)] leading-relaxed">
+                        Requests matching these patterns are automatically hidden and remembered across reloads.
+                    </p>
+
+                    {/* Add rule form */}
+                    <form 
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (newPatternInput.trim()) {
+                                addHiddenPattern(newPatternInput.trim());
+                                setNewPatternInput('');
+                            }
+                        }}
+                        className="flex items-center gap-2 mt-0.5"
+                    >
+                        <input 
+                            type="text"
+                            placeholder="e.g. /api/device-mapper or heartbeat"
+                            value={newPatternInput}
+                            onChange={(e) => setNewPatternInput(e.target.value)}
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text)] outline-none text-xs placeholder:text-[var(--dev-console-text-muted)] font-mono transition-all focus:border-[#007fd4]"
+                        />
+                        <button 
+                            type="submit"
+                            disabled={!newPatternInput.trim()}
+                            className="px-3 py-1.5 rounded-lg bg-[#007fd4] hover:bg-[#0060a3] disabled:opacity-40 text-white font-medium text-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0 border-0 shadow-xs"
+                        >
+                            <Plus size={13} />
+                            <span>Add</span>
+                        </button>
+                    </form>
+
+                    {/* Patterns list (Containerless seamless items) */}
+                    <div className="flex flex-col gap-1 max-h-52 overflow-y-auto mt-1 scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
+                        {hiddenPatterns.length === 0 ? (
+                            <div className="text-[var(--dev-console-text-muted)] italic text-center py-4 text-[11px]">
+                                No persistent hide rules configured yet. Right-click any request or type above.
+                            </div>
+                        ) : (
+                            hiddenPatterns.map(pattern => (
+                                <div 
+                                    key={pattern}
+                                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-[var(--dev-console-bg-active)] text-xs transition-colors group"
+                                >
+                                    <span className="font-mono text-[var(--dev-console-syntax-property)] truncate mr-2 text-[11px]" title={pattern}>
+                                        {pattern}
+                                    </span>
+                                    <button 
+                                        onClick={() => removeHiddenPattern(pattern)}
+                                        className="p-1 hover:bg-red-500/10 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors border-0 bg-transparent cursor-pointer shrink-0"
+                                        title="Remove Rule"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
-            )}
+            </DraggableMobileDrawer>
 
             {/* Context Menu Dropdown */}
             {contextMenu && (

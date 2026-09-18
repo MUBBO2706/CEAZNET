@@ -203,6 +203,12 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
         setExpandedPaths(new Set());
     };
 
+    // Check if data contains any collapsible/truncated content
+    const hasTruncatedContent = useMemo(() => {
+        const raw = formatDataWithMarkers(data, new Set());
+        return raw.includes(TRUNC_TAG) || raw.includes(EXP_START_TAG);
+    }, [data]);
+
     // Formatted text with markers based on current expandedPaths
     const formattedWithMarkers = useMemo(() => {
         return formatDataWithMarkers(data, expandedPaths);
@@ -358,113 +364,134 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                         </button>
                     )}
 
-                    {/* Smart Copy Split/Dropdown Controls */}
-                    <div className="relative flex items-center shrink-0" ref={menuRef}>
-                        <div className="inline-flex items-center rounded border border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] overflow-hidden shadow-xs">
-                            <button
-                                type="button"
-                                onClick={handlePrimaryCopy}
-                                className="text-[var(--dev-console-text)] hover:text-[var(--dev-console-link)] flex items-center gap-1.5 text-[10px] sm:text-[10.5px] uppercase font-mono px-2 py-1 transition-colors cursor-pointer bg-transparent border-0"
-                                title={expandedPaths.size > 0 ? 'Copy as currently shown with expanded fields' : 'Copy with truncated long values'}
-                            >
-                                {isCopied ? (
-                                    <>
-                                        <CategoryIcon name="solar:check-circle-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
-                                        <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <CategoryIcon name="solar:copy-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
-                                        <span>
-                                            {expandedPaths.size > 0 ? `Copy View (${expandedPaths.size})` : 'Copy'}
-                                        </span>
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setIsMenuOpen(prev => !prev)}
-                                className="px-1.5 py-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-l border-[var(--dev-console-border)] transition-colors cursor-pointer bg-transparent"
-                                title="More copy options"
-                            >
-                                <ChevronDown size={11} className={`transition-transform duration-150 ${isMenuOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                        </div>
-
-                        {/* Dropdown Menu with Full-Width Descriptions and Multi-Icon Library Support */}
-                        {isMenuOpen && (
-                            <div className="absolute right-0 top-full mt-1.5 w-64 rounded-lg border border-[var(--dev-console-border)] bg-[var(--dev-console-bg)] shadow-[var(--dev-console-shadow)] z-50 p-1.5 text-[11px] animate-in fade-in zoom-in-95 duration-100">
-                                <div className="text-[9px] uppercase font-bold text-[var(--dev-console-text-muted)] px-2 py-1 tracking-wider border-b border-[var(--dev-console-border-light)] mb-1">
-                                    Smart Copy Options
-                                </div>
-
-                                {/* Option 1: Copy Truncated */}
+                    {/* Smart Copy Split/Dropdown Controls (or Single Copy button if no truncation) */}
+                    {!hasTruncatedContent ? (
+                        <button
+                            type="button"
+                            onClick={() => handleCopy(getFullRawString(), `${copyIdPrefix}-raw`)}
+                            className="inline-flex items-center gap-1.5 text-[10px] sm:text-[10.5px] uppercase font-mono px-2 py-1 rounded border border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text)] hover:text-[var(--dev-console-link)] hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer shrink-0"
+                            title="Copy full content"
+                        >
+                            {isCopied ? (
+                                <>
+                                    <CategoryIcon name="solar:check-circle-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
+                                    <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CategoryIcon name="solar:copy-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
+                                    <span>Copy</span>
+                                </>
+                            )}
+                        </button>
+                    ) : (
+                        <div className="relative flex items-center shrink-0" ref={menuRef}>
+                            <div className="inline-flex items-center rounded border border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] overflow-hidden shadow-xs">
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        handleCopy(getTruncatedString(), `${copyIdPrefix}-trunc`);
-                                        setIsMenuOpen(false);
-                                    }}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
+                                    onClick={handlePrimaryCopy}
+                                    className="text-[var(--dev-console-text)] hover:text-[var(--dev-console-link)] flex items-center gap-1.5 text-[10px] sm:text-[10.5px] uppercase font-mono px-2 py-1 transition-colors cursor-pointer bg-transparent border-0"
+                                    title={expandedPaths.size > 0 ? 'Copy as currently shown with expanded fields' : 'Copy with truncated long values'}
                                 >
-                                    <div className="flex items-center gap-1.5">
-                                        <CategoryIcon name="solar:minimize-square-3-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
-                                        <span className="font-semibold text-[10.5px] text-[var(--dev-console-text)]">Copy Truncated</span>
-                                    </div>
-                                    <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">
-                                        Compact view with long fields truncated
-                                    </div>
+                                    {isCopied ? (
+                                        <>
+                                            <CategoryIcon name="solar:check-circle-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
+                                            <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CategoryIcon name="solar:copy-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
+                                            <span>
+                                                {expandedPaths.size > 0 ? `Copy View (${expandedPaths.size})` : 'Copy'}
+                                            </span>
+                                        </>
+                                    )}
                                 </button>
 
-                                {/* Option 2: Copy Current View (Only visible when >=1 field is expanded!) */}
-                                {expandedPaths.size > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMenuOpen(prev => !prev)}
+                                    className="px-1.5 py-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-l border-[var(--dev-console-border)] transition-colors cursor-pointer bg-transparent"
+                                    title="More copy options"
+                                >
+                                    <ChevronDown size={11} className={`transition-transform duration-150 ${isMenuOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
+
+                            {/* Dropdown Menu with Full-Width Descriptions and Multi-Icon Library Support */}
+                            {isMenuOpen && (
+                                <div className="absolute right-0 top-full mt-1.5 w-64 rounded-lg border border-[var(--dev-console-border)] bg-[var(--dev-console-bg)] shadow-[var(--dev-console-shadow)] z-50 p-1.5 text-[11px] animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="text-[9px] uppercase font-bold text-[var(--dev-console-text-muted)] px-2 py-1 tracking-wider border-b border-[var(--dev-console-border-light)] mb-1">
+                                        Smart Copy Options
+                                    </div>
+
+                                    {/* Option 1: Copy Truncated */}
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            handleCopy(getCurrentViewString(), `${copyIdPrefix}-shown`);
+                                            handleCopy(getTruncatedString(), `${copyIdPrefix}-trunc`);
                                             setIsMenuOpen(false);
                                         }}
                                         className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
                                     >
                                         <div className="flex items-center gap-1.5">
-                                            <CategoryIcon name="solar:magic-stick-3-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-link)] shrink-0" />
-                                            <span className="font-semibold text-[10.5px] text-[var(--dev-console-link)]">
-                                                Copy Current View ({expandedPaths.size} expanded)
-                                            </span>
+                                            <CategoryIcon name="solar:minimize-square-3-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
+                                            <span className="font-semibold text-[10.5px] text-[var(--dev-console-text)]">Copy Truncated</span>
                                         </div>
                                         <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">
-                                            Expanded fields full, rest truncated
+                                            Compact view with long fields truncated
                                         </div>
                                     </button>
-                                )}
 
-                                {/* Option 3: Copy Full Raw */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        handleCopy(getFullRawString(), `${copyIdPrefix}-raw`);
-                                        setIsMenuOpen(false);
-                                    }}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
-                                >
-                                    <div className="flex items-center gap-1.5">
-                                        <CategoryIcon name="solar:code-file-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
-                                        <span className="font-semibold text-[10.5px] text-[var(--dev-console-text)]">Copy Full Raw</span>
-                                    </div>
-                                    <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">
-                                        100% original untruncated content
-                                    </div>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                                    {/* Option 2: Copy Current View (Only visible when >=1 field is expanded!) */}
+                                    {expandedPaths.size > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                handleCopy(getCurrentViewString(), `${copyIdPrefix}-shown`);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                <CategoryIcon name="solar:magic-stick-3-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-link)] shrink-0" />
+                                                <span className="font-semibold text-[10.5px] text-[var(--dev-console-link)]">
+                                                    Copy Current View ({expandedPaths.size} expanded)
+                                                </span>
+                                            </div>
+                                            <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">
+                                                Expanded fields full, rest truncated
+                                            </div>
+                                        </button>
+                                    )}
+
+                                    {/* Option 3: Copy Full Raw */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            handleCopy(getFullRawString(), `${copyIdPrefix}-raw`);
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            <CategoryIcon name="solar:code-file-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
+                                            <span className="font-semibold text-[10.5px] text-[var(--dev-console-text)]">Copy Full Raw</span>
+                                        </div>
+                                        <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">
+                                            100% original untruncated content
+                                        </div>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Content Pre Block */}
             <div className="flex-1 overflow-auto">
-                <pre className={`font-mono ${syntaxColorClass} text-[11px] whitespace-pre-wrap break-all max-w-full overflow-x-auto bg-[var(--dev-console-bg-active)] p-2.5 rounded ${isMobile ? 'mt-1' : 'ml-2 mt-2'}`}>
+                <pre className={`font-mono ${syntaxColorClass} text-[11px] whitespace-pre-wrap break-all max-w-full overflow-x-auto bg-[var(--dev-payload-code-bg)] border border-[var(--dev-payload-code-border)] p-2.5 sm:p-3 rounded-lg ${isMobile ? 'mt-1' : 'ml-2 mt-2'}`}>
                     {renderedContent}
                 </pre>
             </div>
