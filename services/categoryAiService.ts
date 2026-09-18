@@ -104,7 +104,7 @@ ${diaryNames.length > 0 ? `\nEXISTING DIARY/KHATA ITEMS (match category name if 
 
 Task:
 1. If the transaction clearly fits one of the EXISTING CATEGORIES, set "isExisting": true and "matchedCategory" to that exact category name.
-2. If NO existing category fits accurately, set "isExisting": false, suggest a concise 1-3 word "suggestedCategoryName", and a 1-3 word visual search term "iconSearchQuery" (e.g. "protein fitness", "medicine pill", "cricket bat").
+2. If NO existing category fits accurately, set "isExisting": false, suggest a concise 1-3 word "suggestedCategoryName" (MUST be distinct and NOT in EXISTING CATEGORIES), and a 1-3 word visual search term "iconSearchQuery" (e.g. "protein fitness", "medicine pill", "cricket bat").
 3. Provide a brief 1-sentence "reason".
 
 Respond strictly in JSON:
