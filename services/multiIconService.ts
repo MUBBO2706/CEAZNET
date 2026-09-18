@@ -734,7 +734,7 @@ Respond strictly in valid JSON:
 
     // Step 4 Fallback: Deduplicated candidate list if AI ranking fails (strictly excluding used icons)
     for (const item of liveCandidatePool) {
-        if (!usedIconSet.has(item.id.toLowerCase().trim())) {
+        if (!isIconUsed(item.id)) {
             candidates.push({
                 iconId: item.id,
                 iconName: item.name,
@@ -748,7 +748,7 @@ Respond strictly in valid JSON:
 
     if (candidates.length === 0) {
         // Find an unused icon from CURATED_ICONS
-        const fallback = CURATED_ICONS.find(c => !usedIconSet.has(c.id.toLowerCase().trim())) || {
+        const fallback = CURATED_ICONS.find(c => !isIconUsed(c.id)) || {
             id: 'solar:widget-add-bold-duotone',
             name: 'Category Tag',
             library: 'solar'

@@ -36,4 +36,6 @@ export type NetEntry = {
     fromConsole?: boolean;
     count?: number;
     history?: NetHistoryEntry[];
+    isHidden?: boolean;
+    hiddenRuleMatch?: string;
 };

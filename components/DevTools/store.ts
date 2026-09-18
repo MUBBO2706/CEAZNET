@@ -11,6 +11,126 @@ import {
 export const logs: LogEntry[] = [];
 export const nets: NetEntry[] = [];
 
+// LocalStorage persistence for hidden URL/Query patterns
+const LS_HIDDEN_PATTERNS_KEY = 'devToolsNetHiddenPatterns';
+
+export const loadHiddenPatterns = (): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const saved = localStorage.getItem(LS_HIDDEN_PATTERNS_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed.filter(p => typeof p === 'string' && p.trim().length > 0);
+        }
+    } catch {}
+    return [];
+};
+
+export const hiddenPatterns: string[] = loadHiddenPatterns();
+
+export const saveHiddenPatterns = () => {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(LS_HIDDEN_PATTERNS_KEY, JSON.stringify(hiddenPatterns));
+    } catch (e) {
+        console.warn('Failed to save hidden patterns to localStorage', e);
+    }
+};
+
+export const isUrlMatchingHiddenPatterns = (url: string, patterns: string[] = hiddenPatterns): string | null => {
+    if (!patterns || patterns.length === 0 || !url) return null;
+    const lowerUrl = url.toLowerCase();
+    for (const pat of patterns) {
+        if (!pat) continue;
+        const lowerPat = pat.trim().toLowerCase();
+        if (!lowerPat) continue;
+        if (lowerUrl.includes(lowerPat)) return pat;
+        try {
+            const urlObj = new URL(url, window.location.origin);
+            const fullPath = (urlObj.pathname + urlObj.search).toLowerCase();
+            if (fullPath.includes(lowerPat)) return pat;
+        } catch {}
+    }
+    return null;
+};
+
+export const addHiddenPattern = (pattern: string) => {
+    const trimmed = pattern.trim();
+    if (!trimmed) return;
+    if (!hiddenPatterns.includes(trimmed)) {
+        hiddenPatterns.push(trimmed);
+        saveHiddenPatterns();
+    }
+    // Apply to existing nets
+    nets.forEach(n => {
+        const match = isUrlMatchingHiddenPatterns(n.url);
+        if (match) {
+            n.isHidden = true;
+            n.hiddenRuleMatch = match;
+        }
+    });
+    notify();
+};
+
+export const removeHiddenPattern = (pattern: string) => {
+    const idx = hiddenPatterns.indexOf(pattern);
+    if (idx !== -1) {
+        hiddenPatterns.splice(idx, 1);
+        saveHiddenPatterns();
+    }
+    // Re-evaluate existing nets that matched this pattern
+    nets.forEach(n => {
+        const remainingMatch = isUrlMatchingHiddenPatterns(n.url);
+        if (remainingMatch) {
+            n.isHidden = true;
+            n.hiddenRuleMatch = remainingMatch;
+        } else if (n.hiddenRuleMatch === pattern) {
+            n.isHidden = false;
+            n.hiddenRuleMatch = undefined;
+        }
+    });
+    notify();
+};
+
+export const hideNetEntries = (ids: string[]) => {
+    const idSet = new Set(ids);
+    nets.forEach(n => {
+        if (idSet.has(n.id)) {
+            n.isHidden = true;
+        }
+    });
+    notify();
+};
+
+export const unhideNetEntries = (ids: string[]) => {
+    const idSet = new Set(ids);
+    nets.forEach(n => {
+        if (idSet.has(n.id)) {
+            n.isHidden = false;
+            n.hiddenRuleMatch = undefined;
+        }
+    });
+    notify();
+};
+
+export const unhideAllNetEntries = () => {
+    nets.forEach(n => {
+        n.isHidden = false;
+        n.hiddenRuleMatch = undefined;
+    });
+    notify();
+};
+
+export const deleteNetEntries = (ids: string[]) => {
+    const idSet = new Set(ids);
+    for (let i = nets.length - 1; i >= 0; i--) {
+        if (idSet.has(nets[i].id)) {
+            nets.splice(i, 1);
+        }
+    }
+    notify();
+};
+
 export const netStats = {
     totalSent: 0,
     totalReceived: 0
@@ -30,6 +150,13 @@ export const notify = () => {
 export let isInitialized = false;
 
 export const addOrUpdateNetEntry = (entry: NetEntry) => {
+    // Check if matching any hidden pattern rule
+    const ruleMatch = isUrlMatchingHiddenPatterns(entry.url);
+    if (ruleMatch) {
+        entry.isHidden = true;
+        entry.hiddenRuleMatch = ruleMatch;
+    }
+
     const isAuto = isAutoFireRequest(entry.method, entry.url);
     
     if (isAuto) {
@@ -66,6 +193,11 @@ export const addOrUpdateNetEntry = (entry: NetEntry) => {
             existing.requestBody = entry.requestBody;
             existing.requestSize = entry.requestSize;
             existing.fromConsole = entry.fromConsole;
+            
+            if (entry.isHidden !== undefined) {
+                existing.isHidden = entry.isHidden;
+                existing.hiddenRuleMatch = entry.hiddenRuleMatch;
+            }
             
             existing.responseHeaders = undefined;
             existing.responseBody = undefined;

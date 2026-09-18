@@ -229,6 +229,8 @@ export const DevTools = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const visibleNets = nets.filter(n => !n.isHidden);
+
     const handleCopyAll = () => {
         if (activeTab === 'console') {
             const allText = logs.map(l => {
@@ -238,7 +240,7 @@ export const DevTools = () => {
             navigator.clipboard.writeText(allText);
             setCopiedId('all-console');
         } else {
-            const allText = nets.map(n => {
+            const allText = visibleNets.map(n => {
                 const istStr = n.timestamp.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
                 let parts = [`[${istStr}] ${n.method} ${n.url} - ${n.status} (${n.duration}ms)`];
                 if (n.requestBody) parts.push(`Payload: ${safeStringifyWithTruncation(n.requestBody, 2)}`);
@@ -270,8 +272,8 @@ export const DevTools = () => {
             const reportData = {
                 title: "Ceaznet DevTools Network XHR Report",
                 exportedAt: new Date().toISOString(),
-                totalRequests: nets.length,
-                requests: nets.map(n => ({
+                totalRequests: visibleNets.length,
+                requests: visibleNets.map(n => ({
                     id: n.id,
                     method: n.method,
                     url: n.url,
@@ -501,7 +503,7 @@ export const DevTools = () => {
                         <div className="flex items-center gap-1.5 shrink-0" title="Network Requests">
                             <Network size={14} /> 
                             <span className="hidden sm:inline">Network</span>
-                            {nets.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{nets.length}</span>}
+                            {visibleNets.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{visibleNets.length}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0" title="Device Models Mapping">
                             <Smartphone size={14} /> 
@@ -606,7 +608,7 @@ export const DevTools = () => {
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'network' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Network
                                 </span>
-                                {nets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{nets.length}</span>}
+                                {visibleNets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{visibleNets.length}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('cache'); }}
