@@ -189,9 +189,24 @@ const formatValue = (v: any): string => {
 export const RealtimeDiffViewer: React.FC<RealtimeDiffViewerProps> = ({ prefix, payload }) => {
   if (!payload || typeof payload !== 'object') return null;
 
+  const eventType = payload.eventType || (payload.new && !payload.old ? 'INSERT' : payload.old && !payload.new ? 'DELETE' : 'UPDATE');
+  const oldObj = payload.old || {};
+  const newObj = payload.new || {};
+
   const unifiedData = getUnifiedRealtimeData(payload);
-  const changedKeys = getChangedRealtimeKeys(payload);
   const keys = Object.keys(unifiedData);
+
+  const formatRawValue = (v: any): string => {
+    if (v === null) return 'null';
+    if (v === undefined) return 'undefined';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return String(v);
+    }
+  };
 
   return (
     <div className="font-mono leading-relaxed select-text">
@@ -214,24 +229,98 @@ export const RealtimeDiffViewer: React.FC<RealtimeDiffViewerProps> = ({ prefix, 
         <div className="pl-4">
           {keys.map((key, idx) => {
             const isLast = idx === keys.length - 1;
-            const isChanged = changedKeys.has(key);
+            const hasOld = Object.prototype.hasOwnProperty.call(oldObj, key);
+            const hasNew = Object.prototype.hasOwnProperty.call(newObj, key);
+            const oldVal = oldObj[key];
+            const newVal = newObj[key];
+
+            const oldStr = formatValue(oldVal);
+            const newStr = formatValue(newVal);
+
+            const isChanged = eventType === 'UPDATE' && hasOld && hasNew && oldStr !== newStr;
+            const isAdded = eventType === 'INSERT' || (!hasOld && hasNew && Object.keys(oldObj).length > 0);
+            const isRemoved = eventType === 'DELETE' || (hasOld && !hasNew && Object.keys(newObj).length > 0);
+
+            if (isChanged) {
+              const oldDisplay = formatRawValue(oldVal);
+              const newDisplay = formatRawValue(newVal);
+
+              return (
+                <div key={key} className="my-1.5 flex flex-col gap-1">
+                  <div>
+                    <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
+                    <span className="text-[var(--dev-console-text-muted)]">:</span>
+                  </div>
+                  <div className="pl-3 sm:pl-4 flex flex-col gap-1">
+                    {/* Old (Removed) Value badge with strikethrough */}
+                    <div className="w-fit">
+                      <span className="inline-block bg-[var(--diff-removed-bg)] text-[var(--diff-removed-text)] border border-[var(--diff-removed-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed line-through break-all select-text">
+                        — {oldDisplay}
+                      </span>
+                    </div>
+                    {/* New (Added) Value badge with + */}
+                    <div className="w-fit flex items-baseline">
+                      <span className="inline-block bg-[var(--diff-added-bg)] text-[var(--diff-added-text)] border border-[var(--diff-added-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed break-all select-text">
+                        + {newDisplay}
+                      </span>
+                      {!isLast && <span className="text-[var(--dev-console-text-muted)] ml-1">,</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            if (isAdded) {
+              const newDisplay = formatRawValue(newVal);
+              return (
+                <div key={key} className="my-1 flex flex-col gap-1">
+                  <div>
+                    <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
+                    <span className="text-[var(--dev-console-text-muted)]">:</span>
+                  </div>
+                  <div className="pl-3 sm:pl-4 w-fit flex items-baseline">
+                    <span className="inline-block bg-[var(--diff-added-bg)] text-[var(--diff-added-text)] border border-[var(--diff-added-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed break-all select-text">
+                      + {newDisplay}
+                    </span>
+                    {!isLast && <span className="text-[var(--dev-console-text-muted)] ml-1">,</span>}
+                  </div>
+                </div>
+              );
+            }
+
+            if (isRemoved) {
+              const oldDisplay = formatRawValue(oldVal);
+              return (
+                <div key={key} className="my-1 flex flex-col gap-1">
+                  <div>
+                    <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
+                    <span className="text-[var(--dev-console-text-muted)]">:</span>
+                  </div>
+                  <div className="pl-3 sm:pl-4 w-fit flex items-baseline">
+                    <span className="inline-block bg-[var(--diff-removed-bg)] text-[var(--diff-removed-text)] border border-[var(--diff-removed-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed line-through break-all select-text">
+                      — {oldDisplay}
+                    </span>
+                    {!isLast && <span className="text-[var(--dev-console-text-muted)] ml-1">,</span>}
+                  </div>
+                </div>
+              );
+            }
+
+            // Normal unchanged field
             const val = unifiedData[key];
             const valFormatted = formatValue(val);
 
             return (
               <div
                 key={key}
-                className={`flex items-baseline flex-wrap leading-relaxed transition-colors ${
-                  isChanged
-                    ? 'bg-[var(--dev-highlight-yellow-bg)] text-[var(--dev-highlight-yellow-text)] font-semibold px-1 rounded -mx-1'
-                    : 'text-[var(--dev-console-text)]'
-                }`}
+                className="flex items-baseline flex-wrap leading-relaxed text-[var(--dev-console-text)]"
               >
-                <span>&quot;{key}&quot;: </span>
-                <span className={`ml-1 break-all ${isChanged ? 'text-[var(--dev-highlight-yellow-text)]' : ''}`}>
+                <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
+                <span className="text-[var(--dev-console-text-muted)]">: </span>
+                <span className="ml-1 break-all">
                   {valFormatted}
                 </span>
-                {!isLast && <span className={isChanged ? 'text-[var(--dev-highlight-yellow-text)]' : 'text-[var(--dev-console-text)]'}>,</span>}
+                {!isLast && <span className="text-[var(--dev-console-text-muted)]">,</span>}
               </div>
             );
           })}

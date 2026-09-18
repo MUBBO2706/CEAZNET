@@ -26,7 +26,15 @@ export const getGroupKey = (method: string, url: string, requestBody?: any) => {
         }
 
         if (u.hostname === 'api.iconify.design' && u.pathname.includes('/search')) {
-            return `${method} api.iconify.design/search`;
+            return `ICONIFY_SEARCH`;
+        }
+
+        if (u.pathname.includes('/api/icons')) {
+            const action = u.searchParams.get('action');
+            const hasQuery = u.searchParams.has('query') || u.searchParams.has('q');
+            if (hasQuery || action === 'search' || (method === 'GET' && action !== 'suggest')) {
+                return `ICONIFY_SEARCH`;
+            }
         }
 
         if (u.pathname.includes('/api/news')) {
@@ -48,13 +56,16 @@ export const getGroupKey = (method: string, url: string, requestBody?: any) => {
             const payloadSig = requestBody ? stableStringify(requestBody) : '';
             return `${method} ${normalizedUrl}:${payloadSig}`;
         }
-        if (url.includes('api.iconify.design') && url.includes('/search')) {
-            return `${method} api.iconify.design/search`;
+        if (lowerUrl.includes('api.iconify.design') && lowerUrl.includes('/search')) {
+            return `ICONIFY_SEARCH`;
         }
-        if (url.includes('/api/news')) {
+        if (lowerUrl.includes('/api/icons') && (lowerUrl.includes('query=') || lowerUrl.includes('q=') || lowerUrl.includes('search') || method === 'GET')) {
+            return `ICONIFY_SEARCH`;
+        }
+        if (lowerUrl.includes('/api/news')) {
             return `${method} /api/news`;
         }
-        if (url.includes('/api/image-proxy')) {
+        if (lowerUrl.includes('/api/image-proxy')) {
             return `${method} /api/image-proxy`;
         }
         return `${method} ${url}`;
@@ -80,6 +91,14 @@ export const isAutoFireRequest = (method: string, url: string): boolean => {
             return true;
         }
 
+        if (path.includes('/api/icons')) {
+            const action = urlObj.searchParams.get('action');
+            const hasQuery = urlObj.searchParams.has('query') || urlObj.searchParams.has('q');
+            if (hasQuery || action === 'search' || (method === 'GET' && action !== 'suggest')) {
+                return true;
+            }
+        }
+
         if (urlObj.hostname.includes('generativelanguage.googleapis') || path.includes('/models/gemini-')) {
             return true;
         }
@@ -98,7 +117,8 @@ export const isAutoFireRequest = (method: string, url: string): boolean => {
                lowerUrl.includes('/models/gemini-') ||
                lowerUrl.includes('/api/news') ||
                lowerUrl.includes('/api/image-proxy') ||
-               (lowerUrl.includes('api.iconify.design') && lowerUrl.includes('/search'));
+               (lowerUrl.includes('api.iconify.design') && lowerUrl.includes('/search')) ||
+               (lowerUrl.includes('/api/icons') && (lowerUrl.includes('query=') || lowerUrl.includes('q=') || lowerUrl.includes('search') || method === 'GET'));
     }
 };
 
@@ -449,7 +469,7 @@ export const truncateLongValuesInObject = (obj: any, maxLength = 300, key?: stri
     return obj;
 };
 
-export const getEnhancedRequestName = (rawUrl: string, requestBody?: any): string => {
+export const getEnhancedRequestName = (rawUrl: string, requestBody?: any, isGroupSummary?: boolean): string => {
     if (!rawUrl) return 'Unknown Request';
     try {
         const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
@@ -569,18 +589,45 @@ export const getEnhancedRequestName = (rawUrl: string, requestBody?: any): strin
             return 'Fetch URL Content';
         }
         if (pathname.includes('/api/version-control') || pathname.includes('/api/version/check')) return 'Check App Version';
-        if (pathname.includes('/api/icons') || pathname.includes('/api/dairy/suggest-icon')) return 'Icons Service';
+
+        // Iconify / Icons Search Proxy or Direct Mirror
+        const isIconifySearch = 
+            (urlObj.hostname === 'api.iconify.design' && pathname.includes('/search')) ||
+            (pathname.includes('/api/icons') && (
+                urlObj.searchParams.has('query') || 
+                urlObj.searchParams.has('q') || 
+                urlObj.searchParams.get('action') === 'search' || 
+                (!urlObj.searchParams.get('action') && !bodyStr.includes('"suggest"') && !bodyStr.includes('"action":"suggest"'))
+            ));
+
+        if (isIconifySearch) {
+            if (isGroupSummary) {
+                return 'Iconify Search';
+            }
+            const qParam = urlObj.searchParams.get('query') || 
+                           urlObj.searchParams.get('q') || 
+                           (requestBody && typeof requestBody === 'object' ? (requestBody.query || requestBody.q) : '');
+            if (qParam && String(qParam).trim()) {
+                const cleanQuery = decodeURIComponent(String(qParam).trim());
+                return `Search ${cleanQuery}`;
+            }
+            return 'Iconify Search';
+        }
+
+        if (pathname.includes('/api/icons') || pathname.includes('/api/dairy/suggest-icon')) {
+            if (urlObj.searchParams.get('action') === 'suggest' || bodyStr.includes('suggest')) {
+                return 'AI Suggest Icon';
+            }
+            return 'Icons Service';
+        }
+
         if (pathname.includes('/api/health')) return 'Health Check';
         if (pathname.includes('/api/db/clear-cache')) return 'Clear DB Cache';
         if (pathname.includes('/api/debug-triggers')) return 'Debug DB Triggers';
         if (pathname.includes('/api/debug-news-keys')) return 'Debug News Keys';
         if (pathname.includes('/api/session-cache/stream')) return 'Stream Session Cache';
 
-        // 9. External Services
-        if (urlObj.hostname === 'api.iconify.design' && pathname.includes('/search')) {
-            const qParam = urlObj.searchParams.get('query');
-            return qParam ? `Iconify "${qParam.slice(0, 10)}"` : 'Iconify Search';
-        }
+        // 10. External Services
         if (urlObj.hostname.includes('generativelanguage.googleapis') || pathname.includes('/models/gemini-')) {
             const modelMatch = pathname.match(/\/models\/([a-zA-Z0-9.-]+)/);
             const modelName = modelMatch ? modelMatch[1].replace('gemini-', '') : 'AI';
@@ -590,7 +637,7 @@ export const getEnhancedRequestName = (rawUrl: string, requestBody?: any): strin
             return 'PubChem Compound Data';
         }
 
-        // 10. Fallback: Parse last segment or domain, limit strictly to max 3 words
+        // 11. Fallback: Parse last segment or domain, limit strictly to max 3 words
         const rawSegment = pathname.split('/').filter(Boolean).pop() || urlObj.hostname;
         const cleaned = rawSegment
             .replace(/[._-]/g, ' ')

@@ -406,7 +406,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                         }
 
                                         const urlToUse = item.url || groupParent?.url || '';
-                                        const baseEnhanced = getEnhancedRequestName(urlToUse, item.requestBody || groupParent?.requestBody);
+                                        const baseEnhanced = getEnhancedRequestName(urlToUse, item.requestBody || groupParent?.requestBody, false);
                                         const displayName = item.isLatest ? `Latest - ${baseEnhanced}` : `#${item.index} - ${baseEnhanced}`;
 
                                         return (
@@ -578,7 +578,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                 </div>
                                                 <div className="flex-1 min-w-0 pr-1 flex items-center gap-1.5 text-left" title={net.url}>
                                                     <span className="truncate">
-                                                        {getEnhancedRequestName(net.url, net.requestBody)}
+                                                        {getEnhancedRequestName(net.url, net.requestBody, true)}
                                                     </span>
                                                     <span className={`shrink-0 border px-1 rounded-[3px] text-[8px] uppercase tracking-wider font-bold hidden sm:inline ${
                                                         isSupabase ? 'border-[#3ecf8e]/30 text-[#3ecf8e] bg-[#3ecf8e]/10' :
