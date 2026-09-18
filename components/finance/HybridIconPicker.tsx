@@ -59,11 +59,11 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
     // Online search async results
     const [onlineIcons, setOnlineIcons] = useState<IconItem[]>([]);
     const [isOnlineSearching, setIsOnlineSearching] = useState(false);
-    const [visibleCount, setVisibleCount] = useState(64);
+    const [visibleCount, setVisibleCount] = useState(96);
 
     // Reset pagination when search or filters change
     useEffect(() => {
-        setVisibleCount(64);
+        setVisibleCount(96);
     }, [searchQuery, selectedLibrary, activePreset, isViewAllMode]);
 
     // Load full library collection if View All Mode is toggled or library changes in View All Mode
@@ -616,7 +616,7 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
                     <div className="flex justify-center pt-1">
                         <button
                             type="button"
-                            onClick={() => setVisibleCount(prev => prev + 64)}
+                            onClick={() => setVisibleCount(prev => prev + 96)}
                             className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold py-1 px-3 cursor-pointer"
                         >
                             Load More Icons...

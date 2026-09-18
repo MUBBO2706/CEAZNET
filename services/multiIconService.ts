@@ -264,6 +264,13 @@ export const searchMultiLibraryIcons = (
 const searchCache = new Map<string, IconItem[]>();
 const libraryCollectionCache = new Map<string, IconItem[]>();
 
+// Iconify API endpoints with mirror fallback
+const ICONIFY_API_HOSTS = [
+    'https://api.iconify.design',
+    'https://api.simplesvg.com',
+    'https://api.unisvg.com'
+];
+
 /**
  * Fetch and cache all icons for a specific library collection
  */
@@ -273,38 +280,44 @@ export const fetchLibraryCollection = async (libraryPrefix: string): Promise<Ico
         return libraryCollectionCache.get(libraryPrefix)!;
     }
 
-    try {
-        const url = `https://api.iconify.design/collection?prefix=${libraryPrefix}`;
-        const res = await fetchApi(url);
-        if (!res.ok) return [];
+    for (const host of ICONIFY_API_HOSTS) {
+        try {
+            const url = `${host}/collection?prefix=${libraryPrefix}`;
+            const res = await fetchApi(url);
+            if (!res.ok) continue;
 
-        const data = await res.json();
-        const iconNames: string[] = [];
+            const data = await res.json();
+            const iconNames: string[] = [];
 
-        if (Array.isArray(data.uncategorized)) {
-            iconNames.push(...data.uncategorized);
-        }
-        if (data.categories && typeof data.categories === 'object') {
-            for (const catName in data.categories) {
-                if (Array.isArray(data.categories[catName])) {
-                    iconNames.push(...data.categories[catName]);
+            if (Array.isArray(data.uncategorized)) {
+                iconNames.push(...data.uncategorized);
+            }
+            if (data.categories && typeof data.categories === 'object') {
+                for (const catName in data.categories) {
+                    if (Array.isArray(data.categories[catName])) {
+                        iconNames.push(...data.categories[catName]);
+                    }
                 }
             }
+
+            const items: IconItem[] = iconNames.map(name => ({
+                id: `${libraryPrefix}:${name}`,
+                name: name.replace(/[-_]/g, ' '),
+                library: libraryPrefix,
+                keywords: [name.toLowerCase(), libraryPrefix]
+            }));
+
+            libraryCollectionCache.set(libraryPrefix, items);
+            return items;
+        } catch (e) {
+            // Try next mirror
+            continue;
         }
-
-        const items: IconItem[] = iconNames.map(name => ({
-            id: `${libraryPrefix}:${name}`,
-            name: name.replace(/[-_]/g, ' '),
-            library: libraryPrefix,
-            keywords: [name.toLowerCase(), libraryPrefix]
-        }));
-
-        libraryCollectionCache.set(libraryPrefix, items);
-        return items;
-    } catch (e) {
-        console.warn(`Failed to fetch collection for ${libraryPrefix}:`, e);
-        return [];
     }
+
+    // Fallback to local icons for this library
+    const fallbackLocal = ALL_LOCAL_ICONS.filter(i => i.library === libraryPrefix);
+    return fallbackLocal;
 };
 
 /**
@@ -322,40 +335,50 @@ export const searchOnlineIconify = async (
         return searchCache.get(cacheKey)!;
     }
 
-    try {
-        let prefixFilter = '';
-        if (library === 'solar') prefixFilter = '&prefixes=solar';
-        else if (library === 'ph') prefixFilter = '&prefixes=ph';
-        else if (library === 'hugeicons') prefixFilter = '&prefixes=hugeicons';
-        else if (library === 'tabler') prefixFilter = '&prefixes=tabler';
-        else if (library === 'ri') prefixFilter = '&prefixes=ri';
-        else if (library === 'heroicons') prefixFilter = '&prefixes=heroicons';
-        else if (library === 'lucide') prefixFilter = '&prefixes=lucide';
-        else prefixFilter = '&prefixes=solar,ph,hugeicons,tabler,ri,heroicons,lucide';
+    let prefixFilter = '';
+    if (library === 'solar') prefixFilter = '&prefixes=solar';
+    else if (library === 'ph') prefixFilter = '&prefixes=ph';
+    else if (library === 'hugeicons') prefixFilter = '&prefixes=hugeicons';
+    else if (library === 'tabler') prefixFilter = '&prefixes=tabler';
+    else if (library === 'ri') prefixFilter = '&prefixes=ri';
+    else if (library === 'heroicons') prefixFilter = '&prefixes=heroicons';
+    else if (library === 'lucide') prefixFilter = '&prefixes=lucide';
+    else prefixFilter = '&prefixes=solar,ph,hugeicons,tabler,ri,heroicons,lucide';
 
-        const url = `https://api.iconify.design/search?query=${encodeURIComponent(trimmed)}&limit=64${prefixFilter}`;
-        const res = await fetchApi(url);
-        if (!res.ok) return [];
+    for (const host of ICONIFY_API_HOSTS) {
+        try {
+            const url = `${host}/search?query=${encodeURIComponent(trimmed)}&limit=192&compact=1${prefixFilter}`;
+            const res = await fetchApi(url);
+            if (!res.ok) continue;
 
-        const data = await res.json();
-        if (!data || !Array.isArray(data.icons)) return [];
+            const data = await res.json();
+            if (!data || !Array.isArray(data.icons)) continue;
 
-        const items: IconItem[] = data.icons.map((iconStr: string): IconItem => {
-            const [prefix, iconName] = iconStr.includes(':') ? iconStr.split(':') : ['solar', iconStr];
-            return {
-                id: iconStr,
-                name: (iconName || iconStr).replace(/[-_]/g, ' '),
-                library: prefix || 'solar',
-                keywords: [trimmed]
-            };
-        });
+            const items: IconItem[] = data.icons.map((iconStr: string): IconItem => {
+                const [prefix, iconName] = iconStr.includes(':') ? iconStr.split(':') : ['solar', iconStr];
+                return {
+                    id: iconStr,
+                    name: (iconName || iconStr).replace(/[-_]/g, ' '),
+                    library: prefix || 'solar',
+                    keywords: [trimmed]
+                };
+            });
 
-        searchCache.set(cacheKey, items);
-        return items;
-    } catch (e) {
-        console.warn('Iconify search failed:', e);
-        return [];
+            searchCache.set(cacheKey, items);
+            return items;
+        } catch (e) {
+            // Try next mirror
+            continue;
+        }
     }
+
+    // Fallback: search local database so search never returns empty on network glitch
+    const fallbackLocal = searchMultiLibraryIcons(trimmed, { libraryFilter: library, limit: 192 });
+    if (fallbackLocal.length > 0) {
+        return fallbackLocal;
+    }
+
+    return [];
 };
 
 /**

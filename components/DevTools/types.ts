@@ -3,6 +3,7 @@ export type LogEntry = {
     type: 'log' | 'info' | 'warn' | 'error' | 'eval_result';
     timestamp: Date;
     args: any[];
+    rawArgs?: any[];
 };
 
 export type NetHistoryEntry = {

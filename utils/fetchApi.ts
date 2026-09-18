@@ -1,13 +1,28 @@
 export async function fetchApi(url: string, options: RequestInit = {}) {
-  const mergedOptions = {
+  // Only include credentials for same-origin or relative URLs to avoid CORS failure with third-party APIs
+  let isSameOrigin = true;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (typeof window !== 'undefined') {
+      try {
+        const parsed = new URL(url);
+        isSameOrigin = parsed.origin === window.location.origin;
+      } catch {
+        isSameOrigin = false;
+      }
+    } else {
+      isSameOrigin = false;
+    }
+  }
+
+  const mergedOptions: RequestInit = {
     ...options,
-    credentials: 'include' as RequestCredentials,
+    ...(isSameOrigin && !options.credentials ? { credentials: 'include' as RequestCredentials } : {}),
   };
   
   try {
     const response = await fetch(url, mergedOptions);
     
-    if (response.ok) {
+    if (response.ok && isSameOrigin) {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('text/html')) {
         // AI Studio proxy interception detected!

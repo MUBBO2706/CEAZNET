@@ -117,6 +117,7 @@ export const initDevStore = () => {
             id: Math.random().toString(36).slice(2, 9),
             type,
             timestamp: new Date(),
+            rawArgs: args,
             args: args.map(a => {
                 try {
                     if (a instanceof Error) {
