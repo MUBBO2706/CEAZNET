@@ -163,14 +163,14 @@ const FinanceCalendar: React.FC<FinanceCalendarProps> = ({
     return (
         <div className="w-auto -mx-4 border-y border-gray-200 dark:border-white/10">
             <div className="flex items-center justify-between p-4 px-4 border-b border-gray-200 dark:border-white/10">
-                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
-                    <AppIcon name="solar:alt-arrow-left-linear" className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button onClick={prevMonth} className="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+                    <AppIcon name="solar:alt-arrow-left-linear" className="w-5 h-5" />
                 </button>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
-                    <AppIcon name="solar:alt-arrow-right-linear" className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button onClick={nextMonth} className="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+                    <AppIcon name="solar:alt-arrow-right-linear" className="w-5 h-5" />
                 </button>
             </div>
 

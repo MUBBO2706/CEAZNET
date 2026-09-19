@@ -7,7 +7,9 @@ Chart.register(...registerables);
 import { Transaction, FinanceProfile, Note } from '../../types';
 import { getTransactions, getTransactionsPaginated, getTransactionsForExport, getTransactionsForDate, getFinanceAnalytics, FinanceAnalyticsData, DailyFinanceData, saveTransaction, saveTransactionsBulk, deleteTransaction, getFinanceProfiles, saveFinanceProfile, updateFinanceProfile, deleteFinanceProfile, getCustomCategories, CustomCategoryItem, getWalletTransactionCounts, getFinanceSummary, getFinancePeriodStats, FinancePeriodStats } from '../../services/dbService';
 import { linkWalletToNote, syncTransactionAdd, syncTransactionUpdate, syncTransactionDelete, fetchLinkedNote, syncAllTransactionsToNote } from '../../services/financeSyncService'; 
-import { Plus, Wallet, Download, PieChart, ArrowUpRight, ArrowDownLeft, BarChart3, List, Trash2, X, CheckSquare, ChevronDown, PlusCircle, Edit2, Check, PiggyBank, TrendingUp, TrendingDown, FileText, Database, Upload, Link as LinkIcon, Calendar, StickyNote, Loader, FileSpreadsheet, Activity, MoreVertical, Tag, Search, Filter, RotateCw } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
+import { CategoryIcon } from './CategoryIcon';
 import { CATEGORY_CONFIG, getCategoryConfig } from './categories';
 import FinanceCalendar from './FinanceCalendar';
 import TransactionList from './TransactionList';
@@ -1429,7 +1431,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
             return {
                 id: cat,
                 label: conf?.label || cat,
-                icon: conf?.icon || Tag,
+                icon: conf?.icon,
+                iconName: conf?.iconName || 'Tag',
                 color: conf?.color || 'text-indigo-500',
                 bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30'
             };
@@ -1960,7 +1963,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         className="group flex items-center gap-2 sm:gap-3 p-1 pr-3 sm:p-1.5 sm:pr-4 bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-neutral-200/60 dark:border-gray-800 rounded-full hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all duration-300"
                                     >
                                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-inner group-hover:scale-105 transition-transform flex-shrink-0">
-                                            <Wallet className="w-4 h-4 sm:w-5 h-5" />
+                                            <AppIcon name="wallet" className="w-4 h-4 sm:w-5 h-5" />
                                         </div>
                                         <div className="flex flex-col items-start justify-center min-w-0">
                                             <span className="hidden sm:block text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 leading-none mb-0.5">
@@ -1980,7 +1983,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 )}
                                             </span>
                                         </div>
-                                        <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-neutral-400 group-hover:text-indigo-500 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                                        <AppIcon name="chevron-down" className={`w-3 h-3 sm:w-4 sm:h-4 text-neutral-400 group-hover:text-indigo-500 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
                                     
                                     {isProfileDropdownOpen && (
@@ -1992,7 +1995,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
 
                                             {linkedNote && (
                                                 <div className="px-4 py-2 bg-amber-50/50 dark:bg-amber-900/10 border-b border-amber-100/50 dark:border-amber-900/20 flex items-center gap-2">
-                                                    <StickyNote className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+                                                    <AppIcon name="notes" className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
                                                     <span className="text-xs font-medium text-amber-700 dark:text-amber-400 truncate">
                                                         linked to : {linkedNote.title || 'Untitled Note'}
                                                     </span>
@@ -2015,7 +2018,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 ? 'bg-indigo-500 text-white' 
                                                                 : 'bg-gray-100 dark:bg-[#1a1a1a] text-gray-500 dark:text-gray-400'
                                                         }`}>
-                                                            <Wallet className="w-4 h-4" />
+                                                            <AppIcon name="wallet" className="w-4 h-4" />
                                                         </div>
                                                         <div className="flex-1 text-left min-w-0">
                                                             <p className="text-sm font-bold truncate">Main Wallet</p>
@@ -2023,7 +2026,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                         </div>
 
                                                         <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                            {activeProfile.id === null && <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
+                                                            {activeProfile.id === null && <AppIcon name="check" className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
 
                                                             {/* 3-Dot Action Menu Toggle for Main Wallet */}
                                                             <button
@@ -2036,7 +2039,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 }`}
                                                                 title="Wallet options"
                                                             >
-                                                                <MoreVertical className="w-4 h-4" />
+                                                                <AppIcon name="more-vertical" className="w-4 h-4" />
                                                             </button>
                                                         </div>
                                                     </div>
@@ -2069,7 +2072,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     {isRenamingProfileLoading ? (
                                                                         <Loader className="w-4 h-4 animate-spin text-indigo-500" />
                                                                     ) : (
-                                                                        <Check className="w-4 h-4" />
+                                                                        <AppIcon name="check" className="w-4 h-4" />
                                                                     )}
                                                                 </button>
                                                                 <button 
@@ -2078,7 +2081,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     className="p-1 text-gray-400 hover:text-red-500 disabled:opacity-40 transition-colors cursor-pointer"
                                                                     title="Cancel"
                                                                 >
-                                                                    <X className="w-4 h-4" />
+                                                                    <AppIcon name="close" className="w-4 h-4" />
                                                                 </button>
                                                             </div>
                                                         ) : (
@@ -2104,7 +2107,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 
                                                                 <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                                                                     {activeProfile.id === p.id && (
-                                                                        <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                                                                        <AppIcon name="check" className="w-4 h-4 text-indigo-500 flex-shrink-0" />
                                                                     )}
 
                                                                     {/* 3-Dot Action Menu Toggle for Custom Wallet */}
@@ -2118,7 +2121,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                         }`}
                                                                         title="Wallet options"
                                                                     >
-                                                                        <MoreVertical className="w-4 h-4" />
+                                                                        <AppIcon name="more-vertical" className="w-4 h-4" />
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -2133,9 +2136,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                     <div 
                                                         className="fixed inset-0 z-[99998]" 
                                                         onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setActiveMenuWalletId(null);
-                                                            setMenuPosition(null);
+                                                             e.stopPropagation();
+                                                             setActiveMenuWalletId(null);
+                                                             setMenuPosition(null);
                                                         }} 
                                                     />
                                                     
@@ -2155,7 +2158,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                             }}
                                                             className="w-full px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2.5 transition-colors cursor-pointer"
                                                         >
-                                                            <LinkIcon className="w-3.5 h-3.5 text-indigo-500" />
+                                                            <AppIcon name="link" className="w-3.5 h-3.5 text-indigo-500" />
                                                             <span>Link to Note</span>
                                                         </button>
 
@@ -2171,7 +2174,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 disabled={isSyncing}
                                                                 className="w-full px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50"
                                                             >
-                                                                {isSyncing ? <Loader className="w-3.5 h-3.5 animate-spin text-amber-500" /> : <RotateCw className="w-3.5 h-3.5 text-emerald-500" />}
+                                                                {isSyncing ? <Loader className="w-3.5 h-3.5 animate-spin text-amber-500" /> : <AppIcon name="refresh" className="w-3.5 h-3.5 text-emerald-500" />}
                                                                 <span>{isSyncing ? 'Syncing...' : 'Sync All to Note'}</span>
                                                             </button>
                                                         )}
@@ -2192,7 +2195,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     }}
                                                                     className="w-full px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2.5 transition-colors cursor-pointer"
                                                                 >
-                                                                    <Edit2 className="w-3.5 h-3.5 text-amber-500" />
+                                                                    <AppIcon name="pen" className="w-3.5 h-3.5 text-amber-500" />
                                                                     <span>Rename Wallet</span>
                                                                 </button>
 
@@ -2238,7 +2241,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                             className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-40 transition-colors cursor-pointer"
                                                             title="Create Wallet"
                                                         >
-                                                            {isCreatingProfileLoading ? <Loader className="w-4 h-4 animate-spin text-indigo-500" /> : <Check className="w-4 h-4" />}
+                                                            {isCreatingProfileLoading ? <Loader className="w-4 h-4 animate-spin text-indigo-500" /> : <AppIcon name="check" className="w-4 h-4" />}
                                                         </button>
                                                         <button 
                                                             onClick={() => { setIsCreatingProfile(false); setNewProfileName(''); }} 
@@ -2246,7 +2249,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                             className="p-1 text-gray-400 hover:text-red-500 disabled:opacity-40 transition-colors cursor-pointer"
                                                             title="Cancel"
                                                         >
-                                                            <X className="w-4 h-4" />
+                                                            <AppIcon name="close" className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 ) : (
@@ -2254,7 +2257,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                         onClick={() => setIsCreatingProfile(true)} 
                                                         className="w-full flex items-center justify-center gap-2 py-3 px-4 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100/60 dark:hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-wide cursor-pointer"
                                                     >
-                                                        <PlusCircle className="w-4 h-4" />
+                                                        <AppIcon name="plus-circle" className="w-4 h-4" />
                                                         Add New Wallet
                                                     </button>
                                                 )}
@@ -2278,8 +2281,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 <Loader className="w-5 h-5 animate-spin text-amber-600 dark:text-amber-400" />
                                             ) : (
                                                 <>
-                                                    <StickyNote className="w-5 h-5 text-amber-600 dark:text-amber-400 transition-transform group-hover:scale-105" />
-                                                    <RotateCw className="w-2.5 h-2.5 absolute -bottom-1 -right-1 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900 rounded-full p-0.5 ring-1 ring-amber-300 dark:ring-amber-700" />
+                                                    <AppIcon name="notes" className="w-5 h-5 text-amber-600 dark:text-amber-400 transition-transform group-hover:scale-105" />
+                                                    <AppIcon name="refresh" className="w-2.5 h-2.5 absolute -bottom-1 -right-1 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900 rounded-full p-0.5 ring-1 ring-amber-300 dark:ring-amber-700" />
                                                 </>
                                             )}
                                         </div>
@@ -2292,7 +2295,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         className={`px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                         title="List view"
                                     >
-                                        <List className="w-4 h-4" />
+                                        <AppIcon name="list" className="w-4 h-4" />
                                         <span className="hidden sm:inline text-xs font-semibold">List</span>
                                     </button>
                                     <button 
@@ -2300,7 +2303,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         className={`px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${viewMode === 'analytics' ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                         title="Analytics view"
                                     >
-                                        <BarChart3 className="w-4 h-4" />
+                                        <AppIcon name="analytics" className="w-4 h-4" />
                                         <span className="hidden sm:inline text-xs font-semibold">Analytics</span>
                                     </button>
                                     <button 
@@ -2308,17 +2311,17 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         className={`px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${viewMode === 'calendar' ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                         title="Calendar view"
                                     >
-                                        <Calendar className="w-4 h-4" />
+                                        <AppIcon name="calendar" className="w-4 h-4" />
                                         <span className="hidden sm:inline text-xs font-semibold">Calendar</span>
                                     </button>
                                 </div>
                                 
-                                <button onClick={openExportModal} className="p-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl transition-all shadow-sm active:scale-95" title="Download Reports">
-                                    <Download className="w-5 h-5" />
+                                <button onClick={openExportModal} className="p-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl transition-all shadow-sm active:scale-95 group" title="Download Reports">
+                                    <AppIcon name="download" className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 </button>
 
-                                <button onClick={() => setIsDataModalOpen(true)} className="p-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl transition-all shadow-sm active:scale-95" title="Data Management">
-                                    <Database className="w-5 h-5" />
+                                <button onClick={() => setIsDataModalOpen(true)} className="p-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl transition-all shadow-sm active:scale-95 group" title="Data Management">
+                                    <AppIcon name="database" className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 </button>
                             </div>
                         </div>
@@ -2385,7 +2388,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                 : availableMonths.find(m => m.id === dateFilter)?.label || 'Select Month'}
                                         </span>
                                         {dateFilter !== 'all' && (
-                                            <ChevronDown className={`w-3.5 h-3.5 relative z-10 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`} />
+                                            <AppIcon name="chevron-down" className={`w-3.5 h-3.5 relative z-10 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`} />
                                         )}
                                     </button>
                                     
@@ -2419,7 +2422,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 }`}
                                                             >
                                                                 {month.label}
-                                                                {isSelected && <Check className="w-4 h-4" />}
+                                                                {isSelected && <AppIcon name="check" className="w-4 h-4" />}
                                                             </button>
                                                         );
                                                     })}
@@ -2458,7 +2461,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                         : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                                                 }`}
                                             >
-                                                <Tag className="w-3.5 h-3.5 flex-shrink-0" />
+                                                <AppIcon name="tag" className="w-3.5 h-3.5 flex-shrink-0" />
                                                 <span className="whitespace-nowrap max-w-[110px] xs:max-w-[140px] truncate">
                                                     {categoryFilter === 'all' 
                                                         ? 'All Categories' 
@@ -2473,10 +2476,10 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                         className="ml-0.5 p-0.5 hover:bg-white/20 rounded-full transition-colors"
                                                         title="Reset Category"
                                                     >
-                                                        <X className="w-3 h-3" />
+                                                        <AppIcon name="close" className="w-3 h-3" />
                                                     </span>
                                                 )}
-                                                <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                                <AppIcon name="chevron-down" className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
                                             </button>
 
                                             {/* Dropdown Menu */}
@@ -2499,7 +2502,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
 
                                                         {/* Search input inside dropdown */}
                                                         <div className="relative border-b border-gray-100 dark:border-gray-800 bg-transparent flex-shrink-0 flex items-center px-4 py-2.5">
-                                                            <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mr-2.5 pointer-events-none" />
+                                                            <AppIcon name="search" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mr-2.5 pointer-events-none" />
                                                             <input
                                                                 type="text"
                                                                 placeholder="Search category..."
@@ -2513,7 +2516,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     onClick={() => setCategorySearch('')}
                                                                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 flex-shrink-0 ml-1"
                                                                 >
-                                                                    <X className="w-3.5 h-3.5" />
+                                                                    <AppIcon name="close" className="w-3.5 h-3.5" />
                                                                 </button>
                                                             )}
                                                         </div>
@@ -2540,14 +2543,14 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                                 ? 'bg-indigo-500 text-white'
                                                                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
                                                                         }`}>
-                                                                            <Tag className="w-4 h-4" />
+                                                                            <AppIcon name="tag" className="w-4 h-4" />
                                                                         </div>
                                                                         <div className="flex flex-col text-left min-w-0">
                                                                             <span className="text-xs font-bold truncate transition-colors">All Categories</span>
                                                                             <span className="text-[10px] opacity-60 truncate transition-colors">Show all transactions</span>
                                                                         </div>
                                                                     </div>
-                                                                    {categoryFilter === 'all' && <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
+                                                                    {categoryFilter === 'all' && <AppIcon name="check" className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
                                                                 </button>
                                                             )}
 
@@ -2570,13 +2573,17 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     >
                                                                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                                                             <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${cat.color}`}>
-                                                                                <IconComp className="w-4.5 h-4.5" />
+                                                                                {IconComp ? (
+                                                                                    <IconComp className="w-4.5 h-4.5" />
+                                                                                ) : (
+                                                                                    <CategoryIcon name={cat.iconName || 'Tag'} className="w-4.5 h-4.5" />
+                                                                                )}
                                                                             </div>
                                                                             <span className="truncate text-xs font-bold">{cat.label}</span>
                                                                         </div>
                                                                         
                                                                         <div className="flex items-center gap-1 shrink-0">
-                                                                            {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
+                                                                            {isSelected && <AppIcon name="check" className="w-4 h-4 text-indigo-500" />}
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={(e) => {
@@ -2589,7 +2596,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                                 className="p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors opacity-70 group-hover:opacity-100"
                                                                                 title={`Category details, impact & settings for ${cat.label}`}
                                                                             >
-                                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                                                <AppIcon name="pen" className="w-3.5 h-3.5" />
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -2615,7 +2622,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                 }}
                                                                 className="w-full py-1.5 px-3 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                                             >
-                                                                <Tag className="w-3.5 h-3.5" />
+                                                                <AppIcon name="tag" className="w-3.5 h-3.5" />
                                                                 <span>Manage & Edit Categories</span>
                                                             </button>
                                                         </div>
@@ -2636,7 +2643,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         >
                                             <span className="text-gray-500 dark:text-gray-400 font-semibold">Page Limit:</span>
                                             <span className="text-gray-900 dark:text-white font-extrabold">{pageSize}</span>
-                                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isPageSizeDropdownOpen ? 'rotate-180' : ''}`} />
+                                            <AppIcon name="chevron-down" className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isPageSizeDropdownOpen ? 'rotate-180' : ''}`} />
                                         </button>
 
                                         {/* Custom Dropdown Menu */}
@@ -2663,7 +2670,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     }`}
                                                                 >
                                                                     <span>{option} per page</span>
-                                                                    {isSelected && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                                                                    {isSelected && <AppIcon name="check" className="w-3.5 h-3.5 text-indigo-500" />}
                                                                 </button>
                                                             );
                                                         })}
@@ -2687,9 +2694,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                     <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-all h-full min-h-[140px]">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                                                <div className="p-1 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
-                                                    <ArrowDownLeft className="w-3.5 h-3.5" />
-                                                </div>
+                                                <AppIcon name="arrow-down-left" className="w-4 h-4" />
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Income</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">
@@ -2728,9 +2733,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                     <div className="bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-800/40 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-all h-full min-h-[140px]">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
-                                                <div className="p-1 bg-rose-100 dark:bg-rose-900/50 rounded-lg">
-                                                    <ArrowUpRight className="w-3.5 h-3.5" />
-                                                </div>
+                                                <AppIcon name="arrow-up-right" className="w-4 h-4" />
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Expense</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100/80 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 truncate max-w-[110px]">
@@ -2769,9 +2772,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                     <div className="bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/40 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-all h-full min-h-[140px]">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
-                                                <div className="p-1 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-                                                    <Activity className="w-3.5 h-3.5" />
-                                                </div>
+                                                <AppIcon name="activity" className="w-4 h-4" />
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Daily Avg</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300">
@@ -2806,9 +2807,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                     <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-all h-full min-h-[140px]">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
-                                                <div className="p-1 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
-                                                    <Wallet className="w-3.5 h-3.5" />
-                                                </div>
+                                                <AppIcon name="wallet" className="w-4 h-4" />
                                                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Zero Spend</span>
                                             </div>
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/80 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
@@ -2846,14 +2845,14 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                     <div className="relative overflow-hidden rounded-2xl p-3.5 sm:p-4 text-white bg-[#111] dark:bg-black border border-[#222] shadow-lg flex flex-col justify-between h-full min-h-[148px] group">
                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/30 via-purple-600/20 to-transparent opacity-60 pointer-events-none"></div>
                                         <div className="absolute top-1/2 -translate-y-1/2 right-6 sm:right-12 opacity-[0.05] dark:opacity-[0.06] -rotate-12 pointer-events-none transform group-hover:scale-105 transition-transform duration-700 select-none">
-                                            <Wallet className="w-32 h-32 text-white" />
+                                            <AppIcon name="wallet" className="w-32 h-32 text-white" />
                                         </div>
                                         
                                         <div className="relative z-10 flex flex-col justify-between flex-1 h-full">
                                             {/* Top Header */}
                                             <div className="flex items-center justify-between mb-1.5">
                                                 <div className="flex items-center gap-1.5 text-gray-300">
-                                                    <Wallet className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                                                    <AppIcon name="wallet" className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
                                                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-300">Net Saved</span>
                                                 </div>
                                                 <div className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider ${
@@ -2863,7 +2862,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                             ? 'text-amber-400' 
                                                             : 'text-gray-400'
                                                 }`}>
-                                                    <PiggyBank className="w-3.5 h-3.5 flex-shrink-0" />
+                                                    <AppIcon name="piggy-bank" className="w-3.5 h-3.5 flex-shrink-0" />
                                                     <span>
                                                         {isStatsDataLoading ? (
                                                             <StatSkeleton className="w-14 h-2.5" variant="dark" />
@@ -2893,7 +2892,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                     ? 'text-emerald-400' 
                                                                     : 'text-rose-400'
                                                             }`}>
-                                                                {stats.balance >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                                                {stats.balance >= 0 ? <AppIcon name="trending-up" className="w-3 h-3" /> : <AppIcon name="trending-down" className="w-3 h-3" />}
                                                                 <span>
                                                                     {stats.income > 0 
                                                                         ? `${((stats.balance / stats.income) * 100).toFixed(0)}% Margin` 
@@ -2971,9 +2970,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         <div className="lg:flex-1 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all min-h-[70px]">
                                             <div className="flex items-center justify-between mb-0.5">
                                                 <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                                                    <div className="p-0.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-md">
-                                                        <ArrowDownLeft className="w-3.5 h-3.5" />
-                                                    </div>
+                                                    <AppIcon name="arrow-down-left" className="w-3.5 h-3.5" />
                                                     <span className="text-[10px] font-extrabold uppercase tracking-wider">Income</span>
                                                 </div>
                                                 <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">
@@ -3005,9 +3002,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         <div className="lg:flex-1 bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-800/40 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all min-h-[70px]">
                                             <div className="flex items-center justify-between mb-0.5">
                                                 <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
-                                                    <div className="p-0.5 bg-rose-100 dark:bg-rose-900/50 rounded-md">
-                                                        <ArrowUpRight className="w-3.5 h-3.5" />
-                                                    </div>
+                                                    <AppIcon name="arrow-up-right" className="w-3.5 h-3.5" />
                                                     <span className="text-[10px] font-extrabold uppercase tracking-wider">Expense</span>
                                                 </div>
                                                 <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-100/80 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 truncate max-w-[100px]">
@@ -3110,7 +3105,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                     style={{ bottom: 'calc(var(--dev-console-padding, 0px) + 1.5rem)' }}
                     title="Add Record"
                 >
-                    <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
+                    <AppIcon name="plus" className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
                 </button>
             )}
 
@@ -3126,10 +3121,10 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                         <div className="flex items-center gap-2 pl-1 pr-1.5">
                             <button 
                                 onClick={cancelSelectionMode} 
-                                className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-gray-800 text-neutral-500 dark:text-gray-400 transition-colors"
+                                className="p-1.5 rounded-lg text-neutral-500 dark:text-gray-400 group"
                                 title="Cancel selection"
                             >
-                                <X className="w-4 h-4" />
+                                <AppIcon name="x" className="w-4 h-4 group-hover:scale-110 transition-transform" />
                             </button>
                             <span className="text-xs font-bold text-neutral-900 dark:text-white whitespace-nowrap">
                                 {selectedIds.size} Selected
@@ -3138,18 +3133,18 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                         <div className="flex items-center gap-1.5 border-l border-neutral-200 dark:border-gray-800 pl-2">
                             <button
                                 onClick={handleToggleSelectAll}
-                                className="p-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors flex items-center gap-1"
+                                className="p-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center gap-1 group"
                             >
-                                <CheckSquare className="w-3.5 h-3.5" />
+                                <AppIcon name="check-square" className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                 <span className="hidden xs:inline">{selectedIds.size === transactionsForList.length ? 'Deselect' : 'Select All'}</span>
                             </button>
                             <button
                                 onClick={() => setIsBulkDeleteConfirmOpen(true)}
                                 disabled={selectedIds.size === 0}
-                                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
                                 style={{ borderRadius: 'calc(var(--app-border-radius, 1rem) * 0.75)' }}
                             >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <AppIcon name="trash-2" className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                 <span>Delete</span>
                             </button>
                         </div>
@@ -3171,9 +3166,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                         <div className="relative p-6">
                             <div className="flex justify-between items-start mb-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                                        <Download className="w-6 h-6" />
-                                    </div>
+                                    <AppIcon name="download" className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                                             Download Report
@@ -3183,8 +3176,8 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         </p>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsExportModalOpen(false)} className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors">
-                                    <X className="w-4 h-4" />
+                                <button onClick={() => setIsExportModalOpen(false)} className="p-1.5 text-gray-500 group">
+                                    <AppIcon name="x" className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                 </button>
                             </div>
 
@@ -3201,7 +3194,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                 <div className="bg-gray-50 dark:bg-black rounded-2xl p-4 border border-gray-100 dark:border-gray-800/60">
                                     <div className="flex items-center gap-3 mb-4 cursor-pointer group" onClick={() => setExportAllDates(!exportAllDates)}>
                                         <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${exportAllDates ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300 dark:border-gray-600 group-hover:border-indigo-400'}`}>
-                                            {exportAllDates && <Check className="w-3.5 h-3.5 text-white" />}
+                                            {exportAllDates && <AppIcon name="check" className="w-3.5 h-3.5 text-white" />}
                                         </div>
                                         <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Export All Time Data</span>
                                     </div>
@@ -3210,7 +3203,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block ml-1">From Date</label>
                                             <div className="relative group" onClick={() => (document.getElementById('export-start-date') as HTMLInputElement)?.showPicker()}>
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+                                                <AppIcon name="calendar" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none group-hover:scale-110 transition-transform" />
                                                 <input 
                                                     id="export-start-date"
                                                     type="date" 
@@ -3223,7 +3216,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block ml-1">To Date</label>
                                             <div className="relative group" onClick={() => (document.getElementById('export-end-date') as HTMLInputElement)?.showPicker()}>
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+                                                <AppIcon name="calendar" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none group-hover:scale-110 transition-transform" />
                                                 <input 
                                                     id="export-end-date"
                                                     type="date" 
@@ -3240,7 +3233,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                 <div className="grid grid-cols-2 gap-3">
                                     <button 
                                         onClick={() => initiateExport('csv')}
-                                        className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 hover:border-emerald-500/50 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 transition-all group"
+                                        className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 hover:border-emerald-500/50 text-gray-700 dark:text-gray-300 transition-all group"
                                     >
                                         <span className="text-xs font-bold uppercase tracking-wide">CSV Excel</span>
                                     </button>
@@ -3270,9 +3263,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                         <div className="relative p-6">
                             <div className="flex justify-between items-start mb-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                                        <Database className="w-6 h-6" />
-                                    </div>
+                                    <AppIcon name="database" className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                                             Data Backup
@@ -3282,19 +3273,17 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                         </p>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsDataModalOpen(false)} className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors">
-                                    <X className="w-4 h-4" />
+                                <button onClick={() => setIsDataModalOpen(false)} className="p-1.5 text-gray-500 group">
+                                    <AppIcon name="x" className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                 </button>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <button 
                                     onClick={initiateBackup}
-                                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 dark:bg-black hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-gray-200 dark:border-gray-800 hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all group text-center shadow-sm"
+                                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all group text-center shadow-sm"
                                 >
-                                    <div className="p-2 rounded-full bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform shadow-sm">
-                                        <Download className="w-5 h-5" />
-                                    </div>
+                                    <AppIcon name="download" className="w-5 h-5 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
                                     <div>
                                         <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wide">Export</p>
                                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Save JSON</p>
@@ -3303,11 +3292,9 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
 
                                 <button 
                                     onClick={() => setIsBulkImportOpen(true)}
-                                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 dark:bg-black hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all group text-center shadow-sm"
+                                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all group text-center shadow-sm"
                                 >
-                                    <div className="p-2 rounded-full bg-white dark:bg-black text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shadow-sm">
-                                        <Upload className="w-5 h-5" />
-                                    </div>
+                                    <AppIcon name="upload" className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
                                     <div>
                                         <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wide">Import</p>
                                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Restore JSON</p>
@@ -3392,11 +3379,11 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                     <div className="relative w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[80vh]">
                         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-indigo-500" />
+                                <AppIcon name="calendar" className="w-5 h-5 text-indigo-500" />
                                 {new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </h3>
-                            <button onClick={() => setIsCalendarModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors">
-                                <X className="w-5 h-5" />
+                            <button onClick={() => setIsCalendarModalOpen(false)} className="p-2 text-gray-500 group">
+                                <AppIcon name="x" className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">

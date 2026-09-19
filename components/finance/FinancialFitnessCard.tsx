@@ -133,13 +133,11 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
             <div className="flex justify-between items-start">
                 <div>
                     <div className="flex items-center gap-1.5 mb-0.5">
-                        <div className="p-0.5 bg-gray-100 dark:bg-gray-800 rounded-md">
-                            {stats.isCurrentPeriod ? (
-                                <AppIcon name="solar:calendar-linear" className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
-                            ) : (
-                                <AppIcon name="solar:pulse-2-linear" className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
-                            )}
-                        </div>
+                        {stats.isCurrentPeriod ? (
+                            <AppIcon name="solar:calendar-linear" className="w-4 h-4 text-gray-600 dark:text-gray-300 shrink-0" />
+                        ) : (
+                            <AppIcon name="solar:pulse-2-linear" className="w-4 h-4 text-gray-600 dark:text-gray-300 shrink-0" />
+                        )}
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">{stats.dailyMetricLabel}</span>
                     </div>
                     <div className="flex items-baseline gap-1 mt-0.5">

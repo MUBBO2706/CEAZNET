@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon, loadIcons, iconLoaded } from '@iconify/react';
 import * as LucideIcons from 'lucide-react';
-import { Tag } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 
 export interface CategoryIconProps {
     name: string;
@@ -59,7 +59,7 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
     }, [name]);
 
     if (!name || hasError) {
-        return <Tag className={className} style={color ? { color } : undefined} size={size} />;
+        return <AppIcon name="solar:tag-linear" className={className} style={color ? { color } : undefined} />;
     }
 
     // 1. Check if it's an Iconify icon (contains ':')
@@ -111,7 +111,7 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
     }
 
     // 3. Fallback to Tag icon
-    return <Tag className={className} style={color ? { color } : undefined} size={size} />;
+    return <AppIcon name="solar:tag-linear" className={className} style={color ? { color } : undefined} />;
 };
 
 /**

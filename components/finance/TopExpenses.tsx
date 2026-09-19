@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useMemo, useRef } from 'react';
 import { Transaction } from '../../types';
-import { ArrowUpRight, IndianRupee } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { TransactionItem } from './TransactionList';
 import { CustomCategoryItem, getCustomCategories } from '../../services/dbService';
 
@@ -92,7 +92,7 @@ const TopExpenses: React.FC<TopExpensesProps> = ({
                 <div className="sticky top-0 z-10 bg-[#F9F6F2] dark:bg-black py-2 px-4 flex justify-between items-center border-b border-gray-200 dark:border-white/10 transition-colors w-full">
                     <div className="flex items-center gap-2">
                         <h3 className="font-bold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest flex items-center gap-1.5">
-                            <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />
+                            <AppIcon name="solar:arrow-up-right-linear" className="w-3.5 h-3.5 text-rose-500" />
                             Top Expenses
                         </h3>
                         <span className="w-12 h-3.5 rounded animate-pulse" style={{ backgroundColor: 'var(--finance-skeleton-bg)' }} />
@@ -128,7 +128,7 @@ const TopExpenses: React.FC<TopExpensesProps> = ({
             <div className="-mx-4 space-y-2 select-none pb-0">
                 <div className="sticky top-0 z-10 bg-[#F9F6F2] dark:bg-black py-2 px-4 flex justify-between items-center border-b border-gray-200 dark:border-white/10 transition-colors w-full">
                     <h3 className="font-bold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest flex items-center gap-1.5">
-                        <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />
+                        <AppIcon name="solar:arrow-up-right-linear" className="w-3.5 h-3.5 text-rose-500" />
                         Top Expenses
                     </h3>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/40">
@@ -136,11 +136,8 @@ const TopExpenses: React.FC<TopExpensesProps> = ({
                     </span>
                 </div>
                 <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center">
-                    <div 
-                        className="p-4 sm:p-5 rounded-full mb-3 flex items-center justify-center"
-                        style={{ backgroundColor: 'var(--finance-empty-icon-bg)' }}
-                    >
-                        <IndianRupee className="w-7 h-7 sm:w-8 sm:h-8" style={{ color: 'var(--finance-empty-text)' }} />
+                    <div className="mb-3 flex items-center justify-center">
+                        <AppIcon name="solar:wallet-money-linear" className="w-12 h-12" style={{ color: 'var(--finance-empty-text)' }} />
                     </div>
                     <p className="text-sm font-semibold tracking-tight" style={{ color: 'var(--finance-empty-text)' }}>
                         No Expenses In This Period
@@ -156,7 +153,7 @@ const TopExpenses: React.FC<TopExpensesProps> = ({
             <div className="sticky top-0 z-10 bg-[#F9F6F2] dark:bg-black py-2 px-4 flex justify-between items-center border-b border-gray-200 dark:border-white/10 transition-colors w-full">
                 <div className="flex items-center gap-2">
                     <h3 className="font-bold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest flex items-center gap-1.5">
-                        <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />
+                        <AppIcon name="solar:arrow-up-right-linear" className="w-3.5 h-3.5 text-rose-500" />
                         Top Expenses
                     </h3>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/40">
@@ -168,7 +165,7 @@ const TopExpenses: React.FC<TopExpensesProps> = ({
                     {/* Total Expense Outflow Summary */}
                     {totalTopExpenseAmount > 0 && (
                         <div className="flex items-center text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                            <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                            <AppIcon name="solar:arrow-up-right-linear" className="w-3.5 h-3.5 mr-0.5" />
                             <span>{totalTopExpenseAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                         </div>
                     )}

@@ -1,12 +1,8 @@
 
 import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Transaction } from '../../types';
-import { 
-    IndianRupee, Check, HelpCircle, Loader, ArrowDownLeft, ArrowUpRight, Gauge,
-    ChevronDown, Calendar, Clock, Wallet, CreditCard,
-    Edit2, Copy, Fuel, ExternalLink, CheckCircle2, Car, Route, Droplets,
-    FileText, X
-} from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { InlineConfirmDelete } from '../core/InlineConfirmDelete';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORY_CONFIG, getCategoryConfig } from './categories';
@@ -41,7 +37,7 @@ const CategoryIcon: React.FC<{ categoryId: string, type: string, className?: str
         const IconComponent = categoryData.icon;
         return <IconComponent className={className} />;
     }
-    return <HelpCircle className={className} />;
+    return <AppIcon name="solar:question-circle-linear" className={className} />;
 }
 
 export const TransactionItem = React.memo<{
@@ -133,7 +129,7 @@ export const TransactionItem = React.memo<{
                                 'text-indigo-600 dark:text-indigo-400'
                             ) : ''}`}>
                             {isSelectionMode ? (
-                                isSelected ? <Check className="w-6 h-6 lg:w-4 lg:h-4" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                                isSelected ? <AppIcon name="solar:check-read-linear" className="w-6 h-6 lg:w-4 lg:h-4" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
                             ) : (
                                 <CategoryIcon categoryId={t.category} type={t.type} className="w-6 h-6 lg:w-5 lg:h-5" customCategories={customCategories} />
                             )}
@@ -159,7 +155,7 @@ export const TransactionItem = React.memo<{
                                 <>
                                     <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0"></span>
                                     <span className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                        <Gauge className="w-3 h-3" /> {mileage} km/L
+                                        <AppIcon name="solar:speedometer-linear" className="w-3 h-3" /> {mileage} km/L
                                     </span>
                                 </>
                             )}
@@ -208,7 +204,7 @@ export const TransactionItem = React.memo<{
                                         isExpense ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300' :
                                         'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
                                     }`}>
-                                        <CheckCircle2 className="w-3 h-3" />
+                                        <AppIcon name="solar:check-circle-linear" className="w-3 h-3" />
                                         {t.type}
                                     </span>
                                     <button
@@ -228,10 +224,10 @@ export const TransactionItem = React.memo<{
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onEdit(t); }}
-                                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-700/80 text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-600 transition-colors shadow-xs flex items-center gap-1.5 text-xs font-semibold"
+                                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-700/80 text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-600 transition-colors shadow-xs flex items-center gap-1.5 text-xs font-semibold group"
                                         title="Edit Transaction"
                                     >
-                                        <Edit2 className="w-3.5 h-3.5 text-amber-500" />
+                                        <AppIcon name="solar:pen-linear" className="w-3.5 h-3.5 text-amber-500 transition-transform group-hover:scale-110" />
                                         <span className="inline">Edit</span>
                                     </button>
                                     <InlineConfirmDelete
@@ -245,10 +241,10 @@ export const TransactionItem = React.memo<{
                                         <button
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); onDuplicate(t); }}
-                                            className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-700/80 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors shadow-xs flex items-center gap-1.5 text-xs font-semibold"
+                                            className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-700/80 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors shadow-xs flex items-center gap-1.5 text-xs font-semibold group"
                                             title="Copy Transaction"
                                         >
-                                            <Copy className="w-3.5 h-3.5 text-indigo-500" />
+                                            <AppIcon name="solar:copy-linear" className="w-3.5 h-3.5 text-indigo-500 transition-transform group-hover:scale-110" />
                                             <span className="inline">Copy</span>
                                         </button>
                                     )}
@@ -265,7 +261,7 @@ export const TransactionItem = React.memo<{
                                 }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                                            <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                            <AppIcon name="solar:calendar-linear" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                                             <span className="text-[10px] font-bold uppercase tracking-wider">Date</span>
                                         </div>
                                         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">{weekdayStr}</span>
@@ -284,7 +280,7 @@ export const TransactionItem = React.memo<{
                                 }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                                            <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                            <AppIcon name="solar:clock-circle-linear" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                                             <span className="text-[10px] font-bold uppercase tracking-wider">Time</span>
                                         </div>
                                         <span className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 truncate shrink-0">{timeAgo}</span>
@@ -303,7 +299,7 @@ export const TransactionItem = React.memo<{
                                 }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                                            <Wallet className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                            <AppIcon name="solar:wallet-money-linear" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                                             <span className="text-[10px] font-bold uppercase tracking-wider">Wallet</span>
                                         </div>
                                         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">Active</span>
@@ -326,7 +322,7 @@ export const TransactionItem = React.memo<{
                                 }`}>
                                     <div className="flex items-center justify-between gap-1">
                                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                                            <CreditCard className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                            <AppIcon name="solar:card-linear" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                                             <span className="text-[10px] font-bold uppercase tracking-wider">Method</span>
                                         </div>
                                         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 truncate shrink-0">
@@ -346,7 +342,7 @@ export const TransactionItem = React.memo<{
                             {metadata?.vehicle_id && (
                                 <div className="bg-transparent p-2.5 rounded-xl border border-red-200/40 dark:border-red-900/30 flex flex-col gap-2">
                                     <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-xs">
-                                        <Fuel className="w-4 h-4" />
+                                        <AppIcon name="solar:gas-station-linear" className="w-4 h-4" />
                                         <span>Vehicle Fuel Log — {metadata.vehicle_name || 'Vehicle'}</span>
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -539,11 +535,8 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
     if (transactions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
-                <div 
-                    className="p-5 sm:p-6 rounded-full mb-4 flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--finance-empty-icon-bg)' }}
-                >
-                    <IndianRupee className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: 'var(--finance-empty-text)' }} />
+                <div className="mb-3 flex items-center justify-center">
+                    <AppIcon name="solar:wallet-money-linear" className="w-12 h-12" style={{ color: 'var(--finance-empty-text)' }} />
                 </div>
                 <p className="text-sm sm:text-base font-semibold tracking-tight" style={{ color: 'var(--finance-empty-text)' }}>
                     No Transactions
@@ -580,7 +573,7 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
                                 {/* Income Summary */}
                                 {dailyIncome > 0 && (
                                     <div className="flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                        <ArrowDownLeft className="w-3 h-3 mr-0.5" />
+                                        <AppIcon name="solar:arrow-down-left-linear" className="w-3.5 h-3.5 mr-0.5" />
                                         <span>{dailyIncome.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                                     </div>
                                 )}
@@ -588,7 +581,7 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
                                 {/* Expense Summary */}
                                 {dailyExpense > 0 && (
                                     <div className="flex items-center text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                                        <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                                        <AppIcon name="solar:arrow-up-right-linear" className="w-3.5 h-3.5 mr-0.5" />
                                         <span>{dailyExpense.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                                     </div>
                                 )}

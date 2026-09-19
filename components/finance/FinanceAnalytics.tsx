@@ -2,7 +2,7 @@
 import React, { useMemo, useState, memo } from 'react';
 import { Transaction } from '../../types';
 import { FinanceAnalyticsData, CustomCategoryItem } from '../../services/dbService';
-import { TrendingDown, TrendingUp, Wallet, ArrowUp, ChevronDown, PieChart as PieChartIcon, Activity, CreditCard } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import Tooltip from '../Tooltip';
 import {
   Chart as ChartJS,
@@ -362,7 +362,7 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({
             <div>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-indigo-500" />
+                        <AppIcon name="solar:chart-2-linear" className="w-4 h-4 text-indigo-500" />
                         Cash Flow Trend
                     </h3>
                     <div className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
@@ -384,7 +384,7 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({
                 <div className="flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <PieChartIcon className="w-4 h-4 text-purple-500" />
+                            <AppIcon name="solar:pie-chart-2-linear" className="w-4 h-4 text-purple-500" />
                             Expenses
                         </h3>
                         <div className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300">
@@ -433,7 +433,7 @@ const FinanceAnalytics: React.FC<FinanceAnalyticsProps> = ({
                 <div className="flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <PieChartIcon className="w-4 h-4 text-emerald-500" />
+                            <AppIcon name="solar:pie-chart-2-linear" className="w-4 h-4 text-emerald-500" />
                             Income
                         </h3>
                         <div className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300">
