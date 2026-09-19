@@ -1,6 +1,6 @@
 import { fetchApi } from "../utils/fetchApi";
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Tell TypeScript that __BUILD_ID__ is injected by Vite at compile time
@@ -274,7 +274,7 @@ export const VersionUpdateModal: React.FC = () => {
                             }}
                         >
                             <span>Reload</span>
-                            <ArrowRight className="w-3 h-3" />
+                            <AppIcon name="solar:arrow-right-linear" className="w-3 h-3" />
                         </button>
                     </div>
                 </motion.div>

@@ -1,41 +1,7 @@
 import { fetchApi } from "../utils/fetchApi";
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  User, 
-  Mail, 
-  Calendar, 
-  ShieldCheck, 
-  Camera, 
-  Save, 
-  LogOut, 
-  RotateCw, 
-  Sun, 
-  Moon, 
-  Monitor, 
-  Palette, 
-  Layout, 
-  Type, 
-  Eye, 
-  ArrowLeft, 
-  Smartphone, 
-  Laptop, 
-  Globe, 
-  MapPin, 
-  Clock, 
-  Sparkles, 
-  Check, 
-  X, 
-  AlertCircle, 
-  Loader,
-  Info,
-  Shield,
-  ChevronRight,
-  Maximize,
-  Minimize,
-  Pencil,
-  Lock,
-  Trash2
-} from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { motion } from 'motion/react';
 import { UIPreferences, UserProfile, View } from '../types';
 import { useAuth } from '../hooks/useAuth';
@@ -792,12 +758,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const getDeviceIcon = (deviceName?: string) => {
     const name = (deviceName || '').toLowerCase();
     if (name.includes('iphone') || name.includes('android') || name.includes('mobile') || name.includes('samsung') || name.includes('pixel')) {
-      return <Smartphone className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />;
+      return <AppIcon name="solar:smartphone-linear" className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />;
     }
     if (name.includes('mac') || name.includes('windows') || name.includes('linux') || name.includes('laptop') || name.includes('desktop')) {
-      return <Laptop className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
+      return <AppIcon name="solar:laptop-linear" className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
     }
-    return <Globe className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
+    return <AppIcon name="solar:global-linear" className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
   };
 
   // Most recent 1 session preview
@@ -915,7 +881,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   className="text-neutral-400 hover:text-gray-900 dark:hover:text-white transition-colors focus:outline-none cursor-pointer flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider p-0 bg-transparent border-0"
                   title="Edit Profile"
                 >
-                  <Pencil className="w-3.5 h-3.5" />
+                  <AppIcon name="solar:pen-linear" className="w-3.5 h-3.5" />
                   <span>Edit</span>
                 </button>
               ) : (
@@ -929,7 +895,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     className="text-neutral-400 hover:text-gray-900 dark:hover:text-white transition-colors focus:outline-none cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center gap-1 text-[10px] font-mono uppercase tracking-wider"
                     title="Cancel"
                   >
-                    <X className="w-4 h-4 shrink-0" />
+                    <AppIcon name="solar:close-circle-linear" className="w-4 h-4 shrink-0" />
                     <span>Cancel</span>
                   </button>
                   <button
@@ -942,7 +908,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     {isSavingProfile ? (
                       <div className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin flex-shrink-0" />
                     ) : (
-                      <Check className="w-4 h-4 shrink-0" />
+                      <AppIcon name="solar:check-read-linear" className="w-4 h-4 shrink-0" />
                     )}
                     <span>Save</span>
                   </button>
@@ -970,7 +936,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                   {isEditing && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/65 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                      <Camera className="w-5 h-5 text-white mb-1" />
+                      <AppIcon name="solar:camera-linear" className="w-5 h-5 text-white mb-1" />
                       <span className="text-[9px] text-white font-mono font-bold uppercase tracking-wider">Change</span>
                     </div>
                   )}
@@ -1020,7 +986,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </span>
                   ) : (
                     <div className="relative flex items-center w-full">
-                      <Lock className="absolute right-2.5 w-3.5 h-3.5 text-neutral-500" />
+                      <AppIcon name="solar:lock-linear" className="absolute right-2.5 w-3.5 h-3.5 text-neutral-500" />
                       <input
                         type="text"
                         disabled
@@ -1057,9 +1023,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               <div className="grid grid-cols-3 gap-2.5 w-full max-w-xl mx-auto">
                 {[
-                  { id: 'light', icon: Sun, label: 'Light Theme', color: 'text-amber-500 hover:text-amber-600' },
-                  { id: 'system', icon: Monitor, label: 'System Theme', color: 'text-blue-500 hover:text-blue-600' },
-                  { id: 'dark', icon: Moon, label: 'Dark Theme', color: 'text-indigo-500 hover:text-indigo-600' },
+                  { id: 'light', icon: 'solar:sun-2-linear', label: 'Light Theme', color: 'text-amber-500 hover:text-amber-600' },
+                  { id: 'system', icon: 'solar:monitor-linear', label: 'System Theme', color: 'text-blue-500 hover:text-blue-600' },
+                  { id: 'dark', icon: 'solar:moon-linear', label: 'Dark Theme', color: 'text-indigo-500 hover:text-indigo-600' },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -1073,7 +1039,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       }
                     `}
                   >
-                    <t.icon
+                    <AppIcon
+                      name={t.icon}
                       className={`w-4 h-4 shrink-0 ${
                         currentTheme === t.id
                           ? 'text-purple-600 dark:text-purple-400'
@@ -1108,7 +1075,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     className="flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-xs font-semibold transition-all cursor-pointer bg-transparent border-0 p-0 focus:outline-none"
                     title="View Complete Session History"
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <AppIcon name="solar:eye-linear" className="w-3.5 h-3.5" />
                     <span>View All {sessionStats.total > 0 ? `(${sessionStats.total})` : ''}</span>
                   </button>
                 </div>
@@ -1444,7 +1411,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {/* Modal Header */}
             <div className="p-4 border-b border-[var(--profile-card-border)] flex items-center justify-between bg-[var(--profile-card-subtle-bg)]">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-[var(--profile-accent)]" />
+                <AppIcon name="solar:shield-check-linear" className="w-5 h-5 text-[var(--profile-accent)]" />
                 <h3 className="text-sm font-bold text-[var(--profile-text-primary)]">
                   Session Node Telemetry Details
                 </h3>
@@ -1453,7 +1420,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={() => setDetailModalSession(null)}
                 className="p-1 rounded-lg text-[var(--profile-text-muted)] hover:text-[var(--profile-text-primary)] hover:bg-[var(--profile-card-border)] transition-colors"
               >
-                <X className="w-4 h-4" />
+                <AppIcon name="solar:close-circle-linear" className="w-4 h-4" />
               </button>
             </div>
 
@@ -1495,7 +1462,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="py-2.5 flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Geo-Location Metadata</span>
                 <span className="text-xs font-medium text-[var(--profile-text-primary)] flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                  <AppIcon name="solar:map-point-linear" className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
                   <span>{detailModalSession.location || 'Unknown Location Coordinates'}</span>
                 </span>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DairyItem, DairyEntry, DairyPayment } from '../../types';
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Droplet, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -66,10 +66,10 @@ const TrendMonthPicker: React.FC<{
                 className="flex items-center justify-between gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-neutral-900 dark:hover:bg-neutral-850 border border-gray-200 dark:border-neutral-800 text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-sm"
             >
                 <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                    <AppIcon name="solar:calendar-linear" className="w-3.5 h-3.5 text-blue-500" />
                     <span>{formattedLabel}</span>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-all duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                <AppIcon name="solar:alt-arrow-down-linear" className={`w-3.5 h-3.5 text-gray-400 transition-all duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
@@ -78,9 +78,9 @@ const TrendMonthPicker: React.FC<{
                         <button
                             type="button"
                             onClick={() => setViewYear(prev => prev - 1)}
-                            className="p-1 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
+                            className="p-1 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                         >
-                            <ChevronLeft className="w-3.5 h-3.5" />
+                            <AppIcon name="solar:alt-arrow-left-linear" className="w-3.5 h-3.5" />
                         </button>
                         <span className="font-bold text-xs text-gray-900 dark:text-white tracking-wide">
                             {viewYear}
@@ -88,9 +88,9 @@ const TrendMonthPicker: React.FC<{
                         <button
                             type="button"
                             onClick={() => setViewYear(prev => prev + 1)}
-                            className="p-1 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
+                            className="p-1 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                         >
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
@@ -404,7 +404,7 @@ const DairyStats: React.FC<DairyStatsProps> = ({ item, entries, payments }) => {
                             <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">Total Due</span>
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <div className="p-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                    <DollarSign className="w-4 h-4 text-red-500" />
+                                    <AppIcon name="solar:tag-price-bold" className="w-4 h-4 text-red-500" />
                                 </div>
                                 <span className={`text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md ${due > 0 ? 'bg-red-50 text-red-500 dark:bg-red-900/30' : 'bg-green-50 text-green-500 dark:bg-green-900/30'}`}>
                                     {due > 0 ? 'Pending' : 'Cleared'}
@@ -440,7 +440,7 @@ const DairyStats: React.FC<DairyStatsProps> = ({ item, entries, payments }) => {
                             <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">Current Bill</span>
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                                    <AppIcon name="solar:graph-up-linear" className="w-4 h-4 text-blue-500" />
                                 </div>
                                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-500 dark:bg-blue-900/30">
                                     Active Cycle
@@ -476,7 +476,7 @@ const DairyStats: React.FC<DairyStatsProps> = ({ item, entries, payments }) => {
                             <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">Total Paid</span>
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <div className="p-1.5 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                    <DollarSign className="w-4 h-4 text-green-500" />
+                                    <AppIcon name="solar:wallet-money-bold" className="w-4 h-4 text-green-500" />
                                 </div>
                                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-green-50 text-green-500 dark:bg-green-900/30">
                                     {totalPaid >= totalCost && totalCost > 0 ? 'Settled' : 'Partial'}
@@ -512,7 +512,7 @@ const DairyStats: React.FC<DairyStatsProps> = ({ item, entries, payments }) => {
                             <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">Current Quantity</span>
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                    <Droplet className="w-4 h-4 text-purple-500" />
+                                    <AppIcon name="solar:waterdrops-bold" className="w-4 h-4 text-purple-500" />
                                 </div>
                                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-500 dark:bg-purple-900/30">
                                     Unpaid

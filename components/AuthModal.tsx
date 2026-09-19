@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { X, Loader, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useToast } from './ToastSystem';
 
 interface AuthModalProps {
@@ -175,7 +176,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         onClick={handleClose} 
                         className="absolute top-5 right-5 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-20"
                     >
-                        <X className="h-5 w-5" />
+                        <AppIcon name="heroicons:x-mark" className="h-5 w-5" />
                     </button>
 
                     <div className="px-8 pt-10 pb-8">
@@ -229,7 +230,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                             <div className="space-y-6 relative z-10 animate-fade-in-up">
                                 <div className="text-center">
                                     <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
-                                        <Mail className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                                        <AppIcon name="solar:letter-linear" className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                                     </div>
                                     <h3 className="text-2xl font-bold text-neutral-900 dark:text-white">Check your email</h3>
                                     <p className="text-sm text-neutral-600 dark:text-gray-300 mt-3 font-medium">
@@ -274,7 +275,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                             {!isLoginView && !isForgotPasswordView && (
                                 <div className="group relative animate-fade-in-up">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-amber-500 transition-colors">
-                                        <User className="h-5 w-5" />
+                                        <AppIcon name="solar:user-linear" className="h-5 w-5" />
                                     </div>
                                     <input
                                         type="text"
@@ -288,7 +289,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                             )}
                             <div className="group relative">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-amber-500 transition-colors">
-                                    <Mail className="h-5 w-5" />
+                                    <AppIcon name="solar:letter-linear" className="h-5 w-5" />
                                 </div>
                                 <input
                                     type="email"
@@ -304,7 +305,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                 <>
                                     <div className="group relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-amber-500 transition-colors">
-                                            <Lock className="h-5 w-5" />
+                                            <AppIcon name="solar:lock-keyhole-linear" className="h-5 w-5" />
                                         </div>
                                         <input
                                             type={showPassword ? "text" : "password"}
@@ -319,7 +320,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
                                         >
-                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            {showPassword ? <AppIcon name="ph:eye-slash-light" className="h-4 w-4" /> : <AppIcon name="ph:eye-light" className="h-4 w-4" />}
                                         </button>
                                     </div>
                                     
@@ -401,7 +402,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                 ) : (
                                     <>
                                         <span className="text-base">{isForgotPasswordView ? 'Send Reset Link' : (isLoginView ? 'Continue' : 'Create Account')}</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        <AppIcon name="solar:arrow-right-linear" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RotateCcw, TrendingUp, Layers, Clock, ArrowRight, Trash2, Loader, ChevronDown, Copy, Check } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { saveTranslatorUsage, getTranslationHistory, clearTranslationHistory, TranslationHistoryRecord } from '../services/dbService';
 import { useToast } from './ToastSystem';
 
@@ -227,7 +228,7 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                     <div className="space-y-2">
                         <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-900/40 pb-1.5">
                             <h4 className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" />
+                                <AppIcon name="solar:clock-circle-linear" className="w-3.5 h-3.5" />
                                 History
                             </h4>
                             {historyList.length > 0 && (
@@ -265,7 +266,7 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                                                 <div className="min-w-0 flex-1 flex items-center flex-wrap gap-x-2 gap-y-0.5">
                                                     <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
                                                         <span>{item.source_lang || 'Auto'}</span>
-                                                        <ArrowRight className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                        <AppIcon name="solar:arrow-right-linear" className="w-3 h-3 text-neutral-400 shrink-0" />
                                                         <span>{item.target_lang || 'English'}</span>
                                                     </div>
                                                     {item.model && (
@@ -287,7 +288,7 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                                                         <span className="text-[9px] text-neutral-400 font-mono ml-0.5">tk</span>
                                                     </div>
                                                     {hasText && (
-                                                        <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-indigo-500' : ''}`} />
+                                                        <AppIcon name="solar:alt-arrow-down-linear" className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-indigo-500' : ''}`} />
                                                     )}
                                                 </div>
                                             </div>
@@ -308,12 +309,12 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                                                                 >
                                                                     {copiedKey === `${itemId}_in` ? (
                                                                         <>
-                                                                            <Check className="w-2.5 h-2.5 text-emerald-500" />
+                                                                            <AppIcon name="solar:check-read-linear" className="w-2.5 h-2.5 text-emerald-500" />
                                                                             <span className="text-emerald-500">Copied</span>
                                                                         </>
                                                                     ) : (
                                                                         <>
-                                                                            <Copy className="w-2.5 h-2.5" />
+                                                                            <AppIcon name="solar:copy-linear" className="w-2.5 h-2.5" />
                                                                             <span>Copy</span>
                                                                         </>
                                                                     )}
@@ -338,12 +339,12 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                                                                 >
                                                                     {copiedKey === `${itemId}_out` ? (
                                                                         <>
-                                                                            <Check className="w-2.5 h-2.5 text-emerald-500" />
+                                                                            <AppIcon name="solar:check-read-linear" className="w-2.5 h-2.5 text-emerald-500" />
                                                                             <span className="text-emerald-500">Copied</span>
                                                                         </>
                                                                     ) : (
                                                                         <>
-                                                                            <Copy className="w-2.5 h-2.5" />
+                                                                            <AppIcon name="solar:copy-linear" className="w-2.5 h-2.5" />
                                                                             <span>Copy</span>
                                                                         </>
                                                                     )}
@@ -392,7 +393,7 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                         className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus:outline-none rounded-xl"
                         title="Reset all accumulated tokens and history"
                     >
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        <AppIcon name="solar:restart-linear" className="w-3.5 h-3.5" />
                         Reset Stats
                     </button>
                     <button 
@@ -438,7 +439,7 @@ export const TranslatorStatsModal: React.FC<TranslatorStatsModalProps> = ({
                                         </>
                                     ) : (
                                         <>
-                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <AppIcon name="solar:trash-bin-trash-linear" className="w-3.5 h-3.5" />
                                             <span>Delete All</span>
                                         </>
                                     )}

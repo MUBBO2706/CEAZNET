@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Car, Bike, Plus, Trash2, Gauge, Hash, Check, Edit2 } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { Vehicle } from '../../types';
 import { InlineConfirmDelete } from '../core/InlineConfirmDelete';
 
@@ -97,15 +97,15 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                     <div className="px-6 py-5 border-b border-gray-200/50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-white/5 backdrop-blur-md">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400 shadow-sm">
-                                <Car className="w-5 h-5" />
+                                <AppIcon name="solar:wheel-linear" className="w-5 h-5" />
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">My Fleet</h2>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Manage your vehicles</p>
                             </div>
                         </div>
-                        <button onClick={handleClose} className="p-2 rounded-full hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors text-gray-500 dark:text-gray-400">
-                            <X className="w-5 h-5" />
+                        <button onClick={handleClose} className="p-2 rounded-full hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors text-gray-500 dark:text-gray-400 cursor-pointer">
+                            <AppIcon name="solar:close-circle-linear" className="w-5 h-5" />
                         </button>
                     </div>
 
@@ -118,7 +118,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                         <div className="flex items-start justify-between">
                                             <div className="flex gap-3">
                                                 <div className="p-2.5 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-600 dark:text-gray-300">
-                                                    {v.type === 'car' ? <Car className="w-5 h-5" /> : <Bike className="w-5 h-5" />}
+                                                    {v.type === 'car' ? <AppIcon name="solar:wheel-linear" className="w-5 h-5" /> : <AppIcon name="solar:scooter-linear" className="w-5 h-5" />}
                                                 </div>
                                                 <div>
                                                     <h3 className="font-bold text-gray-900 dark:text-white">{v.name}</h3>
@@ -128,9 +128,9 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                             <div className="flex items-center gap-1 transition-opacity">
                                                 <button 
                                                     onClick={() => handleEditClick(v)}
-                                                    className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                                                    className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors cursor-pointer"
                                                 >
-                                                    <Edit2 className="w-4 h-4" />
+                                                    <AppIcon name="solar:pen-linear" className="w-4 h-4" />
                                                 </button>
                                                 <InlineConfirmDelete
                                                     onDelete={() => onDeleteVehicle(v.id)}
@@ -141,7 +141,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                             </div>
                                         </div>
                                         <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                            <Gauge className="w-3.5 h-3.5" />
+                                            <AppIcon name="solar:speedometer-low-linear" className="w-3.5 h-3.5" />
                                             <span>Current: <span className="font-bold text-gray-900 dark:text-white">{v.current_odometer.toLocaleString()} km</span></span>
                                         </div>
                                     </div>
@@ -149,7 +149,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                 
                                 {vehicles.length === 0 && (
                                     <div className="text-center py-8 text-gray-400 dark:text-gray-600">
-                                        <Car className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                                        <AppIcon name="solar:wheel-linear" className="w-10 h-10 mx-auto mb-2 opacity-20" />
                                         <p className="text-sm">No vehicles added yet.</p>
                                     </div>
                                 )}
@@ -163,7 +163,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                     <h3 className="text-sm font-bold text-gray-900 dark:text-white">
                                         {editingId ? 'Edit Vehicle' : 'Add New Vehicle'}
                                     </h3>
-                                    <button type="button" onClick={resetForm} className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Cancel</button>
+                                    <button type="button" onClick={resetForm} className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer">Cancel</button>
                                 </div>
                                 
                                 <div className="space-y-3">
@@ -171,14 +171,14 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                         <button
                                             type="button"
                                             onClick={() => setType('bike')}
-                                            className={`p-2 rounded-xl text-xs font-bold border transition-all ${type === 'bike' ? 'bg-white dark:bg-black/40 border-red-500 text-red-500 shadow-sm' : 'border-transparent text-gray-500 hover:bg-white/50'}`}
+                                            className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${type === 'bike' ? 'bg-white dark:bg-black/40 border-red-500 text-red-500 shadow-sm' : 'border-transparent text-gray-500 hover:bg-white/50'}`}
                                         >
                                             Bike
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setType('car')}
-                                            className={`p-2 rounded-xl text-xs font-bold border transition-all ${type === 'car' ? 'bg-white dark:bg-black/40 border-red-500 text-red-500 shadow-sm' : 'border-transparent text-gray-500 hover:bg-white/50'}`}
+                                            className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${type === 'car' ? 'bg-white dark:bg-black/40 border-red-500 text-red-500 shadow-sm' : 'border-transparent text-gray-500 hover:bg-white/50'}`}
                                         >
                                             Car
                                         </button>
@@ -197,7 +197,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                     
                                     <div className="flex gap-3">
                                         <div className="relative flex-1">
-                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <AppIcon name="solar:hashtag-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                             <input 
                                                 type="text"
                                                 value={plate}
@@ -207,7 +207,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                             />
                                         </div>
                                         <div className="relative flex-1">
-                                            <Gauge className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <AppIcon name="solar:speedometer-low-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                             <input 
                                                 type="number"
                                                 value={odometer}
@@ -220,9 +220,9 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
 
                                     <button 
                                         type="submit" 
-                                        className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
+                                        className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2 cursor-pointer"
                                     >
-                                        <Check className="w-4 h-4" /> 
+                                        <AppIcon name="solar:check-read-linear" className="w-4 h-4" /> 
                                         {editingId ? 'Update Vehicle' : 'Save Vehicle'}
                                     </button>
                                 </div>
@@ -230,9 +230,9 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                         ) : (
                             <button 
                                 onClick={() => setIsFormOpen(true)}
-                                className="w-full py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400 transition-all font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400 transition-all font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 cursor-pointer"
                             >
-                                <Plus className="w-4 h-4" /> Add Vehicle
+                                <AppIcon name="solar:add-circle-linear" className="w-4 h-4" /> Add Vehicle
                             </button>
                         )}
                     </div>

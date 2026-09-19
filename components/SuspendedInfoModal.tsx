@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, AlertTriangle } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface SuspendedInfoModalProps {
     isOpen: boolean;
@@ -35,14 +35,14 @@ export const SuspendedInfoModal: React.FC<SuspendedInfoModalProps> = ({ isOpen, 
             >
                 <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800/50">
                     <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                        <AlertTriangle className="w-5 h-5" />
+                        <AppIcon name="solar:danger-triangle-linear" className="w-5 h-5" />
                         <h2 className="font-semibold text-gray-900 dark:text-white">Account Suspended</h2>
                     </div>
                     <button 
                         onClick={onClose}
                         className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
-                        <X className="w-5 h-5" />
+                        <AppIcon name="solar:close-circle-linear" className="w-5 h-5" />
                     </button>
                 </div>
                 

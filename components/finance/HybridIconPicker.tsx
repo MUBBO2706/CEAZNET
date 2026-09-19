@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-    Search, Sparkles, X, Check, Loader, Tag, RotateCcw, 
-    ChevronRight, ArrowRight, HelpCircle, ExternalLink,
-    Filter, Layers
-} from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { CustomAiSparkleIcon } from '../SupportView';
 import { CategoryIcon } from './CategoryIcon';
 import { 
@@ -244,7 +241,7 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
             <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                        <AppIcon name="solar:layers-minimalistic-linear" className="w-3.5 h-3.5 text-indigo-500" />
                         <span>Icon Selection (7 Libraries)</span>
                     </label>
 
@@ -263,7 +260,7 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
                 {/* Hybrid Search Bar + AI Suggest Action Button */}
                 <div className="flex items-center gap-2">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                        <AppIcon name="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                         <input
                             type="text"
                             value={searchQuery}
@@ -278,7 +275,7 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                 title="Clear search"
                             >
-                                <X className="w-3.5 h-3.5" />
+                                <AppIcon name="solar:close-circle-linear" className="w-3.5 h-3.5" />
                             </button>
                         )}
                     </div>
@@ -347,7 +344,7 @@ export const HybridIconPicker: React.FC<HybridIconPickerProps> = ({
                         }`}
                         title="Browse complete library collection"
                     >
-                        <Layers className="w-3.5 h-3.5" />
+                        <AppIcon name="solar:layers-minimalistic-linear" className="w-3.5 h-3.5" />
                         <span>{isViewAllMode ? 'View Curated' : 'View All Icons'}</span>
                     </button>
                 )}

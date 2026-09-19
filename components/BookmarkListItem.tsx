@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { NewsArticle } from '../types';
-import { Bookmark } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useCachedImage } from '../services/imageCachingService';
 
 interface BookmarkListItemProps {
@@ -94,7 +94,7 @@ const BookmarkListItem: React.FC<BookmarkListItemProps> = ({ article, onClick, o
                 aria-label="Remove bookmark"
                 title="Remove from saved"
             >
-                <Bookmark className="h-4 w-4 fill-current text-emerald-500 group-hover:text-neutral-400 hover:!text-red-500 transition-colors" />
+                <AppIcon name="solar:bookmark-linear" className="h-4 w-4 text-emerald-500 group-hover:text-neutral-400 hover:!text-red-500 transition-colors" />
             </button>
         </div>
     );

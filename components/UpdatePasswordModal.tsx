@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { X, Loader, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useToast } from './ToastSystem';
 
 interface UpdatePasswordModalProps {
@@ -92,7 +93,7 @@ const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({ isOpen, onClo
                     <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
                         <div className="group relative">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-amber-500 transition-colors">
-                                <Lock className="h-5 w-5" />
+                                <AppIcon name="solar:lock-linear" className="h-5 w-5" />
                             </div>
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -107,7 +108,7 @@ const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({ isOpen, onClo
                                 onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
                             >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                {showPassword ? <AppIcon name="solar:eye-closed-linear" className="h-4 w-4" /> : <AppIcon name="solar:eye-linear" className="h-4 w-4" />}
                             </button>
                         </div>
                         
@@ -134,7 +135,7 @@ const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({ isOpen, onClo
                         
                         <div className="group relative">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-amber-500 transition-colors">
-                                <Lock className="h-5 w-5" />
+                                <AppIcon name="solar:lock-linear" className="h-5 w-5" />
                             </div>
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
@@ -149,7 +150,7 @@ const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({ isOpen, onClo
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
                             >
-                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                {showConfirmPassword ? <AppIcon name="solar:eye-closed-linear" className="h-4 w-4" /> : <AppIcon name="solar:eye-linear" className="h-4 w-4" />}
                             </button>
                         </div>
                         
@@ -174,7 +175,7 @@ const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({ isOpen, onClo
                                 Cancel
                             </button>
                             <button type="submit" disabled={loading || password !== confirmPassword || strength < 2} className="flex-1 group relative flex items-center justify-center gap-2 py-4 bg-neutral-900 dark:bg-white text-white dark:text-black font-bold rounded-xl overflow-hidden transition-all hover:shadow-xl hover:shadow-amber-500/20 active:scale-[0.98] disabled:opacity-70">
-                                {loading ? <Loader className="h-5 w-5 animate-spin" /> : <><span>Update</span><ArrowRight className="w-4 h-4" /></>}
+                                {loading ? <Loader className="h-5 w-5 animate-spin" /> : <><span>Update</span><AppIcon name="solar:arrow-right-linear" className="w-4 h-4" /></>}
                             </button>
                         </div>
                     </form>

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { NewsArticle } from '../types';
 import { formatTimeAgo, formatStat } from '../utils/stringUtils';
-import { Eye } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useDynamicColors } from '../hooks/useDynamicColors';
 import { useCachedImage } from '../services/imageCachingService';
 
@@ -90,7 +90,7 @@ const RelatedArticleCard: React.FC<RelatedArticleCardProps> = ({ article, onClic
                 <div className="flex justify-between items-center text-xs mt-2" style={{ color: colors.subText }}>
                     <span>{formatTimeAgo(article.publishedAt)}</span>
                     <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
+                        <AppIcon name="solar:eye-linear" className="h-3 w-3" />
                         <span>{formatStat(article.views)}</span>
                     </div>
                 </div>

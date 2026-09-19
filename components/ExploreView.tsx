@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { WifiOff, RotateCw, ChevronsRight, ChevronsLeft, Compass, Cpu, BarChart3, FlaskConical, Stethoscope, Trophy, Drama, Bookmark } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { NewsArticle, UserArticleInteraction } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import ArticleCard from './ArticleCard';
@@ -15,14 +15,14 @@ import { motion } from 'motion/react';
 const allCategories = ['technology', 'business', 'science', 'health', 'sports', 'entertainment'];
 const categories = ['for-you', ...allCategories];
 
-const categoryIcons: Record<string, React.ElementType> = {
-    'for-you': Compass,
-    'technology': Cpu,
-    'business': BarChart3,
-    'science': FlaskConical,
-    'health': Stethoscope,
-    'sports': Trophy,
-    'entertainment': Drama,
+const categoryIcons: Record<string, string> = {
+    'for-you': 'ph:compass-light',
+    'technology': 'solar:cpu-bolt-linear',
+    'business': 'ph:chart-line-up-light',
+    'science': 'tabler:microscope',
+    'health': 'solar:heart-pulse-linear',
+    'sports': 'ph:trophy-light',
+    'entertainment': 'solar:clapperboard-play-linear',
 };
 
 interface ExploreViewProps {
@@ -189,7 +189,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
                 <div className="overflow-x-auto scrollbar-hide px-4 md:px-8 py-2">
                     <div className="flex items-center gap-3 md:gap-4 min-w-max mx-auto md:justify-center">
                         {categories.map(category => {
-                            const Icon = categoryIcons[category] || Compass;
+                            const iconName = categoryIcons[category] || 'ph:compass-light';
                             const label = category === 'for-you' ? 'For You' : category.charAt(0).toUpperCase() + category.slice(1);
                             const isActive = activeCategory === category;
                             
@@ -210,7 +210,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
                                         }
                                     `}
                                 >
-                                    <Icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110 stroke-[2.5px]' : 'group-hover:scale-110'}`} />
+                                    <AppIcon name={iconName} className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                                     <span className="text-sm tracking-wide">{label}</span>
                                     
                                     {isActive && (
@@ -248,7 +248,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
 
                     {error && (
                         <div className="text-center p-4">
-                            <WifiOff className="h-12 w-12 mx-auto text-red-400 mb-4" />
+                            <AppIcon name="solar:wifi-router-minimalistic-linear" className="h-12 w-12 mx-auto text-red-400 mb-4" />
                             <h2 className="text-xl font-semibold text-red-300">Could Not Fetch News</h2>
                             <p className="mt-2 text-red-400 max-w-md mx-auto">{error}</p>
                         </div>
@@ -271,7 +271,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
                                 }} 
                                 className="flex items-center gap-2 mx-auto px-5 py-2.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm font-medium"
                             >
-                                <RotateCw className="h-4 w-4" />
+                                <AppIcon name="solar:restart-linear" className="h-4 w-4" />
                                 Next: {(() => {
                                     const currentCatIdx = categories.indexOf(activeCategory);
                                     const nextCategory = categories[(currentCatIdx + 1) % categories.length];
@@ -358,7 +358,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
                         return (
                             <>
                                 <button onClick={() => setCurrentIndex(() => Math.max(currentIndex - 1, 0))} disabled={currentIndex === 0} className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 disabled:opacity-50 transition-colors backdrop-blur-sm">
-                                    <ChevronsLeft className="h-5 w-5" />
+                                    <AppIcon name="solar:alt-arrow-left-linear" className="h-5 w-5" />
                                 </button>
                                 <div className="text-xs font-medium text-white">{currentIndex + 1} / {articles.length}</div>
                                 <button 
@@ -366,7 +366,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
                                     className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors backdrop-blur-sm"
                                     title={currentIndex >= articles.length - 1 ? "Next Category" : "Next Article"}
                                 >
-                                    <ChevronsRight className="h-5 w-5" />
+                                    <AppIcon name="solar:alt-arrow-right-linear" className="h-5 w-5" />
                                 </button>
                             </>
                         );
@@ -384,7 +384,7 @@ const ExploreView: React.FC<ExploreViewProps> = ({
                     </div>
                 ) : error ? (
                     <div className="text-center p-12">
-                        <WifiOff className="h-16 w-16 mx-auto text-red-400 mb-4" />
+                        <AppIcon name="solar:wifi-router-minimalistic-linear" className="h-16 w-16 mx-auto text-red-400 mb-4" />
                         <h2 className="text-2xl font-semibold text-neutral-800 dark:text-gray-200">Could Not Fetch News</h2>
                         <p className="mt-2 text-neutral-600 dark:text-gray-400 max-w-md mx-auto">{error}</p>
                     </div>

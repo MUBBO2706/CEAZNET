@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, FileText, Download } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 
 interface FileRenameModalProps {
     isOpen: boolean;
@@ -55,14 +55,14 @@ const FileRenameModal: React.FC<FileRenameModalProps> = ({
                     <div className="px-6 py-5 border-b border-gray-200/50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-white/5 backdrop-blur-md">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 shadow-sm">
-                                <FileText className="w-5 h-5" />
+                                <AppIcon name="solar:document-text-linear" className="w-5 h-5" />
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Name Your File</h2>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors text-gray-500 dark:text-gray-400">
-                            <X className="w-5 h-5" />
+                            <AppIcon name="solar:close-circle-linear" className="w-5 h-5" />
                         </button>
                     </div>
 
@@ -98,7 +98,7 @@ const FileRenameModal: React.FC<FileRenameModalProps> = ({
                                 type="submit"
                                 className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
                             >
-                                <Download className="w-4 h-4" />
+                                <AppIcon name="solar:download-minimalistic-linear" className="w-4 h-4" />
                                 Download
                             </button>
                         </div>

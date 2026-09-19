@@ -1,11 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { 
-    ChevronDown, ChevronRight, Zap, Globe, BrainCircuit, Mic, 
-    Wallet, StickyNote, Languages, Code, Settings, Image as ImageIcon, 
-    Layers, Cpu, Shield, Terminal, Database,
-    Layout, FileText, Music, Sparkles, TrendingUp, Calendar, FlaskConical
-} from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import metadata from '../metadata.json';
 import packageInfo from '../package.json';
 import { View } from '../types';
@@ -19,13 +14,13 @@ interface SubFeature {
     label: string;
     description: string;
     techSpec?: string;
-    icon?: React.ElementType;
+    icon?: string;
 }
 
 interface FeatureSection {
     id: string;
     label: string;
-    icon: React.ElementType;
+    icon: string;
     description: string;
     subFeatures: SubFeature[];
 }
@@ -34,7 +29,7 @@ const featuresData: FeatureSection[] = [
     {
         id: 'core',
         label: 'System Core',
-        icon: Layout,
+        icon: 'solar:widget-2-linear',
         description: 'The operating system for your personal life. Fast, private, and integrated.',
         subFeatures: [
             {
@@ -42,28 +37,28 @@ const featuresData: FeatureSection[] = [
                 label: 'Dynamic Dashboard',
                 description: 'A centralized hub for all your tools. The home view adapts to your usage, providing at-a-glance snapshots of your digital life. From your latest chemical compound discovery and translation stats to recent notes and financial overviews, everything is accessible from a single, beautiful grid.',
                 techSpec: 'Grid-based layout with responsive cards that fetch and display dynamic summaries from Supabase and local storage. Features adaptive dark mode styling and animated entry effects.',
-                icon: Layers
+                icon: 'solar:layers-minimalistic-linear'
             },
             {
                 id: 'privacy',
                 label: 'Local-First Architecture',
                 description: 'Your data belongs to you. The application is built with a local-first philosophy. Authentication is optional, and for anonymous users, data is stored locally in your browser. For logged-in users, strict Row Level Security (RLS) applies.',
                 techSpec: 'Implements rigorous RLS policies on Supabase. API keys are stored in local storage and never transmitted to our servers.',
-                icon: Shield
+                icon: 'solar:shield-check-linear'
             },
             {
                 id: 'multi-modal',
                 label: 'Universal File Handling',
                 description: 'Drag and drop support for images and documents across the entire suite. Whether attaching receipts to expenses, diagrams to notes, or analyzing chemistry snapshots, the system handles your files seamlessly.',
                 techSpec: 'Client-side compression runs immediately upon upload. Files are converted to Base64 inline data or stored in Supabase Storage buckets depending on the context.',
-                icon: ImageIcon
+                icon: 'solar:gallery-linear'
             }
         ]
     },
     {
         id: 'finance-suite',
         label: 'Finance & Productivity',
-        icon: Wallet,
+        icon: 'solar:wallet-money-linear',
         description: 'Comprehensive tools for managing your personal economy and daily tasks.',
         subFeatures: [
             {
@@ -71,28 +66,28 @@ const featuresData: FeatureSection[] = [
                 label: 'Financial Intelligence',
                 description: 'Take control of your money with advanced expense tracking and budget management. The "Financial Fitness" card analyzes your spending habits against your budget, providing a daily safe spend limit and visual pacing indicators to keep you on track.',
                 techSpec: 'Real-time aggregation of transaction data stored in Supabase. Calculates daily averages, remaining budget, and burn rate using client-side logic for instant feedback.',
-                icon: TrendingUp
+                icon: 'solar:chart-square-linear'
             },
             {
                 id: 'daily-khata',
                 label: 'Daily Khata Ledger',
                 description: 'A digital ledger for your day-to-day accounts. Track due amounts, record payments, and monitor your debt clearance progress with intuitive visual bars. Perfect for managing informal loans, daily expenses, or small business accounts.',
                 techSpec: 'Dedicated "dairy" table in the database tracks entries and payments. The UI computes total due vs. paid in real-time to render progress visualizations.',
-                icon: Calendar
+                icon: 'solar:calendar-date-linear'
             },
             {
                 id: 'smart-notes',
                 label: 'Rich Text Notes',
                 description: 'Capture your thoughts instantly. The integrated Notes app supports Markdown formatting, code blocks, and organization. It\'s the perfect place to jot down ideas, draft content, or save important information.',
                 techSpec: 'Uses a custom Markdown parser with syntax highlighting. Notes are indexed for instant search and can be categorized with tags.',
-                icon: StickyNote
+                icon: 'solar:notes-linear'
             }
         ]
     },
     {
         id: 'knowledge-tools',
         label: 'Knowledge & Utilities',
-        icon: BrainCircuit,
+        icon: 'solar:smart-home-angle-linear',
         description: 'Specialized tools for learning, exploring, and creating.',
         subFeatures: [
             {
@@ -100,28 +95,28 @@ const featuresData: FeatureSection[] = [
                 label: 'Curated News Feed',
                 description: 'Stay updated with the "Explore" feature. The system curates the latest articles and headlines based on your interests, allowing you to read summaries or dive deep into sources without leaving the app.',
                 techSpec: 'Integrates with news APIs to fetch real-time content. Articles are presented in a clean, card-based feed with source attribution and "Read Mode" for distraction-free consumption.',
-                icon: Globe
+                icon: 'solar:global-linear'
             },
             {
                 id: 'molecule-viewer',
                 label: 'Interactive 3D Chemistry',
                 description: 'A specialized tool for students and scientists. Visualize chemical compounds in interactive 3D. The dashboard even features a blurred "visual snapshot" of your last viewed molecule, creating a beautiful and informative entry point back into your research.',
                 techSpec: 'Fetches crystallographic data from PubChem. Renders 3D ball-and-stick models using WebGL/Three.js. Dashboard card uses CSS filters for the blurred snapshot effect.',
-                icon: FlaskConical
+                icon: 'ph:flask-light'
             },
             {
                 id: 'translator',
                 label: 'Smart Translator',
                 description: 'Break down language barriers. The translator tool not only converts text but tracks your usage stats. View your lifetime character input/output counts directly on the home screen with a visual progress indicator.',
                 techSpec: 'Uses advanced translation models for high-accuracy results. Usage metrics are persisted to the user profile and visualized with SVG charts.',
-                icon: Languages
+                icon: 'hugeicons:translate'
             }
         ]
     },
     {
         id: 'voice-assistant',
         label: 'Voice Control',
-        icon: Mic,
+        icon: 'hugeicons:voice',
         description: 'Hands-free interaction and voice memos.',
         subFeatures: [
             {
@@ -129,21 +124,21 @@ const featuresData: FeatureSection[] = [
                 label: 'Voice Commands & Dictation',
                 description: 'Control your apps and dictate notes with your voice. The system understands natural language commands for hands-free operation, making multitasking effortless.',
                 techSpec: 'Establishes a WebSocket connection for low-latency audio streaming. Handles raw PCM audio streams for high-fidelity communication.',
-                icon: Zap
+                icon: 'solar:bolt-linear'
             },
             {
                 id: 'voice-history',
                 label: 'Voice Memos & History',
                 description: 'Access your voice logs anytime. All voice interactions are saved as memos for easy playback and reference, ensuring you never lose a thought.',
                 techSpec: 'Audio blobs are stored in Supabase Storage, with metadata and transcripts saved to the database. Custom audio player with waveform visualization.',
-                icon: Music
+                icon: 'solar:music-note-linear'
             },
             {
                 id: 'personas',
                 label: 'Voice Settings',
                 description: 'Select your preferred voice for system feedback and interactions.',
                 techSpec: 'Manages voice synthesis configuration parameters dynamically based on user settings.',
-                icon: Settings
+                icon: 'solar:settings-linear'
             }
         ]
     }
@@ -218,9 +213,9 @@ const FeaturesView: React.FC<FeaturesViewProps> = ({ onNavigate }) => {
                             Index of Features
                         </span>
                         {isTocOpen ? (
-                            <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-down-linear" className="w-4 h-4 text-neutral-500" />
                         ) : (
-                            <ChevronRight className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-right-linear" className="w-4 h-4 text-neutral-500" />
                         )}
                     </button>
 
@@ -236,12 +231,12 @@ const FeaturesView: React.FC<FeaturesViewProps> = ({ onNavigate }) => {
                                             onClick={() => toggleTocSection(section.id)}
                                             className="w-full text-left text-sm font-bold text-neutral-800 dark:text-neutral-200 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-2 flex items-center gap-2 group"
                                         >
-                                            <section.icon className="w-3.5 h-3.5 opacity-50 group-hover:text-amber-600 group-hover:opacity-100 transition-all" />
+                                            <AppIcon name={section.icon} className="w-3.5 h-3.5 opacity-50 group-hover:text-amber-600 group-hover:opacity-100 transition-all" />
                                             <span className="flex-1">{section.label}</span>
                                             {isExpanded ? (
-                                                <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                                                <AppIcon name="solar:alt-arrow-down-linear" className="w-3.5 h-3.5 text-neutral-400" />
                                             ) : (
-                                                <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                                                <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5 text-neutral-400" />
                                             )}
                                         </button>
                                         
@@ -272,7 +267,7 @@ const FeaturesView: React.FC<FeaturesViewProps> = ({ onNavigate }) => {
                             {/* Section Header */}
                             <div className="flex items-start gap-3 mb-6">
                                 <div className="mt-0.5 p-2 rounded-xl bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white">
-                                    <section.icon className="w-5 h-5 stroke-1" />
+                                    <AppIcon name={section.icon} className="w-5 h-5 stroke-1" />
                                 </div>
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white mb-1">
@@ -300,7 +295,7 @@ const FeaturesView: React.FC<FeaturesViewProps> = ({ onNavigate }) => {
                                             <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                                             <div className="flex items-center gap-2 mb-2 pt-1.5">
-                                                {feature.icon && <feature.icon className="w-4 h-4 text-amber-600 dark:text-amber-500" />}
+                                                {feature.icon && <AppIcon name={feature.icon} className="w-4 h-4 text-amber-600 dark:text-amber-500" />}
                                                 <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
                                                     {feature.label}
                                                 </h3>
@@ -316,7 +311,7 @@ const FeaturesView: React.FC<FeaturesViewProps> = ({ onNavigate }) => {
                                             {feature.techSpec && (
                                                 <div className="mt-4 p-3 bg-neutral-50 dark:bg-white/5 border-l-2 border-indigo-500 rounded-r-md w-full">
                                                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1 flex items-center gap-1.5">
-                                                        <Terminal className="w-3 h-3" /> Technical Implementation
+                                                        <AppIcon name="solar:code-square-linear" className="w-3 h-3" /> Technical Implementation
                                                     </h4>
                                                     <p className="text-xs font-mono text-neutral-600 dark:text-neutral-400 leading-relaxed">
                                                         {feature.techSpec}

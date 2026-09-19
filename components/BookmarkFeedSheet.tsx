@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Bookmark, Loader, WifiOff } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { NewsArticle, UserArticleInteraction } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient';
@@ -113,7 +113,7 @@ const BookmarkFeedSheet: React.FC<BookmarkFeedSheetProps> = ({ isOpen, onClose, 
                     <header className="px-6 py-5 flex items-center justify-between flex-shrink-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 sticky top-0 border-b border-neutral-200/80 dark:border-neutral-800">
                         <div>
                             <h2 className="text-2xl font-serif font-bold text-neutral-900 dark:text-white flex items-center gap-3">
-                                <Bookmark className="h-6 w-6 text-emerald-500 fill-current" />
+                                <AppIcon name="solar:bookmark-linear" className="h-6 w-6 text-emerald-500" />
                                 Saved Stories
                             </h2>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 font-medium">
@@ -125,7 +125,7 @@ const BookmarkFeedSheet: React.FC<BookmarkFeedSheetProps> = ({ isOpen, onClose, 
                             className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors group"
                             aria-label="Close bookmarks view"
                         >
-                            <X className="h-5 w-5 text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors" />
+                            <AppIcon name="heroicons:x-mark" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors" />
                         </button>
                     </header>
                     <div className="overflow-y-auto flex-1 px-0 pb-20">
@@ -140,7 +140,7 @@ const BookmarkFeedSheet: React.FC<BookmarkFeedSheetProps> = ({ isOpen, onClose, 
                         {error && (
                             <div className="flex flex-col items-center justify-center h-64 text-center px-6">
                                 <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-                                    <WifiOff className="h-8 w-8 text-red-500 dark:text-red-400" />
+                                    <AppIcon name="solar:wifi-router-minimalistic-linear" className="h-8 w-8 text-red-500 dark:text-red-400" />
                                 </div>
                                 <p className="text-neutral-900 dark:text-white font-medium">{error}</p>
                             </div>
@@ -148,7 +148,7 @@ const BookmarkFeedSheet: React.FC<BookmarkFeedSheetProps> = ({ isOpen, onClose, 
                         {!isLoading && !error && articles.length === 0 && (
                              <div className="flex flex-col items-center justify-center h-[60vh] text-center px-6">
                                 <div className="w-20 h-20 bg-neutral-100 dark:bg-neutral-900 rounded-full flex items-center justify-center mb-6">
-                                    <Bookmark className="h-10 w-10 text-neutral-400 dark:text-neutral-600" />
+                                    <AppIcon name="solar:bookmark-linear" className="h-10 w-10 text-neutral-400 dark:text-neutral-600" />
                                 </div>
                                 <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">No saved stories yet</h3>
                                 <p className="text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">

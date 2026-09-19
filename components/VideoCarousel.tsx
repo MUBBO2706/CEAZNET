@@ -1,6 +1,6 @@
 
 import React, { useState, memo, useRef, useEffect, useCallback } from 'react';
-import { Play } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface VideoCarouselProps {
     videos: { title: string; url: string; }[];
@@ -156,7 +156,7 @@ const VideoCard: React.FC<VideoCardProps> = memo(({ videoId, title, isActive, is
 
                     {/* Play Button */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300 shadow-lg border border-white/20 z-20">
-                        <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white ml-0.5" />
+                        <AppIcon name="solar:play-bold" className="w-4 h-4 sm:w-5 sm:h-5 text-white ml-0.5" />
                     </div>
 
                     {/* Title Overlay */}

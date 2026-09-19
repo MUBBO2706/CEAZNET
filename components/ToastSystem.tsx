@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { motion, AnimatePresence } from 'motion/react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -56,28 +56,28 @@ export const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void 
     // Premium styling configuration
     const config = {
         success: {
-            icon: <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />,
+            icon: <AppIcon name="solar:check-circle-linear" className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />,
             border: 'border-emerald-500/20',
             glow: 'shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] dark:shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)]',
             bg: 'bg-white dark:bg-neutral-900/95',
             text: 'text-neutral-800 dark:text-emerald-50'
         },
         error: {
-            icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
+            icon: <AppIcon name="solar:danger-circle-linear" className="w-5 h-5 text-rose-500" />,
             border: 'border-rose-500/20',
             glow: 'shadow-[0_0_20px_-5px_rgba(244,63,94,0.2)] dark:shadow-[0_0_20px_-5px_rgba(244,63,94,0.3)]',
             bg: 'bg-white dark:bg-neutral-900/95',
             text: 'text-neutral-800 dark:text-rose-50'
         },
         info: {
-            icon: <Info className="w-5 h-5 text-blue-500 dark:text-blue-400" />,
+            icon: <AppIcon name="solar:info-circle-linear" className="w-5 h-5 text-blue-500 dark:text-blue-400" />,
             border: 'border-blue-500/20',
             glow: 'shadow-[0_0_20px_-5px_rgba(59,130,246,0.2)] dark:shadow-[0_0_20px_-5px_rgba(59,130,246,0.3)]',
             bg: 'bg-white dark:bg-neutral-900/95',
             text: 'text-neutral-800 dark:text-blue-50'
         },
         warning: {
-            icon: <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400" />,
+            icon: <AppIcon name="solar:danger-triangle-linear" className="w-5 h-5 text-amber-500 dark:text-amber-400" />,
             border: 'border-amber-500/20',
             glow: 'shadow-[0_0_20px_-5px_rgba(245,158,11,0.2)] dark:shadow-[0_0_20px_-5px_rgba(245,158,11,0.3)]',
             bg: 'bg-white dark:bg-neutral-900/95',
@@ -124,7 +124,7 @@ export const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void 
                     onClick={(e) => { e.stopPropagation(); onRemove(toast.id); }}
                     className="p-1 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
                 >
-                    <X className="w-4 h-4" />
+                    <AppIcon name="heroicons:x-mark" className="w-4 h-4" />
                 </button>
             </div>
         </div>

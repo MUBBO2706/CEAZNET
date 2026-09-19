@@ -1,7 +1,7 @@
 import { fetchApi } from "../utils/fetchApi";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ExternalLink, WifiOff, ArrowUp, Mic, ChevronUp, ChevronDown, MessageSquare, Eye, Heart, Bookmark } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { NewsArticle, ChatMessage, ArticleConversation, GroundingChunk, UserArticleInteraction } from '../types';
 import MarkdownRenderer from './MarkdownRenderer';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -121,7 +121,7 @@ const FollowUpConversation: React.FC<{
                 
                 <div className="relative bg-neutral-200/50 dark:bg-black/30 backdrop-blur-md rounded-full p-2 flex items-center gap-2 shadow-2xl pointer-events-auto border border-black/20 dark:border-white/20">
                     <button onClick={() => setIsFollowUpOpen(!isFollowUpOpen)} className="p-2 ml-1 text-gray-500 dark:text-gray-400">
-                        {isFollowUpOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                        {isFollowUpOpen ? <AppIcon name="solar:alt-arrow-up-linear" className="h-5 w-5" /> : <AppIcon name="solar:alt-arrow-down-linear" className="h-5 w-5" />}
                     </button>
                     <textarea
                         ref={textareaRef}
@@ -143,7 +143,7 @@ const FollowUpConversation: React.FC<{
                         className="flex-shrink-0 w-10 h-10 rounded-full bg-neutral-300 dark:bg-gray-600 flex items-center justify-center text-neutral-700 dark:text-white disabled:opacity-50 transition-colors hover:bg-neutral-400 dark:hover:bg-gray-500"
                         aria-label="Send follow-up question"
                     >
-                        {isAnswering || isContentLoading ? <Loader className="h-5 w-5 animate-spin" /> : <ArrowUp className="h-5 w-5" />}
+                        {isAnswering || isContentLoading ? <Loader className="h-5 w-5 animate-spin" /> : <AppIcon name="solar:arrow-up-linear" className="h-5 w-5" />}
                     </button>
                 </div>
             </div>
@@ -713,15 +713,15 @@ ${userMessage.content}
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-1.5 text-neutral-500 dark:text-gray-400">
-                                        <Eye className="h-4 w-4" />
+                                        <AppIcon name="solar:eye-linear" className="h-4 w-4" />
                                         <span>{formatStat(article.views)}</span>
                                     </div>
                                     <button onClick={handleLikeClick} className="flex items-center gap-1.5 group cursor-pointer" aria-label={isLiked ? "Unlike article" : "Like article"}>
-                                        <Heart className={`h-4 w-4 transition-colors ${isLiked ? 'text-red-500 fill-current' : 'text-neutral-500 dark:text-gray-400 group-hover:text-red-400'}`} />
+                                        <AppIcon name={isLiked ? "solar:heart-bold" : "solar:heart-linear"} className={`h-4 w-4 transition-colors ${isLiked ? 'text-red-500' : 'text-neutral-500 dark:text-gray-400 group-hover:text-red-400'}`} />
                                         <span className="text-neutral-500 dark:text-gray-400">{formatStat(article.likes)}</span>
                                     </button>
                                     <button onClick={handleBookmarkClick} className="flex items-center gap-1.5 group cursor-pointer" aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}>
-                                        <Bookmark className={`h-4 w-4 transition-colors ${isBookmarked ? 'text-amber-500 fill-current' : 'text-neutral-500 dark:text-gray-400 group-hover:text-amber-500'}`} />
+                                        <AppIcon name={isBookmarked ? "solar:bookmark-opened-linear" : "solar:bookmark-linear"} className={`h-4 w-4 transition-colors ${isBookmarked ? 'text-amber-500' : 'text-neutral-500 dark:text-gray-400 group-hover:text-amber-500'}`} />
                                         <span className="text-neutral-500 dark:text-gray-400">{formatStat(article.bookmarks)}</span>
                                     </button>
                                 </div>
@@ -744,7 +744,7 @@ ${userMessage.content}
 
                         {!isLoading && !hasMarkdownContent(article.formattedContent) && (
                             <div className="text-center py-16 px-4 bg-red-500/10 dark:bg-red-900/20 rounded-2xl border border-dashed border-red-500/30">
-                                <WifiOff className="h-16 w-16 mx-auto text-red-500/70 mb-4" />
+                                <AppIcon name="solar:wifi-router-minimalistic-linear" className="h-16 w-16 mx-auto text-red-500/70 mb-4" />
                                 <h2 className="text-xl font-semibold text-red-700 dark:text-red-300">Could Not Load Formatted Article</h2>
                                 <p className="mt-2 text-red-600 dark:text-red-400 max-w-md mx-auto">The pre-formatted content for this article is shown below.</p>
                             </div>
@@ -763,7 +763,7 @@ ${userMessage.content}
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:underline"
                             >
-                                View Original Source <ExternalLink className="h-4 w-4" />
+                                View Original Source <AppIcon name="solar:arrow-right-up-linear" className="h-4 w-4" />
                             </a>
                         </footer>
                         

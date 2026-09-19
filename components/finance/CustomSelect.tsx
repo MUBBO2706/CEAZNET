@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { ChevronDown, Check, Search } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 
 export interface CustomSelectOption {
     value: string;
@@ -123,7 +123,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                         </span>
                     )}
                 </div>
-                <ChevronDown
+                <AppIcon
+                    name="solar:alt-arrow-down-linear"
                     className={`w-4 h-4 shrink-0 text-gray-400 transition-transform duration-200 ${
                         isOpen ? 'rotate-180 text-indigo-500' : ''
                     }`}
@@ -142,7 +143,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                         {searchable && (
                             <div className="p-2 border-b border-gray-100 dark:border-white/10 sticky top-0 bg-white/90 dark:bg-[#121214]/90 backdrop-blur-md z-10">
                                 <div className="relative flex items-center">
-                                    <Search className="w-3.5 h-3.5 absolute left-2.5 text-gray-400" />
+                                    <AppIcon name="solar:magnifer-linear" className="w-3.5 h-3.5 absolute left-2.5 text-gray-400" />
                                     <input
                                         ref={searchInputRef}
                                         type="text"
@@ -198,7 +199,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                                                 )}
                                             </div>
                                             {isSelected && (
-                                                <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                                             )}
                                         </button>
                                     );

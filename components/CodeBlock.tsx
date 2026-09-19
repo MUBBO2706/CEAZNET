@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Copy, Check, Play } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 declare const hljs: any;
 
@@ -76,7 +76,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code, isStreaming, setC
                             aria-label="Run code"
                             title="Run code"
                         >
-                            <Play className="h-4 w-4" />
+                            <AppIcon name="solar:play-linear" className="h-4 w-4" />
                         </button>
                     )}
                     <button
@@ -89,7 +89,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code, isStreaming, setC
                         aria-label={isCopied ? 'Copied' : 'Copy code'}
                         title={isCopied ? 'Copied' : 'Copy code'}
                     >
-                        {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {isCopied ? <AppIcon name="solar:check-read-linear" className="h-4 w-4" /> : <AppIcon name="solar:copy-linear" className="h-4 w-4" />}
                     </button>
                 </div>
             </div>

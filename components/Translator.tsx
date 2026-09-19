@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Copy, Check, X, ClipboardPaste, Languages, ChevronDown } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { translateText } from '../services/translationService';
 
 interface TranslatorViewProps {
@@ -93,7 +93,7 @@ const LanguageSelectorDropdown: React.FC<{
                 }`}
             >
                 <span>{currentLangObj.name}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-neutral-400 dark:text-gray-500'}`} />
+                <AppIcon name="solar:alt-arrow-down-linear" className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-neutral-400 dark:text-gray-500'}`} />
             </button>
 
             {isOpen && (
@@ -118,11 +118,11 @@ const LanguageSelectorDropdown: React.FC<{
                                     className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center justify-between transition-colors focus:outline-none focus:ring-0 active:outline-none ${
                                         isSelected 
                                             ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-300 font-bold' 
-                                            : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-50 dark:hover:bg-neutral-900/60'
+                                             : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-50 dark:hover:bg-neutral-900/60'
                                     }`}
                                 >
                                     <span>{item.name}</span>
-                                    {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />}
+                                    {isSelected && <AppIcon name="solar:check-read-linear" className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />}
                                 </button>
                             );
                         })}
@@ -167,7 +167,7 @@ const TranslatorModelDropdown: React.FC<{
                 title={`AI Model: ${currentModelObj.fullName}`}
             >
                 <span className="whitespace-nowrap">{currentModelObj.shortName}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-neutral-400 dark:text-gray-500'}`} />
+                <AppIcon name="solar:alt-arrow-down-linear" className={`w-3.5 h-3.5 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-neutral-400 dark:text-gray-500'}`} />
             </button>
 
             {isOpen && (
@@ -194,7 +194,7 @@ const TranslatorModelDropdown: React.FC<{
                                     }`}
                                 >
                                     <span>{item.fullName}</span>
-                                    {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />}
+                                    {isSelected && <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />}
                                 </button>
                             );
                         })}
@@ -351,11 +351,11 @@ const TranslatorView: React.FC<TranslatorViewProps> = ({ onBack, onTranslationCo
                                 onSelect={handleModelChange}
                             />
                             <button onClick={handlePaste} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-neutral-600 dark:text-gray-300" aria-label="Paste text" title="Paste text">
-                                <ClipboardPaste className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <AppIcon name="solar:clipboard-text-linear" className="h-4 w-4 sm:h-5 sm:w-5" />
                             </button>
                             {inputText && (
                                 <button onClick={() => setInputText('')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-neutral-600 dark:text-gray-300" aria-label="Clear input text" title="Clear text">
-                                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    <AppIcon name="solar:close-circle-linear" className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </button>
                             )}
                         </div>
@@ -387,7 +387,7 @@ const TranslatorView: React.FC<TranslatorViewProps> = ({ onBack, onTranslationCo
                             </p>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-neutral-400 dark:text-gray-500 my-auto py-8">
-                                <Languages className="h-12 w-12 mb-2 opacity-60" />
+                                <AppIcon name="solar:global-linear" className="h-12 w-12 mb-2 opacity-60" />
                                 <span className="font-medium text-sm">Translation will appear here</span>
                             </div>
                         )}
@@ -399,7 +399,7 @@ const TranslatorView: React.FC<TranslatorViewProps> = ({ onBack, onTranslationCo
                         <div className="flex items-center gap-1.5 sm:gap-2 min-h-[32px]">
                             {!isLoading && outputText && (
                                <button onClick={handleCopy} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-neutral-600 dark:text-gray-300" aria-label="Copy translation" title="Copy translation">
-                                    {isCopied ? <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" /> : <Copy className="h-4 w-4 sm:h-5 sm:w-5" />}
+                                    {isCopied ? <AppIcon name="solar:check-read-linear" className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" /> : <AppIcon name="solar:copy-linear" className="h-4 w-4 sm:h-5 sm:w-5" />}
                                 </button>
                             )}
                         </div>

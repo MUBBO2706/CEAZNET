@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, UserCog, LogIn, X, Bookmark, Loader, Search, Eye, EyeOff, Heart, ArrowLeft, Trash2, Upload, Download, RotateCw, Edit2, Check, HeadphonesIcon, Sparkles, ChevronDown, BarChart3 } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { UserProfile, View } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useToast } from './ToastSystem';
@@ -124,7 +125,7 @@ const UserMenu: React.FC<{ user: SupabaseUser; userProfile: UserProfile; avatarU
                     onClick={onOpenProfile}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-700 dark:text-gray-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-all group"
                 >
-                    <UserCog className="h-4 w-4 text-neutral-500 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
+                    <AppIcon name="solar:user-circle-linear" className="h-4 w-4 text-neutral-500 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
                     <span>Manage Profile</span>
                 </button>
                 
@@ -138,7 +139,7 @@ const UserMenu: React.FC<{ user: SupabaseUser; userProfile: UserProfile; avatarU
                     {isLoggingOut ? (
                         <Loader className="h-4 w-4 animate-spin text-red-500" />
                     ) : (
-                        <LogOut className="h-4 w-4" />
+                        <AppIcon name="solar:logout-2-linear" className="h-4 w-4" />
                     )}
                     <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
                 </button>
@@ -350,9 +351,9 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                         <line x1="3" x2="9" y1="18" y2="18" />
                     </svg>
                 ) : (props.dairyTitle || props.expandedVoiceTitle || isNotesEditorOpen || props.supportHeaderState?.title || isFinanceCategoriesView) ? (
-                    <ArrowLeft className="h-5 w-5" />
+                    <AppIcon name="heroicons:arrow-left" className="h-5 w-5" />
                 ) : (
-                    <X className="h-5 w-5" />
+                    <AppIcon name="heroicons:x-mark" className="h-5 w-5" />
                 )}
                 </button>
             </div>
@@ -403,11 +404,11 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
             {isArticleReaderView && (
                 <div className="pointer-events-auto flex items-center gap-3 px-4 h-11 bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-full shadow-sm transition-all duration-300">
                     <div className="flex items-center gap-1.5 text-neutral-500 dark:text-gray-400">
-                        <Eye className="h-3.5 w-3.5" />
+                        <AppIcon name="ph:eye-light" className="h-3.5 w-3.5" />
                         <span className="text-xs font-medium tabular-nums">{formatStat(props.articleViews)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-neutral-500 dark:text-gray-400">
-                        <Heart className="h-3.5 w-3.5" />
+                        <AppIcon name="solar:heart-linear" className="h-3.5 w-3.5" />
                         <span className="text-xs font-medium tabular-nums">{formatStat(props.articleLikes)}</span>
                     </div>
                 </div>
@@ -428,7 +429,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                 }`}
                                 title="Sync Wallet"
                             >
-                                {props.notesHeaderState.isSyncing ? <Loader className="h-5 w-5 animate-spin" /> : <RotateCw className="h-5 w-5" />}
+                                {props.notesHeaderState.isSyncing ? <Loader className="h-5 w-5 animate-spin" /> : <AppIcon name="tabler:rotate-clockwise" className="h-5 w-5" />}
                             </button>
                         </div>
                     )}
@@ -439,7 +440,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                 className="relative flex items-center justify-center h-9 w-9 text-neutral-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-all focus:outline-none rounded-full"
                                 title="Edit"
                             >
-                                <Edit2 className="h-5 w-5" />
+                                <AppIcon name="hugeicons:edit-02" className="h-5 w-5" />
                             </button>
                         ) : (
                             <button 
@@ -451,7 +452,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                 {props.notesHeaderState.isSaving ? (
                                     <Loader className="h-5 w-5 animate-spin text-emerald-600 dark:text-emerald-400" />
                                 ) : (
-                                    <Check className="h-5 w-5" />
+                                    <AppIcon name="ph:check-light" className="h-5 w-5" />
                                 )}
                             </button>
                         )}
@@ -475,9 +476,9 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                 {props.categoryHeaderState.isDeleting ? (
                                     <Loader className="h-5 w-5 animate-spin text-rose-600 dark:text-rose-400" />
                                 ) : props.categoryHeaderState.isCustom ? (
-                                    <Trash2 className="h-5 w-5" />
+                                    <AppIcon name="tabler:trash" className="h-5 w-5" />
                                 ) : (
-                                    <EyeOff className="h-5 w-5" />
+                                    <AppIcon name="ph:eye-slash-light" className="h-5 w-5" />
                                 )}
                             </button>
                         </div>
@@ -496,7 +497,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                 {props.categoryHeaderState.isSaving ? (
                                     <Loader className="h-5 w-5 animate-spin text-emerald-600 dark:text-emerald-400" />
                                 ) : (
-                                    <Check className="h-5 w-5 stroke-[2.5]" />
+                                    <AppIcon name="ph:check-light" className="h-5 w-5 stroke-[2.5]" />
                                 )}
                             </button>
                         </div>
@@ -526,7 +527,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         className="mr-2 flex-shrink-0 text-amber-500 hover:text-amber-600 focus:outline-none"
                                         title={isFinanceView ? "Search transactions (Press Enter)" : "Search"}
                                     >
-                                        <Search className="w-4 h-4" />
+                                        <AppIcon name="ri:search-2-line" className="w-4 h-4" />
                                     </button>
                                     <input
                                         ref={searchInputRef}
@@ -597,7 +598,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         className="p-1.5 rounded-full hover:text-amber-500 text-neutral-500 dark:text-gray-400 transition-colors ml-1 flex-shrink-0"
                                         title={((isNotesView ? props.notesSearchQuery : isFinanceView ? (localFinanceSearchQuery || props.financeSearchQuery) : props.voiceHistorySearchQuery) ? "Clear search" : "Close search")}
                                     >
-                                        <X className="w-4 h-4" />
+                                        <AppIcon name="heroicons:x-mark" className="w-4 h-4" />
                                     </button>
                                 </div>
                             ) : (
@@ -606,7 +607,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                     className="relative flex items-center justify-center h-9 w-9 text-neutral-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-all focus:outline-none rounded-full group"
                                     aria-label="Search"
                                 >
-                                    <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                                    <AppIcon name="ri:search-2-line" className="h-5 w-5 group-hover:scale-110 transition-transform" />
                                 </button>
                             )}
                         </div>
@@ -624,7 +625,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         aria-label="View bookmarked articles"
                                         title="Bookmarks"
                                     >
-                                        <Bookmark className="h-5 w-5" />
+                                        <AppIcon name="solar:bookmark-linear" className="h-5 w-5" />
                                          {props.bookmarkCount !== null && props.bookmarkCount !== undefined && props.bookmarkCount > 0 && (
                                             <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 text-white px-1 pointer-events-none text-[10px] font-bold">
                                                 {props.bookmarkCount}
@@ -653,7 +654,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         aria-label="Upload Media"
                                         title="Upload Media"
                                     >
-                                        {props.isGalleryUploading ? <Loader className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                                        {props.isGalleryUploading ? <Loader className="h-5 w-5 animate-spin" /> : <AppIcon name="solar:upload-minimalistic-linear" className="h-5 w-5" />}
                                     </button>
                                 </div>
                             )}
@@ -669,7 +670,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                                 aria-label="Import Data"
                                                 title="Import Data"
                                             >
-                                                <Upload className="h-5 w-5" />
+                                                <AppIcon name="solar:upload-minimalistic-linear" className="h-5 w-5" />
                                             </button>
                                         </div>
                                     )}
@@ -681,7 +682,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                                 aria-label="Export Data"
                                                 title="Export Data"
                                             >
-                                                <Download className="h-5 w-5" />
+                                                <AppIcon name="solar:download-minimalistic-linear" className="h-5 w-5" />
                                             </button>
                                         </div>
                                     )}
@@ -699,7 +700,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                                 aria-label="Edit Item"
                                                 title="Edit Item"
                                             >
-                                                <Edit2 className="h-5 w-5" />
+                                                <AppIcon name="hugeicons:edit-02" className="h-5 w-5" />
                                             </button>
                                         </div>
                                     )}
@@ -711,7 +712,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                             aria-label="Delete Item"
                                             title="Delete Item"
                                         >
-                                            <Trash2 className="h-5 w-5" />
+                                            <AppIcon name="tabler:trash" className="h-5 w-5" />
                                         </button>
                                     </div>
                                 </div>
@@ -731,7 +732,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         aria-label="Support Center"
                                         title="Support Center"
                                     >
-                                        <HeadphonesIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                                        <AppIcon name="solar:headphones-round-sound-linear" className="h-5 w-5 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </div>
                             )}
@@ -749,7 +750,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         }`}
                                         title="Save Settings"
                                     >
-                                        {props.isSavingVoiceSettings ? <Loader className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+                                        {props.isSavingVoiceSettings ? <Loader className="h-5 w-5 animate-spin" /> : <AppIcon name="ph:check-light" className="h-5 w-5" />}
                                     </button>
                                 </div>
                             )}
@@ -763,7 +764,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                         aria-label="Translator Statistics"
                                         title="Translator Statistics"
                                     >
-                                        <BarChart3 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                                        <AppIcon name="tabler:chart-bar" className="h-5 w-5 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </div>
                             )}
@@ -785,7 +786,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                     ) : props.user ? (
                                         <img src={avatarUrl} alt="User avatar" className="h-8 w-8 rounded-full object-cover bg-neutral-200 dark:bg-gray-700" />
                                     ) : (
-                                        <LogIn className="h-5 w-5" />
+                                        <AppIcon name="solar:login-2-linear" className="h-5 w-5" />
                                     )}
                                 </button>
                                 

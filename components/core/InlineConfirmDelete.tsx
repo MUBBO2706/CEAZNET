@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Trash2, Loader } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './AppIcon';
 
 interface InlineConfirmDeleteProps {
     onDelete: () => Promise<void> | void;
@@ -92,7 +93,7 @@ export const InlineConfirmDelete: React.FC<InlineConfirmDeleteProps> = ({
             className={defaultIconStyles}
             title={typeof text === 'string' ? text : undefined}
         >
-            <Trash2 className={iconClassName} />
+            <AppIcon name="tabler:trash" className={iconClassName} />
             {!iconOnly && <span>{text}</span>}
         </button>
     );

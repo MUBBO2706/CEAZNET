@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Note } from '../../types';
-import { Pin, Trash2, Tag, Clock, Share2 } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { InlineConfirmDelete } from '../core/InlineConfirmDelete';
 
 interface NoteCardProps {
@@ -130,7 +130,7 @@ const NoteCard: React.FC<NoteCardProps> = React.memo(({ note, onClick, onDelete,
                     `}
                     title={note.isPinned ? "Unpin" : "Pin"}
                 >
-                    <Pin className={`w-3.5 h-3.5 ${note.isPinned ? 'fill-current' : ''}`} />
+                    <AppIcon name="ph:push-pin-light" className="w-3.5 h-3.5" />
                 </button>
             </div>
 
@@ -145,7 +145,7 @@ const NoteCard: React.FC<NoteCardProps> = React.memo(({ note, onClick, onDelete,
             <div className="pt-1 mt-auto flex flex-col gap-2 flex-shrink-0 border-t border-black/5 dark:border-white/5">
                 <div className="flex items-center justify-between transition-opacity">
                     <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide">
-                        <Clock className="w-3 h-3" />
+                        <AppIcon name="solar:clock-circle-linear" className="w-3 h-3" />
                         {formattedDate}
                     </div>
                     
@@ -156,7 +156,7 @@ const NoteCard: React.FC<NoteCardProps> = React.memo(({ note, onClick, onDelete,
                                 className="p-1 transition-colors text-neutral-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"
                                 title="Share Note"
                             >
-                                <Share2 className="w-3.5 h-3.5" />
+                                <AppIcon name="solar:share-linear" className="w-3.5 h-3.5" />
                             </button>
                         )}
                         <InlineConfirmDelete 

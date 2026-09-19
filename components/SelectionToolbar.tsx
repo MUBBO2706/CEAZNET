@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trash2, X } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface SelectionToolbarProps {
     selectedCount: number;
@@ -20,7 +20,7 @@ const SelectionToolbar: React.FC<SelectionToolbarProps> = ({ selectedCount, onDe
                     className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-gray-800 text-neutral-500 dark:text-gray-400 transition-colors"
                     title="Cancel selection"
                 >
-                    <X className="w-4 h-4" />
+                    <AppIcon name="solar:close-circle-linear" className="w-4 h-4" />
                 </button>
                 <span className="text-xs font-bold text-neutral-900 dark:text-white whitespace-nowrap">
                     {selectedCount} Selected
@@ -32,7 +32,7 @@ const SelectionToolbar: React.FC<SelectionToolbarProps> = ({ selectedCount, onDe
                 className="flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ borderRadius: 'calc(var(--app-border-radius, 1rem) * 0.75)' }}
             >
-                <Trash2 className="w-3.5 h-3.5" />
+                <AppIcon name="solar:trash-bin-trash-linear" className="w-3.5 h-3.5" />
                 <span>Delete</span>
             </button>
         </div>

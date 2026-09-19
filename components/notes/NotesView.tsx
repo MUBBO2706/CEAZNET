@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Note } from '../../types';
 import { getNotes, saveNote, deleteNote, getNoteById, invalidateNoteCache } from '../../services/dbService';
 import { syncAllTransactionsToNote, getProfileName } from '../../services/financeSyncService';
-import { Plus, Palette, Check, Clock, Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading, X, LayoutGrid, Strikethrough, Quote, Code, Undo, Redo, ChevronLeft, Minus, Link as LinkIcon, Edit2, Lock, RotateCw, Loader, Search, User as UserIcon, Share2, Table } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import NoteCard from './NoteCard';
 import ConfirmationModal from '../ConfirmationModal';
 import ShareNoteModal from './ShareNoteModal';
@@ -350,7 +351,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
                             }}
                             className={`w-7 h-7 min-w-[28px] shrink-0 rounded-full border-2 ${option.bg} ${option.border} flex items-center justify-center transition-transform hover:scale-110 focus:outline-none`}
                         >
-                            {((selectedNote.colorTheme === option.id) || (!selectedNote.colorTheme && option.id === 'default')) && <Check className="w-3.5 h-3.5 text-black/60 dark:text-white/70" />}
+                            {((selectedNote.colorTheme === option.id) || (!selectedNote.colorTheme && option.id === 'default')) && <AppIcon name="ph:check-light" className="w-3.5 h-3.5 text-black/60 dark:text-white/70" />}
                         </button>
                     ))}
                 </div>
@@ -362,7 +363,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
                     className={`p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${showColorPicker ? 'bg-gray-100 dark:bg-gray-800 text-amber-500' : 'text-neutral-500 dark:text-gray-400'}`}
                     title="Change Theme"
                 >
-                    <Palette className="w-5 h-5" />
+                    <AppIcon name="solar:palette-round-linear" className="w-5 h-5" />
                 </button>
 
                 <button 
@@ -370,34 +371,34 @@ const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
                     className="p-2.5 rounded-xl hover:bg-amber-100/50 dark:hover:bg-amber-900/30 text-amber-600 dark:text-amber-400 transition-colors"
                     title="Share Note Link"
                 >
-                    <Share2 className="w-5 h-5" />
+                    <AppIcon name="solar:share-linear" className="w-5 h-5" />
                 </button>
 
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1" />
 
                 <div className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide pr-2">
-                    <button onMouseDown={(e) => handleFormat(e, 'undo')} className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-neutral-500 dark:text-gray-400" title="Undo"><Undo className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'redo')} className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-neutral-500 dark:text-gray-400" title="Redo"><Redo className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'undo')} className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-neutral-500 dark:text-gray-400" title="Undo"><AppIcon name="tabler:arrow-back-up" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'redo')} className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-neutral-500 dark:text-gray-400" title="Redo"><AppIcon name="tabler:arrow-forward-up" className="w-4 h-4" /></button>
                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-800 mx-1" />
                     
-                    <button onMouseDown={(e) => handleFormat(e, 'bold')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.bold)}`} title="Bold"><Bold className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'italic')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.italic)}`} title="Italic"><Italic className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'strikeThrough')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.strikeThrough)}`} title="Strikethrough"><Strikethrough className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'bold')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.bold)}`} title="Bold"><AppIcon name="ph:text-b-light" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'italic')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.italic)}`} title="Italic"><AppIcon name="ph:text-italic-light" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'strikeThrough')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.strikeThrough)}`} title="Strikethrough"><AppIcon name="ph:text-strikethrough-light" className="w-4 h-4" /></button>
                     
-                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'H1')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'h1')}`} title="Heading 1"><Heading1 className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'H2')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'h2')}`} title="Heading 2"><Heading2 className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'H3')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'h3')}`} title="Heading 3"><Heading3 className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'H1')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'h1')}`} title="Heading 1"><AppIcon name="tabler:h-1" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'H2')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'h2')}`} title="Heading 2"><AppIcon name="tabler:h-2" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'H3')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'h3')}`} title="Heading 3"><AppIcon name="tabler:h-3" className="w-4 h-4" /></button>
                     
                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-800 mx-1" />
                     
-                    <button onMouseDown={(e) => handleFormat(e, 'insertUnorderedList')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.isUnorderedList)}`} title="List"><List className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'insertOrderedList')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.isOrderedList)}`} title="Ordered List"><ListOrdered className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'insertUnorderedList')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.isUnorderedList)}`} title="List"><AppIcon name="ph:list-bullets-light" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'insertOrderedList')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.isOrderedList)}`} title="Ordered List"><AppIcon name="ph:list-numbers-light" className="w-4 h-4" /></button>
                     
-                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'blockquote')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'blockquote')}`} title="Quote"><Quote className="w-4 h-4" /></button>
-                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'pre')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'pre')}`} title="Code Block"><Code className="w-4 h-4" /></button>
-                    <button onMouseDown={handleInsertTable} className="p-2.5 rounded-xl transition-colors text-neutral-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Insert Table"><Table className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'blockquote')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'blockquote')}`} title="Quote"><AppIcon name="solar:quote-up-2-linear" className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'formatBlock', 'pre')} className={`p-2.5 rounded-xl transition-colors ${getButtonStyle(activeFormats.blockType === 'pre')}`} title="Code Block"><AppIcon name="tabler:code" className="w-4 h-4" /></button>
+                    <button onMouseDown={handleInsertTable} className="p-2.5 rounded-xl transition-colors text-neutral-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Insert Table"><AppIcon name="tabler:table" className="w-4 h-4" /></button>
                     
-                    <button onMouseDown={(e) => handleFormat(e, 'insertHorizontalRule')} className="p-2.5 rounded-xl transition-colors text-neutral-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Separator"><Minus className="w-4 h-4" /></button>
+                    <button onMouseDown={(e) => handleFormat(e, 'insertHorizontalRule')} className="p-2.5 rounded-xl transition-colors text-neutral-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" title="Separator"><AppIcon name="solar:minus-circle-linear" className="w-4 h-4" /></button>
                 </div>
             </div>
         </div>
@@ -1222,7 +1223,7 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                                 >
                                     <div className="bg-white dark:bg-[#050505] h-full w-full rounded-[1.3rem] p-4 flex flex-col gap-2 items-center justify-center">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
-                                            <Plus className="w-5 h-5" />
+                                            <AppIcon name="solar:add-circle-linear" className="w-5 h-5" />
                                         </div>
                                         <span className="font-bold text-sm text-neutral-800 dark:text-white">New Note</span>
                                     </div>
@@ -1260,7 +1261,7 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                     style={{ bottom: 'calc(var(--dev-console-padding, 0px) + 1.5rem)' }}
                     title="Create New Note"
                 >
-                    <Plus className="w-8 h-8" />
+                    <AppIcon name="ph:plus-light" className="w-8 h-8" />
                 </button>
             )}
 
@@ -1380,14 +1381,14 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                                     className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors"
                                     title="Previous Match"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    <AppIcon name="solar:alt-arrow-left-linear" className="w-5 h-5" />
                                 </button>
                                 <button 
                                     onClick={handleNextMatch}
                                     className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors rotate-180"
                                     title="Next Match"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    <AppIcon name="solar:alt-arrow-left-linear" className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>

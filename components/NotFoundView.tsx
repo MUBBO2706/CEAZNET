@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Home, ArrowLeft } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { View } from '../types';
 
 interface NotFoundViewProps {
@@ -76,11 +76,13 @@ const NotFoundView: React.FC<NotFoundViewProps> = ({ onNavigate }) => {
                         {/* Button Glow Effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/[0.15] via-purple-500/[0.15] to-pink-500/[0.15] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         
-                        <Home className="w-5 h-5 group-hover:-translate-y-1 group-hover:text-indigo-600 transition-all duration-300 relative z-10" />
+                        <AppIcon name="solar:home-smile-linear" className="w-5 h-5 group-hover:-translate-y-1 group-hover:text-indigo-600 transition-all duration-300 relative z-10" />
                         <span className="relative z-10">Teleport Home</span>
                         
                         {/* Animated arrow on hover */}
-                        <ArrowLeft className="w-4 h-4 absolute right-[-20px] opacity-0 group-hover:opacity-100 group-hover:right-4 transition-all duration-300 text-black z-10 rotate-180" />
+                        <span className="absolute right-[-20px] opacity-0 group-hover:opacity-100 group-hover:right-4 transition-all duration-300 text-black z-10">
+                            <AppIcon name="solar:arrow-right-linear" className="w-4 h-4" />
+                        </span>
                     </motion.button>
                 </motion.div>
             </div>

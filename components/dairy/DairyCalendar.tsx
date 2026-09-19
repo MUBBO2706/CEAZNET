@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DairyItem, DairyEntry, DairyPayment } from '../../types';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { allocatePayments } from '../../utils/dairyUtils';
 
 interface DairyCalendarProps {
@@ -119,11 +119,11 @@ const DairyCalendar: React.FC<DairyCalendarProps> = ({ item, entries, payments, 
                         {entry && (
                             <div title={entry.isFullyPaid ? "Fully Paid" : (entry.paidAmount > 0 ? "Partially Paid" : "Pending")}>
                                 {entry.isFullyPaid ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                                    <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
                                 ) : entry.paidAmount > 0 ? (
                                     <span className="w-2.5 h-2.5 rounded-full bg-blue-500 dark:bg-blue-400 inline-block" />
                                 ) : (
-                                    <span className="w-2 h-2 rounded-full bg-orange-500 dark:bg-orange-400 inline-block" />
+                                    <span className="w-2 h-2 rounded-full bg-orange-500 dark:orange-400 inline-block" />
                                 )}
                             </div>
                         )}
@@ -168,14 +168,14 @@ const DairyCalendar: React.FC<DairyCalendarProps> = ({ item, entries, payments, 
     return (
         <div className="w-auto -mx-4 md:-mx-6 border-y border-gray-200 dark:border-white/10">
             <div className="flex items-center justify-between p-4 px-4 md:px-6 border-b border-gray-200 dark:border-white/10">
-                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
+                    <AppIcon name="solar:alt-arrow-left-linear" className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
+                    <AppIcon name="solar:alt-arrow-right-linear" className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
             </div>
 

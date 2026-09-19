@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Heart } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface LikeAnimationProps {
     animating: boolean;
@@ -25,7 +25,7 @@ const LikeAnimation: React.FC<LikeAnimationProps> = ({ animating, onAnimationEnd
 
     return (
         <div className={`${position} inset-0 flex items-center justify-center pointer-events-none z-50`}>
-            <Heart className="h-24 w-24 sm:h-32 sm:w-32 text-red-500 fill-current animate-like-heart drop-shadow-lg" />
+            <AppIcon name="solar:heart-bold" className="h-24 w-24 sm:h-32 sm:w-32 text-red-500 animate-like-heart drop-shadow-lg" />
         </div>
     );
 };

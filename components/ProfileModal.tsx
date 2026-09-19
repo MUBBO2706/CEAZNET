@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { UserProfile } from '../types';
 import type { User } from '@supabase/supabase-js';
-import { X, Loader, Camera, User as UserIcon, Mail, Sparkles, LogOut } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useToast } from './ToastSystem';
 
 interface ProfileModalProps {
@@ -137,7 +138,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, user
                         onClick={handleClose}
                         className="absolute top-4 right-4 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors z-10"
                     >
-                        <X className="h-5 w-5" />
+                        <AppIcon name="solar:close-circle-linear" className="h-5 w-5" />
                     </button>
 
                     <div className="px-8 pt-8 pb-6">
@@ -168,12 +169,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, user
 
                                 {/* Overlay & Icon */}
                                 <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[1px]">
-                                    <Camera className="h-8 w-8 text-white drop-shadow-md transform scale-90 group-hover:scale-100 transition-transform" />
+                                    <AppIcon name="solar:camera-linear" className="h-8 w-8 text-white drop-shadow-md transform scale-90 group-hover:scale-100 transition-transform" />
                                 </div>
 
                                 {/* Floating Badge */}
                                 <div className="absolute bottom-1 right-1 bg-white dark:bg-neutral-800 p-1.5 rounded-full shadow-md border border-neutral-100 dark:border-neutral-700 text-amber-500">
-                                    <Sparkles className="w-3.5 h-3.5 fill-current" />
+                                    <AppIcon name="solar:stars-minimalistic-bold" className="w-3.5 h-3.5 fill-current" />
                                 </div>
 
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg" className="hidden" />
@@ -184,7 +185,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, user
                         <div className="space-y-5">
                             <div className="group relative">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors pointer-events-none">
-                                    <UserIcon className="h-5 w-5" />
+                                    <AppIcon name="solar:user-linear" className="h-5 w-5" />
                                 </div>
                                 <input
                                     type="text"
@@ -198,7 +199,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, user
 
                             <div className="group relative opacity-80">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 pointer-events-none">
-                                    <Mail className="h-5 w-5" />
+                                    <AppIcon name="solar:letter-linear" className="h-5 w-5" />
                                 </div>
                                 <input
                                     type="email"
@@ -256,7 +257,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, user
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-2">
-                                        <LogOut className="h-4 w-4" />
+                                        <AppIcon name="solar:logout-2-linear" className="h-4 w-4" />
                                         <span>Sign Out</span>
                                     </div>
                                 )}

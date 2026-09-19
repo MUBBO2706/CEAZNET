@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface ImageModalProps {
     images: string[];
@@ -46,7 +46,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ images, initialIndex, onClose }
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:scale-110 focus:outline-none"
                   aria-label="Close gallery"
                 >
-                  <X className="h-6 w-6" />
+                  <AppIcon name="solar:close-circle-linear" className="h-6 w-6" />
                 </button>
             </div>
 
@@ -70,7 +70,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ images, initialIndex, onClose }
                         className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all hover:scale-110 border border-white/10 shadow-lg group"
                         aria-label="Previous image"
                     >
-                        <ChevronLeft className="h-6 w-6 group-active:scale-90 transition-transform" />
+                        <AppIcon name="solar:alt-arrow-left-linear" className="h-6 w-6 group-active:scale-90 transition-transform" />
                     </button>
 
                     <div className="text-white/90 font-bold text-base bg-white/10 px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg tracking-widest min-w-[5rem] flex items-center justify-center gap-2 select-none">
@@ -84,7 +84,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ images, initialIndex, onClose }
                         className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all hover:scale-110 border border-white/10 shadow-lg group"
                         aria-label="Next image"
                     >
-                        <ChevronRight className="h-6 w-6 group-active:scale-90 transition-transform" />
+                        <AppIcon name="solar:alt-arrow-right-linear" className="h-6 w-6 group-active:scale-90 transition-transform" />
                     </button>
                 </div>
             )}

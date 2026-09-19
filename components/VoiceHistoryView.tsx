@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { deleteConversation } from '../services/dbService';
-import { ArrowLeft, Play, Pause, Calendar, Clock, Trash2, FileAudio, Loader, User, Bot, ChevronDown, ChevronUp, Volume2, Mic, Activity, Search, Filter, Menu, X, SkipBack, SkipForward, Maximize2, Minimize2, MoreVertical, Download, Copy, Check } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { format } from 'date-fns';
 import { InlineConfirmDelete } from './core/InlineConfirmDelete';
 import { UserProfile } from '../types';
@@ -390,9 +391,9 @@ const ExpandedVoiceView: React.FC<{
                             {isAudioLoading ? (
                                 <Loader className="w-6 h-6 md:w-6 md:h-6 animate-spin text-neutral-500" />
                             ) : isPlaying ? (
-                                <Pause className="w-6 h-6 md:w-6 md:h-6 fill-current" />
+                                <AppIcon name="solar:pause-bold" className="w-6 h-6 md:w-6 md:h-6" />
                             ) : (
-                                <Play className="w-6 h-6 md:w-6 md:h-6 ml-1.5 fill-current" />
+                                <AppIcon name="solar:play-bold" className="w-6 h-6 md:w-6 md:h-6 ml-1" />
                             )}
                         </button>
 
@@ -796,7 +797,7 @@ const VoiceHistoryView: React.FC<VoiceHistoryViewProps> = ({ onBack, user, userP
                             >
                                 <div className="flex items-center gap-6 md:gap-4">
                                     <div className="w-12 h-12 md:w-12 md:h-12 shrink-0 rounded-full border border-neutral-300 dark:border-white/20 flex items-center justify-center group-hover:bg-neutral-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-black transition-all duration-300">
-                                        <Play className="w-5 h-5 md:w-5 md:h-5 ml-1" />
+                                        <AppIcon name="solar:play-bold" className="w-5 h-5 md:w-5 md:h-5 ml-0.5" />
                                     </div>
                                     <div>
                                         <h3 className="text-xl md:text-2xl font-light text-neutral-900 dark:text-white mb-1 group-hover:translate-x-2 transition-transform duration-300">
@@ -824,12 +825,12 @@ const VoiceHistoryView: React.FC<VoiceHistoryViewProps> = ({ onBack, user, userP
                                     ) : (
                                         <button 
                                             onClick={(e) => {
-                                                e.stopPropagation();
+                                                 e.stopPropagation();
                                                 setOpenDropdownId(openDropdownId === convo.id ? null : convo.id);
                                             }}
                                             className="p-3 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors rounded-full hover:bg-neutral-100 dark:hover:bg-white/10"
                                         >
-                                            <MoreVertical className="w-5 h-5" />
+                                            <AppIcon name="solar:menu-dots-bold" className="w-5 h-5" />
                                         </button>
                                     )}
                                     
@@ -870,7 +871,7 @@ const VoiceHistoryView: React.FC<VoiceHistoryViewProps> = ({ onBack, user, userP
                                                         }}
                                                         className="w-full text-left px-4 py-3 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 flex items-center gap-3 transition-colors border-b border-neutral-100 dark:border-white/5"
                                                     >
-                                                        <Download className="w-4 h-4" />
+                                                        <AppIcon name="solar:download-minimalistic-linear" className="w-4 h-4" />
                                                         <span className="text-sm font-medium">Download Audio</span>
                                                     </button>
                                                 )}

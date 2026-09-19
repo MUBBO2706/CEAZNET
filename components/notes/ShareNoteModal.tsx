@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Note } from '../../types';
-import { X, Copy, Check, Share2, Globe, ExternalLink, ShieldCheck, Clock, Eye, ChevronDown } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { useToast } from '../ToastSystem';
 
 interface ShareNoteModalProps {
@@ -147,7 +147,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                 <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/50 dark:bg-neutral-900/50">
                     <div className="flex items-center gap-2.5">
                         <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                            <Share2 size={18} />
+                            <AppIcon name="solar:share-linear" size={18} />
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 leading-tight">
@@ -177,7 +177,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                         {/* Expiration Settings (Left Column) */}
                         <div className="flex flex-col justify-between gap-1.5 min-w-0 relative h-full">
                             <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                                <Clock size={13} className="text-amber-500 shrink-0" />
+                                <AppIcon name="solar:clock-circle-linear" size={13} className="text-amber-500 shrink-0" />
                                 <span className="truncate">Expiration</span>
                             </label>
 
@@ -189,7 +189,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                     className="w-full h-9 px-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs font-medium flex items-center justify-between gap-1 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer shadow-2xs"
                                 >
                                     <span className="truncate">{getSelectedLabel()}</span>
-                                    <ChevronDown size={14} className={`text-neutral-400 shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <AppIcon name="solar:alt-arrow-down-linear" size={14} className={`text-neutral-400 shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* Custom Dropdown Content */}
@@ -208,7 +208,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                                 }`}
                                             >
                                                 <span>{opt.label}</span>
-                                                {durationType === opt.value && <Check size={12} className="shrink-0" />}
+                                                {durationType === opt.value && <AppIcon name="ph:check-light" size={12} className="shrink-0" />}
                                             </button>
                                         ))}
                                     </div>
@@ -220,7 +220,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                         <div className="flex flex-col justify-between gap-1.5 min-w-0 h-full">
                             <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center justify-between">
                                 <span className="flex items-center gap-1.5 truncate">
-                                    <Globe size={13} className="text-amber-500 shrink-0" />
+                                    <AppIcon name="solar:global-linear" size={13} className="text-amber-500 shrink-0" />
                                     <span className="truncate">Public Link</span>
                                 </span>
                             </label>
@@ -230,7 +230,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                     onClick={handleCopy}
                                     className="w-full h-9 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
                                 >
-                                    {copied ? <Check size={14} className="shrink-0" /> : <Copy size={14} className="shrink-0" />}
+                                    {copied ? <AppIcon name="ph:check-light" size={14} className="shrink-0" /> : <AppIcon name="ph:copy-light" size={14} className="shrink-0" />}
                                     <span className="truncate">{copied ? "Copied" : "Copy Link"}</span>
                                 </button>
                             </div>
@@ -262,7 +262,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                     className="w-full h-8 px-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs font-medium flex items-center justify-between gap-1 cursor-pointer"
                                 >
                                     <span>{getUnitLabel()}</span>
-                                    <ChevronDown size={12} className="text-neutral-400 shrink-0" />
+                                    <AppIcon name="solar:alt-arrow-down-linear" size={12} className="text-neutral-400 shrink-0" />
                                 </button>
 
                                 {isUnitDropdownOpen && (
@@ -313,7 +313,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                             onClick={handlePreviewLink}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium cursor-pointer"
                         >
-                            <Eye size={14} className="text-neutral-500" />
+                            <AppIcon name="ph:eye-light" size={14} className="text-neutral-500" />
                             <span>Preview</span>
                         </button>
 
@@ -328,7 +328,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                 onClick={handleDirectShare}
                                 className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
                             >
-                                <Share2 size={13} />
+                                <AppIcon name="solar:share-linear" size={13} />
                                 <span>Share</span>
                             </button>
                         </div>

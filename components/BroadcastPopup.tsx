@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
-import { X } from 'lucide-react';
 
 interface Announcement {
     id: string;

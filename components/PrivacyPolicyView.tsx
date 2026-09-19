@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, Eye, Server, RotateCw, ChevronDown, ChevronRight, Activity, Database, Globe } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import metadata from '../metadata.json';
 import packageInfo from '../package.json';
 import { View } from '../types';
@@ -9,14 +9,14 @@ interface PrivacyPolicyViewProps {
 }
 
 const sections = [
-    { id: 'collection', label: 'Information We Collect', icon: Eye },
-    { id: 'usage', label: 'How We Use Information', icon: Server },
-    { id: 'storage', label: 'Information Sharing & Storage', icon: Shield },
-    { id: 'cookies', label: 'Cookies & Tracking', icon: Activity },
-    { id: 'security', label: 'Data Security Measures', icon: Database },
-    { id: 'international', label: 'International Transfers', icon: Globe },
-    { id: 'rights', label: 'Your Choices & Rights', icon: Lock },
-    { id: 'changes', label: 'Changes to This Policy', icon: RotateCw }
+    { id: 'collection', label: 'Information We Collect', icon: 'solar:eye-linear' },
+    { id: 'usage', label: 'How We Use Information', icon: 'solar:server-square-linear' },
+    { id: 'storage', label: 'Information Sharing & Storage', icon: 'solar:shield-check-linear' },
+    { id: 'cookies', label: 'Cookies & Tracking', icon: 'solar:pulse-linear' },
+    { id: 'security', label: 'Data Security Measures', icon: 'solar:database-linear' },
+    { id: 'international', label: 'International Transfers', icon: 'solar:global-linear' },
+    { id: 'rights', label: 'Your Choices & Rights', icon: 'solar:lock-keyhole-linear' },
+    { id: 'changes', label: 'Changes to This Policy', icon: 'solar:restart-linear' }
 ];
 
 const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => {
@@ -74,9 +74,9 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                             Table of Contents
                         </span>
                         {isTocOpen ? (
-                            <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-down-linear" className="w-4 h-4 text-neutral-500" />
                         ) : (
-                            <ChevronRight className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-right-linear" className="w-4 h-4 text-neutral-500" />
                         )}
                     </button>
 
@@ -90,7 +90,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                                     onClick={() => scrollToSection(item.id)}
                                     className="text-left text-xs font-medium text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors py-1 pl-3 -ml-3 flex items-center gap-2"
                                 >
-                                    <item.icon className="w-3 h-3 opacity-70" />
+                                    <AppIcon name={item.icon} className="w-3 h-3 opacity-70" />
                                     {item.label}
                                 </button>
                             ))}
@@ -106,7 +106,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
                         
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Eye className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:eye-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Information We Collect</h2>
                         </div>
                         
@@ -127,7 +127,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Server className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:server-square-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">How We Use Information</h2>
                         </div>
                         
@@ -147,7 +147,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Shield className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:shield-check-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Information Sharing & Storage</h2>
                         </div>
                         
@@ -169,7 +169,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Activity className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:pulse-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Cookies & Tracking</h2>
                         </div>
                         
@@ -188,7 +188,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:lock-keyhole-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Your Choices & Rights</h2>
                         </div>
                         
@@ -209,7 +209,7 @@ const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => 
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <RotateCw className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:restart-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Changes to This Policy</h2>
                         </div>
                         

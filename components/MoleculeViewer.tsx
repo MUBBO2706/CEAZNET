@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MoleculeData, MoleculeViewerState } from '../types';
 import Tooltip from './Tooltip';
-import { Atom, Maximize, ChevronDown } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import MoleculeViewerSkeleton from './MoleculeViewerSkeleton';
 
 // Add ExpandableText component outside MoleculeViewer
@@ -21,7 +21,7 @@ const ExpandableText = ({ text, label }: { text: string, label: string }) => {
                         className="text-[10px] text-amber-500 hover:text-amber-600 flex items-center gap-0.5"
                     >
                         {expanded ? 'Less' : 'More'}
-                        <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                        <AppIcon name="solar:alt-arrow-down-linear" className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                     </button>
                 )}
             </div>
@@ -619,7 +619,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
                                 </div>
                             </div>
                             <div className={`p-1.5 transition-transform duration-300 ${isControlsOpen ? 'rotate-180' : ''}`}>
-                                <ChevronDown className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
+                                <AppIcon name="solar:alt-arrow-down-linear" className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
                             </div>
                         </summary>
 
@@ -711,13 +711,13 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
                     {onMaximize && (
                         <Tooltip content="Full Screen View">
                             <button onClick={onMaximize} className="p-2 bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 rounded-full transition-colors">
-                                <Maximize className="h-5 w-5" />
+                                <AppIcon name="solar:maximize-square-linear" className="h-5 w-5" />
                             </button>
                         </Tooltip>
                     )}
                     <Tooltip content="Toggle Electrons">
                         <button onClick={() => updateState({ showElectrons: !showElectrons })} className="p-2 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full transition-colors text-white">
-                            <Atom className={`h-5 w-5 transition-colors ${showElectrons ? 'text-amber-400' : ''}`} />
+                            <AppIcon name="solar:atom-linear" className={`h-5 w-5 transition-colors ${showElectrons ? 'text-amber-400' : ''}`} />
                         </button>
                     </Tooltip>
                 </div>
@@ -728,7 +728,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
                         <div className="flex-1 min-w-0">
                             {molecule.iupacName && <p className={`font-semibold text-neutral-800 dark:text-gray-200 ${isControlsOpen ? 'break-words' : 'truncate'}`}>{molecule.iupacName}</p>}
                         </div>
-                        <ChevronDown className={`h-5 w-5 text-neutral-500 dark:text-gray-400 transition-transform duration-300 ${isControlsOpen ? 'rotate-180' : ''}`} />
+                        <AppIcon name="solar:alt-arrow-down-linear" className={`h-5 w-5 text-neutral-500 dark:text-gray-400 transition-transform duration-300 ${isControlsOpen ? 'rotate-180' : ''}`} />
                     </div>
                 </div>
             )}

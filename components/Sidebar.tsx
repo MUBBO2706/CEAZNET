@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View } from '../types';
-import { ChevronsLeft, ChevronsRight, Settings, Info } from 'lucide-react';
 import Tooltip from './Tooltip';
 import ThemeToggle from './ThemeToggle';
+import { AppIcon, createAppIcon } from './core/AppIcon';
 
 interface SidebarProps {
     isMobileOpen: boolean;
@@ -20,161 +20,21 @@ interface SidebarItemProps {
     isCollapsed: boolean;
 }
 
-// --- Custom SVG Icons ---
-
-const OverviewIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="2" />
-    <rect x="14" y="3" width="7" height="7" rx="2" />
-    <rect x="14" y="14" width="7" height="7" rx="2" />
-    <rect x="3" y="14" width="7" height="7" rx="2" />
-  </svg>
-);
-
-const ExploreIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
-  </svg>
-);
-
-const MemoryIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-1.26C6.19 14.47 5 12.38 5 10a7 7 0 0 1 7-7z" />
-    <path d="M9 21h6" />
-    <path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
-  </svg>
-);
-
-const TranslatorIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 8l6 6" />
-    <path d="M4 14h6" />
-    <path d="M2 5h12" />
-    <path d="M7 2h1" />
-    <path d="M22 22l-5-10-5 10" />
-    <path d="M14 18h6" />
-  </svg>
-);
-
-const StatsIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 3v18h18" />
-    <path d="M18 17V9" />
-    <path d="M13 17V5" />
-    <path d="M8 17v-3" />
-  </svg>
-);
-
-const SelectIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <path d="M9 12l2 2 4-4" />
-  </svg>
-);
-
-const NotesIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
-    <polyline points="10 9 9 9 8 9" />
-  </svg>
-);
-
-const FinanceIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 12h20" />
-    <path d="M7 12v-3h10v3" />
-    <path d="M7 15h10v-3" />
-    <path d="M9 12v6" />
-    <path d="M15 12v6" />
-    <path d="M3 6h18" />
-    <path d="M3 18h18" />
-  </svg>
-);
-
-const DairyIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 21h10" />
-    <path d="M12 3l7 4-7 4-7-4 7-4z" />
-    <path d="M19 7v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7" />
-    <path d="M9 21v-4a3 3 0 0 1 6 0v4" />
-  </svg>
-);
-
-const GalleryIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-    <circle cx="8.5" cy="8.5" r="1.5" />
-    <polyline points="21 15 16 10 5 21" />
-  </svg>
-);
-
-const AboutIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-    <path d="M12 11v5" />
-    <path d="M12 8h.01" />
-  </svg>
-);
-
-const GuideIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    <path d="M12 7v1" />
-  </svg>
-);
-
-const VoiceIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-    <line x1="12" y1="19" x2="12" y2="23" />
-    <line x1="8" y1="23" x2="16" y2="23" />
-  </svg>
-);
-
-const HistoryIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 3v5h5" />
-    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
-    <path d="M12 7v5l4 2" />
-  </svg>
-);
-
-const SupportIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-  </svg>
-);
-
-const PdfIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <path d="M12 18v-6" />
-    <path d="M9 15l3 3 3-3" />
-  </svg>
-);
-
-const TermsIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <path d="M9 15l2 2 4-4" />
-  </svg>
-);
-
-const PrivacyIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <path d="M12 8v4" />
-    <path d="M12 16h.01" />
-  </svg>
-);
+// --- Enhanced Outline / Linear Icons across 7 Libraries ---
+const OverviewIcon = createAppIcon('solar:widget-2-linear');
+const ExploreIcon = createAppIcon('ph:compass-light');
+const NotesIcon = createAppIcon('tabler:notebook');
+const FinanceIcon = createAppIcon('solar:wallet-money-linear');
+const DairyIcon = createAppIcon('solar:notebook-bookmark-linear');
+const GalleryIcon = createAppIcon('solar:gallery-linear');
+const TranslatorIcon = createAppIcon('ri:translate-2');
+const VoiceIcon = createAppIcon('hugeicons:voice');
+const HistoryIcon = createAppIcon('tabler:history');
+const SupportIcon = createAppIcon('hugeicons:customer-support');
+const GuideIcon = createAppIcon('hugeicons:ai-magic');
+const AboutIcon = createAppIcon('heroicons:information-circle');
+const TermsIcon = createAppIcon('tabler:file-text');
+const PrivacyIcon = createAppIcon('ph:shield-light');
 
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon: Icon, label, isActive, onClick, isCollapsed }) => {
     return (
@@ -467,10 +327,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose, currentV
                                 ${currentView === 'settings' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : ''}
                             `}
                         >
-                            <Settings className={`
-                                transition-transform duration-500 group-hover:rotate-90
-                                ${isCollapsed ? 'h-5 w-5' : 'h-5 w-5'}
-                            `} />
+                            <AppIcon 
+                                name="solar:settings-minimalistic-linear" 
+                                className={`
+                                    transition-transform duration-500 group-hover:rotate-90
+                                    ${isCollapsed ? 'h-5 w-5' : 'h-5 w-5'}
+                                `} 
+                            />
                         </button>
                     </Tooltip>
                 </div>
@@ -490,7 +353,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose, currentV
                     className={`absolute top-4 -right-4 w-8 h-8 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-full shadow-md flex items-center justify-center z-50 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 ${isMobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                     aria-label="Close sidebar"
                 >
-                    <ChevronsLeft className="h-5 w-5" />
+                    <AppIcon name="tabler:chevron-left" className="h-5 w-5" />
                 </button>
             </div>
             
@@ -504,7 +367,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose, currentV
                     className="absolute top-5 -right-4 w-8 h-8 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center z-50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-transform hover:scale-110"
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
-                    {isCollapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
+                    {isCollapsed ? <AppIcon name="tabler:chevron-right" className="h-5 w-5" /> : <AppIcon name="tabler:chevron-left" className="h-5 w-5" />}
                 </button>
             </div>
         </>

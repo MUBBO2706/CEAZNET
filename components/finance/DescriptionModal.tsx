@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 
 interface DescriptionModalProps {
     isOpen: boolean;
@@ -35,7 +35,7 @@ const DescriptionModal: React.FC<DescriptionModalProps> = ({ isOpen, onClose, de
                     className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 p-2 bg-white dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-full shadow-2xl border border-gray-200/80 dark:border-white/10 z-20 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer"
                     aria-label="Close modal"
                 >
-                    <X className="w-5 h-5" />
+                    <AppIcon name="solar:close-circle-linear" className="w-5 h-5" />
                 </button>
 
                 <div className="relative bg-white/95 dark:bg-black/95 backdrop-blur-2xl rounded-[1.8rem] shadow-2xl border border-gray-200/60 dark:border-white/10 overflow-hidden flex flex-col max-h-[80vh]">

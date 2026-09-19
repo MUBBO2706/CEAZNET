@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
-import { Zap, X } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { ChargingOverlayState } from '../hooks/useChargingMode';
 import { updateBrowserThemeColor } from '../utils/themeColor';
 
@@ -146,7 +146,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({
               aria-label="Close Charging Preview"
               title="Close Preview"
             >
-              <X className="w-5 h-5" />
+              <AppIcon name="heroicons:x-mark" className="w-5 h-5" />
             </motion.button>
           )}
 
@@ -161,7 +161,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({
             >
               {/* Left label: Icon + Status text (Shows 'Charged' in preview mode, 'Charging' in real mode) */}
               <div className="flex items-center gap-1.5 text-white">
-                <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#30D158] fill-[#30D158]" />
+                <AppIcon name="solar:bolt-linear" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#30D158]" />
                 <span className="text-white font-semibold text-sm sm:text-base tracking-tight font-sans">
                   {isPreview ? 'Charged' : 'Charging'}
                 </span>
@@ -492,7 +492,7 @@ const ChargingOverlay: React.FC<ChargingOverlayProps> = ({
               aria-label="Close Charging Preview"
               title="Close Preview"
             >
-              <X className="w-5 h-5" />
+              <AppIcon name="heroicons:x-mark" className="w-5 h-5" />
             </motion.button>
           )}
           <div className="flex flex-col items-center justify-center">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Clock, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface DateTimePickerProps {
     value: string; // YYYY-MM-DDTHH:MM format
@@ -337,7 +337,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                     onClick={() => setIsOpen(!isOpen)}
                     className="flex items-center gap-1.5 text-[9.5px] md:text-[10.5px] text-[var(--dev-console-text)] outline-none cursor-pointer h-full text-left"
                 >
-                    <Calendar size={11} className="text-[var(--dev-console-text-muted)] shrink-0" />
+                    <AppIcon name="solar:calendar-linear" className="w-[11px] h-[11px] text-[var(--dev-console-text-muted)] shrink-0" />
                     <span className="truncate max-w-[130px] md:max-w-[160px] pr-1.5">
                         {getDisplayString()}
                     </span>
@@ -351,7 +351,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                         className="p-0.5 text-[var(--dev-console-text-muted)] hover:text-red-400 hover:bg-red-500/10 rounded cursor-pointer transition-colors"
                         title="Clear"
                     >
-                        <X size={10} />
+                        <AppIcon name="heroicons:x-mark" className="w-2.5 h-2.5" />
                     </button>
                 )}
             </div>
@@ -369,7 +369,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                                     onClick={handlePrevMonth}
                                     className="p-1 hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all cursor-pointer"
                                 >
-                                    <ChevronLeft size={13} />
+                                    <AppIcon name="solar:alt-arrow-left-linear" className="w-3.5 h-3.5" />
                                 </button>
                                 <span className="text-[10px] font-semibold tracking-wider uppercase">
                                     {monthNames[navMonth]} {navYear}
@@ -378,7 +378,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                                     onClick={handleNextMonth}
                                     className="p-1 hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all cursor-pointer"
                                 >
-                                    <ChevronRight size={13} />
+                                    <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5" />
                                 </button>
                             </div>
 
@@ -423,7 +423,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                         {/* RIGHT PANE: DEDICATED CUSTOM TIME PICKER */}
                         <div className="flex flex-col gap-1.5 w-[90px] shrink-0">
                             <div className="flex items-center gap-1 border-b border-[var(--dev-console-border)]/50 pb-1.5 h-[23px]">
-                                <Clock size={11} className="text-[var(--dev-console-text-muted)] shrink-0" />
+                                <AppIcon name="solar:clock-circle-linear" className="w-[11px] h-[11px] text-[var(--dev-console-text-muted)] shrink-0" />
                                 <span className="text-[9px] font-bold text-[var(--dev-console-text-muted)] uppercase tracking-wider">Time</span>
                             </div>
 
@@ -498,13 +498,13 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                                 onClick={handleClear}
                                 className="text-red-400 hover:bg-red-500/10 rounded px-1.5 py-1 flex items-center gap-1 transition-all cursor-pointer"
                             >
-                                <X size={10} /> CLEAR
+                                <AppIcon name="heroicons:x-mark" className="w-2.5 h-2.5" /> CLEAR
                             </button>
                             <button
                                 onClick={handleDone}
                                 className="bg-[#007fd4] hover:bg-[#007fd4]/90 text-white rounded px-2 py-1 flex items-center gap-0.5 transition-all cursor-pointer shadow-sm shadow-[#007fd4]/10"
                             >
-                                <Check size={10} /> SELECT
+                                <AppIcon name="solar:check-read-linear" className="w-2.5 h-2.5" /> SELECT
                             </button>
                         </div>
                     </div>

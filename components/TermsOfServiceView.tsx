@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, AlertTriangle, Scale, ShieldCheck, ChevronDown, ChevronRight, Activity, Terminal } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import metadata from '../metadata.json';
 import packageInfo from '../package.json';
 import { View } from '../types';
@@ -9,12 +9,12 @@ interface TermsOfServiceViewProps {
 }
 
 const sections = [
-    { id: 'acceptance', label: 'Acceptance of Terms', icon: FileText },
-    { id: 'accounts', label: 'User Accounts & Authentication', icon: ShieldCheck },
-    { id: 'rules', label: 'Platform Rules & Conduct', icon: Activity },
-    { id: 'acceptable-use', label: 'Acceptable Use Policy', icon: Scale },
-    { id: 'intellectual', label: 'Intellectual Property', icon: Terminal },
-    { id: 'liability', label: 'Limitation of Liability', icon: AlertTriangle }
+    { id: 'acceptance', label: 'Acceptance of Terms', icon: 'solar:document-text-linear' },
+    { id: 'accounts', label: 'User Accounts & Authentication', icon: 'solar:shield-check-linear' },
+    { id: 'rules', label: 'Platform Rules & Conduct', icon: 'solar:pulse-linear' },
+    { id: 'acceptable-use', label: 'Acceptable Use Policy', icon: 'solar:scale-linear' },
+    { id: 'intellectual', label: 'Intellectual Property', icon: 'solar:code-square-linear' },
+    { id: 'liability', label: 'Limitation of Liability', icon: 'solar:danger-triangle-linear' }
 ];
 
 const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) => {
@@ -72,9 +72,9 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                             Table of Contents
                         </span>
                         {isTocOpen ? (
-                            <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-down-linear" className="w-4 h-4 text-neutral-500" />
                         ) : (
-                            <ChevronRight className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-right-linear" className="w-4 h-4 text-neutral-500" />
                         )}
                     </button>
 
@@ -88,7 +88,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                                     onClick={() => scrollToSection(item.id)}
                                     className="text-left text-xs font-medium text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors py-1 pl-3 -ml-3 flex items-center gap-2"
                                 >
-                                    <item.icon className="w-3 h-3 opacity-70" />
+                                    <AppIcon name={item.icon} className="w-3 h-3 opacity-70" />
                                     {item.label}
                                 </button>
                             ))}
@@ -104,7 +104,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
                         
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <FileText className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:document-text-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Acceptance of Terms</h2>
                         </div>
                         
@@ -123,7 +123,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:shield-check-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">User Accounts & Authentication</h2>
                         </div>
                         
@@ -144,7 +144,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Activity className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:pulse-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Platform Rules & Conduct</h2>
                         </div>
                         
@@ -164,7 +164,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Scale className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:scale-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Acceptable Use Policy</h2>
                         </div>
                         
@@ -184,7 +184,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Terminal className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:code-square-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Intellectual Property</h2>
                         </div>
                         
@@ -200,7 +200,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) =
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:danger-triangle-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Limitation of Liability</h2>
                         </div>
                         

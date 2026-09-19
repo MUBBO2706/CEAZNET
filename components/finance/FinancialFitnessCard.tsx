@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Transaction } from '../../types';
-import { TrendingUp, TrendingDown, Calendar, AlertCircle, CheckCircle2, DollarSign, Activity } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 
 interface FinancialFitnessCardProps {
     transactions?: Transaction[];
@@ -135,9 +135,9 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
                     <div className="flex items-center gap-1.5 mb-0.5">
                         <div className="p-0.5 bg-gray-100 dark:bg-gray-800 rounded-md">
                             {stats.isCurrentPeriod ? (
-                                <Calendar className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+                                <AppIcon name="solar:calendar-linear" className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
                             ) : (
-                                <Activity className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+                                <AppIcon name="solar:pulse-2-linear" className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
                             )}
                         </div>
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">{stats.dailyMetricLabel}</span>
@@ -173,7 +173,7 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
                             ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/50 dark:text-emerald-400' 
                             : 'bg-rose-50 border-rose-100 text-rose-700 dark:bg-rose-900/20 dark:border-rose-900/50 dark:text-rose-400'
                     }`}>
-                        {stats.isUnderBudget ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {stats.isUnderBudget ? <AppIcon name="solar:graph-up-linear" className="w-3 h-3" /> : <AppIcon name="solar:graph-down-linear" className="w-3 h-3" />}
                         <span className="text-[9.5px] font-bold uppercase tracking-wider">
                             {stats.isUnderBudget ? 'Under Budget' : 'Over Budget'}
                         </span>
@@ -230,9 +230,9 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
                     ) : (
                         <>
                             {stats.isUnderBudget ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                <AppIcon name="solar:check-circle-linear" className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
                             ) : (
-                                <AlertCircle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
+                                <AppIcon name="solar:danger-circle-linear" className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
                             )}
                             <p className="line-clamp-2">
                                 {stats.isCurrentPeriod

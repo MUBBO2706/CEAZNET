@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Download, ChevronDown, Calendar, FileText, Check } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { DairyItem } from '../../types';
 
 interface DairyPdfExportModalProps {
@@ -40,7 +40,7 @@ const CustomSelect = ({ value, options, onChange, label }: { value: any, options
                 className="w-full flex items-center justify-between pl-3 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
             >
                 <span className="block truncate">{selectedOption?.label || label}</span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <AppIcon name="solar:alt-arrow-down-linear" className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
@@ -58,7 +58,7 @@ const CustomSelect = ({ value, options, onChange, label }: { value: any, options
                             }`}
                         >
                             {option.label}
-                            {value === option.value && <Check className="w-4 h-4" />}
+                            {value === option.value && <AppIcon name="solar:check-read-linear" className="w-4 h-4" />}
                         </button>
                     ))}
                 </div>
@@ -105,7 +105,7 @@ const DairyPdfExportModal: React.FC<DairyPdfExportModalProps> = ({ isOpen, onClo
             <div className="bg-white dark:bg-[#050505] rounded-2xl shadow-xl w-full max-w-md sm:max-w-lg flex flex-col">
                 <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-blue-500" />
+                        <AppIcon name="solar:document-text-linear" className="w-5 h-5 text-blue-500" />
                         Download PDF Report
                     </h3>
                 </div>
@@ -159,7 +159,7 @@ const DairyPdfExportModal: React.FC<DairyPdfExportModalProps> = ({ isOpen, onClo
                                         onChange={(e) => setStartDate(e.target.value)}
                                         className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                     />
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    <AppIcon name="solar:calendar-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                                 </div>
                             </div>
                             <div>
@@ -171,18 +171,18 @@ const DairyPdfExportModal: React.FC<DairyPdfExportModalProps> = ({ isOpen, onClo
                                         onChange={(e) => setEndDate(e.target.value)}
                                         className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                     />
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    <AppIcon name="solar:calendar-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-900/20 rounded-b-2xl">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors cursor-pointer">
                         Cancel
                     </button>
-                    <button onClick={handleExport} className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 shadow-sm shadow-blue-600/20">
-                        <Download className="w-4 h-4" />
+                    <button onClick={handleExport} className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 shadow-sm shadow-blue-600/20 cursor-pointer">
+                        <AppIcon name="solar:download-minimalistic-linear" className="w-4 h-4" />
                         Download PDF
                     </button>
                 </div>

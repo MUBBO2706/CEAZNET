@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Note } from '../types';
 import { getNotes } from '../services/dbService';
-import { X, Search, StickyNote, Loader } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import type { User } from '@supabase/supabase-js';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -86,18 +87,18 @@ const NotePickerModal: React.FC<NotePickerModalProps> = ({ isOpen, onClose, onSe
                 {/* Header */}
                 <div className="p-4 border-b border-neutral-200 dark:border-gray-700 flex items-center justify-between bg-neutral-50/50 dark:bg-black/20">
                     <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                        <StickyNote className="w-5 h-5 text-amber-500" />
+                        <AppIcon name="solar:notes-linear" className="w-5 h-5 text-amber-500" />
                         Attach Note
                     </h3>
                     <button onClick={handleClose} className="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors">
-                        <X className="w-5 h-5 text-neutral-500 dark:text-gray-400" />
+                        <AppIcon name="solar:close-circle-linear" className="w-5 h-5 text-neutral-500 dark:text-gray-400" />
                     </button>
                 </div>
 
                 {/* Search */}
                 <div className="p-4 pb-2">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <AppIcon name="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <input 
                             type="text" 
                             placeholder="Search notes..." 

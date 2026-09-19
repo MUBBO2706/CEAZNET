@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Download, ChevronDown, Calendar } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { DairyItem } from '../../types';
 
 interface DairyExportModalProps {
@@ -66,7 +66,7 @@ const DairyExportModal: React.FC<DairyExportModalProps> = ({ isOpen, onClose, it
                                         <option key={item.id} value={item.id}>{item.name}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                <AppIcon name="solar:alt-arrow-down-linear" className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                             </div>
                         </div>
                         <div>
@@ -82,7 +82,7 @@ const DairyExportModal: React.FC<DairyExportModalProps> = ({ isOpen, onClose, it
                                     <option value="last_month">Last Month</option>
                                     <option value="custom">Custom Range</option>
                                 </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                <AppIcon name="solar:alt-arrow-down-linear" className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                             </div>
                         </div>
                     </div>
@@ -97,7 +97,7 @@ const DairyExportModal: React.FC<DairyExportModalProps> = ({ isOpen, onClose, it
                                         onChange={(e) => setStartDate(e.target.value)}
                                         className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                     />
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    <AppIcon name="solar:calendar-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                                 </div>
                             </div>
                             <div>
@@ -109,18 +109,18 @@ const DairyExportModal: React.FC<DairyExportModalProps> = ({ isOpen, onClose, it
                                         onChange={(e) => setEndDate(e.target.value)}
                                         className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                     />
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    <AppIcon name="solar:calendar-linear" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
                 <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors cursor-pointer">
                         Cancel
                     </button>
-                    <button onClick={handleExport} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2">
-                        <Download className="w-4 h-4" />
+                    <button onClick={handleExport} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer">
+                        <AppIcon name="solar:download-minimalistic-linear" className="w-4 h-4" />
                         Export
                     </button>
                 </div>

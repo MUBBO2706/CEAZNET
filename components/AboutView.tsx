@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, BookOpen, Layers, Cpu, Database, Mic, Shield, Zap, BrainCircuit, Palette, User as UserIcon } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import metadata from '../metadata.json';
 import packageInfo from '../package.json';
 import { View } from '../types';
@@ -10,12 +10,12 @@ interface AboutViewProps {
 }
 
 const sections = [
-    { id: 'philosophy', label: 'The Philosophy', icon: BookOpen },
-    { id: 'creator', label: 'About the Creator', icon: UserIcon },
-    { id: 'architecture', label: 'System Architecture', icon: Layers },
-    { id: 'design', label: 'Design System', icon: Palette },
-    { id: 'voice', label: 'Real-time Voice', icon: Mic },
-    { id: 'privacy', label: 'Privacy & Security', icon: Shield }
+    { id: 'philosophy', label: 'The Philosophy', icon: 'solar:book-linear' },
+    { id: 'creator', label: 'About the Creator', icon: 'solar:user-linear' },
+    { id: 'architecture', label: 'System Architecture', icon: 'solar:layers-minimalistic-linear' },
+    { id: 'design', label: 'Design System', icon: 'solar:palette-linear' },
+    { id: 'voice', label: 'Real-time Voice', icon: 'solar:microphone-3-linear' },
+    { id: 'privacy', label: 'Privacy & Security', icon: 'solar:shield-check-linear' }
 ];
 
 const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
@@ -74,9 +74,9 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                             Table of Contents
                         </span>
                         {isTocOpen ? (
-                            <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-down-linear" className="w-4 h-4 text-neutral-500" />
                         ) : (
-                            <ChevronRight className="w-4 h-4 text-neutral-500" />
+                            <AppIcon name="solar:alt-arrow-right-linear" className="w-4 h-4 text-neutral-500" />
                         )}
                     </button>
 
@@ -90,7 +90,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                                     onClick={() => scrollToSection(item.id)}
                                     className="text-left text-xs font-medium text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors py-1 pl-3 -ml-3 flex items-center gap-2"
                                 >
-                                    <item.icon className="w-3 h-3 opacity-70" />
+                                    <AppIcon name={item.icon} className="w-3.5 h-3.5 opacity-70" />
                                     {item.label}
                                 </button>
                             ))}
@@ -109,7 +109,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
                         
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:book-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">The Integrated Life</h2>
                         </div>
                         
@@ -128,7 +128,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
                         
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <UserIcon className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:user-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">The Creator</h2>
                         </div>
                         
@@ -150,7 +150,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Layers className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:layers-minimalistic-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Technical Architecture</h2>
                         </div>
                         
@@ -186,7 +186,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Palette className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:palette-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Design System</h2>
                         </div>
                         
@@ -215,7 +215,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Mic className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:microphone-3-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Multimodal Voice</h2>
                         </div>
                         
@@ -235,7 +235,7 @@ const AboutView: React.FC<AboutViewProps> = ({ onNavigate }) => {
                         <div className="absolute left-[1.5px] top-3 w-3.5 h-3.5 rounded-full border-[3px] border-[#F9F6F2] dark:border-[#191B1A] bg-neutral-300 dark:bg-neutral-700 group-hover:bg-amber-500 transition-colors duration-500 z-10" />
 
                         <div className="flex items-center gap-2 mb-2 pt-1.5">
-                            <Shield className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            <AppIcon name="solar:shield-check-linear" className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Private by Default</h2>
                         </div>
                         

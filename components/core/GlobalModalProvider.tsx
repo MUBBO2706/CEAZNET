@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { X, AlertTriangle, Info, Eye, EyeOff } from 'lucide-react';
+import { AppIcon } from './AppIcon';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ModalOptions {
@@ -153,7 +153,7 @@ export const GlobalModalProvider: React.FC<{ children: React.ReactNode }> = ({ c
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300"
                                         >
-                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            {showPassword ? <AppIcon name="solar:eye-closed-linear" className="w-4 h-4" /> : <AppIcon name="solar:eye-linear" className="w-4 h-4" />}
                                         </button>
                                     )}
                                 </div>

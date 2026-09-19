@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, ArrowRight, Check, Shield, Zap, Key } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useToast } from './ToastSystem';
 
 interface ApiKeyModalProps {
@@ -95,14 +95,14 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSetApiKey, onClose,
                     onClick={handleClose} 
                     className="absolute top-5 right-5 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-20"
                 >
-                    <X className="h-5 w-5" />
+                    <AppIcon name="heroicons:x-mark" className="h-5 w-5" />
                 </button>
 
                 <div className="px-8 pt-10 pb-8">
                     {/* Header Section */}
                     <div className="text-center mb-8 relative z-10">
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white mb-4 shadow-lg shadow-blue-500/30">
-                            <Zap className="w-6 h-6 fill-current" />
+                            <AppIcon name="solar:bolt-linear" className="w-6 h-6" />
                         </div>
                         <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
                             Initialize Engine
@@ -117,7 +117,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSetApiKey, onClose,
                         <div className="space-y-2">
                             <div className="group relative">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-gray-500 group-focus-within:text-amber-500 transition-colors pointer-events-none">
-                                    <Key className="h-5 w-5" />
+                                    <AppIcon name="solar:key-linear" className="h-5 w-5" />
                                 </div>
                                 <input
                                     type="text"
@@ -132,7 +132,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSetApiKey, onClose,
                                 />
                                 {keyInput && !error && (
                                     <div className="absolute right-4 top-0 bottom-0 flex items-center justify-center text-green-500 animate-fade-in-up pointer-events-none">
-                                        <Check className="h-5 w-5" />
+                                        <AppIcon name="solar:check-circle-linear" className="h-5 w-5" />
                                     </div>
                                 )}
                             </div>
@@ -172,7 +172,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSetApiKey, onClose,
                             ) : (
                                 <>
                                     <span className="text-base">{currentApiKey ? 'Update Key' : 'Connect'}</span>
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    <AppIcon name="solar:arrow-right-linear" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </button>
@@ -182,7 +182,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSetApiKey, onClose,
                 {/* Footer Info */}
                 <div className="bg-neutral-50/80 dark:bg-black/30 p-4 border-t border-neutral-100 dark:border-white/5 backdrop-blur-sm flex justify-between items-center px-6">
                     <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 dark:text-gray-600 font-semibold uppercase tracking-wider">
-                        <Shield className="w-3 h-3" /> Secure Storage
+                        <AppIcon name="solar:shield-check-linear" className="w-3 h-3" /> Secure Storage
                     </div>
                     <a 
                         href="https://aistudio.google.com/app/apikey" 
@@ -190,7 +190,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSetApiKey, onClose,
                         rel="noopener noreferrer" 
                         className="flex items-center gap-1 text-[10px] font-semibold text-neutral-500 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
                     >
-                        Get Key <ExternalLink className="w-2.5 h-2.5" />
+                        Get Key <AppIcon name="solar:arrow-right-up-linear" className="w-2.5 h-2.5" />
                     </a>
                 </div>
             </div>

@@ -1,62 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { VoiceName } from '../types';
-import { Mic, SlidersHorizontal, Smile, ToyBrick, Coffee, Briefcase, Anchor, Zap, Quote, Drama, BookOpen, Wind, CloudRain, Swords, VenetianMask, Laugh, Frown, Check, ChevronDown, Sparkles, ArrowLeft } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { voices } from './LiveConversationView';
 
-const MarsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        {...props}
-    >
-        <circle cx="10" cy="14" r="5"/>
-        <line x1="13.5" y1="10.5" x2="18" y2="6"/>
-        <polyline points="18 9 18 6 15 6"/>
-    </svg>
-);
-
-const VenusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        {...props}
-    >
-        <circle cx="12" cy="9" r="5"></circle>
-        <line x1="12" y1="14" x2="12" y2="22"></line>
-        <line x1="9" y1="18" x2="15" y2="18"></line>
-    </svg>
-);
-
 const tones = [
-    { id: 'friendly', name: 'Friendly', icon: Smile, prompt: "[TONE: friendly, warm]" },
-    { id: 'playful', name: 'Playful', icon: ToyBrick, prompt: "[TONE: playful, lighthearted]" },
-    { id: 'casual', name: 'Casual', icon: Coffee, prompt: "[TONE: casual, relaxed, chill]" },
-    { id: 'formal', name: 'Formal', icon: Briefcase, prompt: "[TONE: formal, professional]" },
-    { id: 'serious', name: 'Serious', icon: Anchor, prompt: "[TONE: serious, direct]" },
-    { id: 'enthusiastic', name: 'Enthusiastic', icon: Zap, prompt: "[TONE: enthusiastic, energetic]" },
-    { id: 'sarcastic', name: 'Sarcastic', icon: Quote, prompt: "[TONE: sarcastic, witty]" },
-    { id: 'dramatic', name: 'Dramatic', icon: Drama, prompt: "[TONE: dramatic, expressive]" },
-    { id: 'storyteller', name: 'Storyteller', icon: BookOpen, prompt: "[TONE: captivating storyteller]" },
-    { id: 'calm', name: 'Calm', icon: Wind, prompt: "[TONE: calm, soothing]" },
-    { id: 'sad', name: 'Sad', icon: CloudRain, prompt: "[TONE: sad, somber]" },
-    { id: 'aggressive', name: 'Aggressive', icon: Swords, prompt: "[TONE: aggressive, assertive]" },
-    { id: 'whisper', name: 'Whisper', icon: VenetianMask, prompt: "[TONE: quiet, whispering voice]" },
-    { id: 'laughing', name: 'Laughing', icon: Laugh, prompt: "[TONE: incorporate laughter]" },
-    { id: 'crying', name: 'Crying', icon: Frown, prompt: "[TONE: incorporate crying/sadness]" },
+    { id: 'friendly', name: 'Friendly', icon: 'solar:smile-circle-linear', prompt: "[TONE: friendly, warm]" },
+    { id: 'playful', name: 'Playful', icon: 'solar:gamepad-linear', prompt: "[TONE: playful, lighthearted]" },
+    { id: 'casual', name: 'Casual', icon: 'solar:cup-linear', prompt: "[TONE: casual, relaxed, chill]" },
+    { id: 'formal', name: 'Formal', icon: 'solar:case-linear', prompt: "[TONE: formal, professional]" },
+    { id: 'serious', name: 'Serious', icon: 'solar:shield-warning-linear', prompt: "[TONE: serious, direct]" },
+    { id: 'enthusiastic', name: 'Enthusiastic', icon: 'solar:bolt-linear', prompt: "[TONE: enthusiastic, energetic]" },
+    { id: 'sarcastic', name: 'Sarcastic', icon: 'solar:chat-round-line-linear', prompt: "[TONE: sarcastic, witty]" },
+    { id: 'dramatic', name: 'Dramatic', icon: 'solar:mask-happly-linear', prompt: "[TONE: dramatic, expressive]" },
+    { id: 'storyteller', name: 'Storyteller', icon: 'solar:book-linear', prompt: "[TONE: captivating storyteller]" },
+    { id: 'calm', name: 'Calm', icon: 'solar:leaf-linear', prompt: "[TONE: calm, soothing]" },
+    { id: 'sad', name: 'Sad', icon: 'solar:cloud-rain-linear', prompt: "[TONE: sad, somber]" },
+    { id: 'aggressive', name: 'Aggressive', icon: 'solar:flame-linear', prompt: "[TONE: aggressive, assertive]" },
+    { id: 'whisper', name: 'Whisper', icon: 'solar:soundwave-linear', prompt: "[TONE: quiet, whispering voice]" },
+    { id: 'laughing', name: 'Laughing', icon: 'solar:emoji-funny-circle-linear', prompt: "[TONE: incorporate laughter]" },
+    { id: 'crying', name: 'Crying', icon: 'solar:sad-circle-linear', prompt: "[TONE: incorporate crying/sadness]" },
 ];
 
 interface VoiceSettingsViewProps {
@@ -100,8 +62,15 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
         <div className="min-h-screen bg-[#F9F6F2] dark:bg-[#050505] pt-24 px-4 pb-8 animate-fade-in">
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
-                <div className="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="mb-8 flex items-center justify-between gap-4">
                     <div>
+                        <button
+                            onClick={onBack}
+                            className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white mb-3 transition-colors"
+                        >
+                            <AppIcon name="solar:arrow-left-linear" className="w-4 h-4" />
+                            Back
+                        </button>
                         <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
                             Voice Configuration
                         </h1>
@@ -116,10 +85,10 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                     <div className="flex p-1 bg-neutral-200 dark:bg-white/5 rounded-full relative max-w-md mx-auto border border-transparent dark:border-white/5">
                         {/* Sliding Background */}
                         <div 
-                            className={`absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white dark:bg-[#1a1a1a] rounded-full shadow-sm transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}
+                            className="absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white dark:bg-[#1a1a1a] rounded-full shadow-sm transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
                             style={{ 
                                 transform: activeTab === 'voices' ? 'translateX(0)' : activeTab === 'tones' ? 'translateX(100%)' : 'translateX(200%)',
-                                left: '2px' // small offset
+                                left: '2px'
                             }}
                         />
                         
@@ -127,19 +96,19 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                             onClick={() => setActiveTab('voices')}
                             className={`flex-1 relative z-10 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-full transition-colors ${activeTab === 'voices' ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'}`}
                         >
-                            <Mic className="w-4 h-4" /> Voices
+                            <AppIcon name="solar:microphone-3-linear" className="w-4 h-4" /> Voices
                         </button>
                         <button
                             onClick={() => setActiveTab('tones')}
                             className={`flex-1 relative z-10 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-full transition-colors ${activeTab === 'tones' ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'}`}
                         >
-                            <VenetianMask className="w-4 h-4" /> Tones
+                            <AppIcon name="solar:magic-stick-3-linear" className="w-4 h-4" /> Tones
                         </button>
                         <button
                             onClick={() => setActiveTab('instructions')}
                             className={`flex-1 relative z-10 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-full transition-colors ${activeTab === 'instructions' ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'}`}
                         >
-                            <SlidersHorizontal className="w-4 h-4" /> Controls
+                            <AppIcon name="solar:tuning-square-2-linear" className="w-4 h-4" /> Controls
                         </button>
                     </div>
                 </div>
@@ -167,18 +136,22 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                                                 <div className="flex items-center gap-3">
                                                     {v.gender === 'female' ? (
                                                         <div className={`p-2 rounded-full ${isSelected ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' : 'bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-neutral-500'}`}>
-                                                            <VenusIcon className="w-4 h-4" />
+                                                            <AppIcon name="solar:user-cross-linear" className="w-4 h-4" />
                                                         </div>
                                                     ) : (
                                                         <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-neutral-500'}`}>
-                                                            <MarsIcon className="w-4 h-4" />
+                                                            <AppIcon name="solar:user-check-linear" className="w-4 h-4" />
                                                         </div>
                                                     )}
                                                     <span className={`font-bold text-base ${isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'}`}>
                                                         {v.displayName}
                                                     </span>
                                                 </div>
-                                                {isSelected && <div className="bg-amber-500 text-white rounded-full p-1"><Check className="w-3 h-3" /></div>}
+                                                {isSelected && (
+                                                    <div className="bg-amber-500 text-white rounded-full p-1">
+                                                        <AppIcon name="solar:check-read-linear" className="w-3 h-3 stroke-[2.5]" />
+                                                    </div>
+                                                )}
                                             </div>
                                             <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed pl-1">
                                                 {v.description}
@@ -199,7 +172,7 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                                     className="w-full py-4 flex items-center justify-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white transition-colors bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-2xl hover:bg-neutral-50 dark:hover:bg-white/5"
                                 >
                                     <span>Show all {voices.length} voices</span>
-                                    <ChevronDown className="h-4 w-4" />
+                                    <AppIcon name="solar:alt-arrow-down-linear" className="h-4 w-4" />
                                 </button>
                             )}
                         </div>
@@ -210,7 +183,7 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                         <div className="space-y-6 animate-fade-in-up">
                             <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl flex items-start gap-4">
                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400">
-                                    <Sparkles className="w-5 h-5" />
+                                    <AppIcon name="solar:magic-stick-3-linear" className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">Style Adjustment</h3>
@@ -222,7 +195,6 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                 {tones.map(tone => {
-                                    const Icon = tone.icon;
                                     const isSelected = selectedToneId === tone.id;
                                     return (
                                         <button
@@ -236,7 +208,7 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                                             }
                                         >
                                             <div className={`p-3 rounded-full ${isSelected ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 dark:text-neutral-400'}`}>
-                                                <Icon className="w-6 h-6" />
+                                                <AppIcon name={tone.icon} className="w-6 h-6" />
                                             </div>
                                             <span className={`text-sm font-medium ${isSelected ? 'text-amber-700 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
                                                 {tone.name}
@@ -297,7 +269,7 @@ const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({
                             {/* Custom Instructions Input */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2">
-                                    <SlidersHorizontal className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                                    <AppIcon name="solar:tuning-square-2-linear" className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
                                     <label htmlFor="custom-instruction" className="text-base font-bold text-neutral-900 dark:text-white">
                                         Custom System Instructions
                                     </label>

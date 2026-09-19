@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 export interface CustomDropdownProps {
   options: string[];
@@ -214,7 +214,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         className={`flex items-center justify-between gap-1 w-full text-left transition-all cursor-pointer ${triggerClassName}`}
       >
         <span className="truncate block flex-1">{displayValue}</span>
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <AppIcon name="solar:alt-arrow-down-linear" className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {panelContent}
     </div>

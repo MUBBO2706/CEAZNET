@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { View, NewsArticle, Note, Transaction, Conversation, UserProfile, MoleculeData } from '../types';
-import { BookOpen, FileText, Wallet, Calendar, Languages, FlaskConical, Mic, Settings, ArrowRight, TrendingUp, TrendingDown, MessageSquare, Clock, Plus, ArrowUpRight, AlertCircle, CheckCircle2, ScrollText, Palette, Volume2, Cpu, ShieldCheck, Database, Layers, Zap, ChevronRight, Sparkles, Sliders, LayoutGrid } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { getNotes, getRecentNotes, getFinanceSummary, getFinanceProfiles, getTransactions, getRecentConversation, getDairySummary, getDairyEntries, getDairyPayments, getTranslatorUsage, getLastMolecule, getSetting } from '../services/dbService';
 import { getMoleculeSummary } from '../services/chemistryService';
 import type { User } from '@supabase/supabase-js';
@@ -58,13 +58,13 @@ interface HomeViewProps {
 }
 
 const apps = [
-    { id: 'explore', title: 'Explore News', description: 'Read the latest curated news and articles', icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-100 dark:border-blue-800/30', bannerImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000&auto=format&fit=crop' },
-    { id: 'notes', title: 'Notes', description: 'Capture your thoughts, ideas, and tasks', icon: FileText, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-100 dark:border-amber-800/30', bannerImg: 'https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=1000&auto=format&fit=crop' },
-    { id: 'finance', title: 'Finance', description: 'Track your expenses and manage budget', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-100 dark:border-emerald-800/30', bannerImg: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000&auto=format&fit=crop' },
-    { id: 'dairy', title: 'Daily Khata', description: 'Manage your daily accounts and ledgers', icon: Calendar, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-100 dark:border-purple-800/30', bannerImg: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop' },
-    { id: 'translator', title: 'Translator', description: 'Translate text seamlessly across languages', icon: Languages, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-100 dark:border-indigo-800/30', bannerImg: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1000&auto=format&fit=crop' },
-    { id: 'molecule-viewer', title: 'Chemistry Lab', description: 'Explore 3D molecular structures', icon: FlaskConical, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-100 dark:border-indigo-800/30', bannerImg: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=1000&auto=format&fit=crop' },
-    { id: 'settings', title: 'Preferences', description: 'Customize your experience', icon: Settings, color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-900/20', border: 'border-slate-100 dark:border-slate-800/30', bannerImg: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'explore', title: 'Explore News', description: 'Read the latest curated news and articles', icon: 'solar:book-linear', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-100 dark:border-blue-800/30', bannerImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'notes', title: 'Notes', description: 'Capture your thoughts, ideas, and tasks', icon: 'solar:notes-linear', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-100 dark:border-amber-800/30', bannerImg: 'https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'finance', title: 'Finance', description: 'Track your expenses and manage budget', icon: 'solar:wallet-money-linear', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-100 dark:border-emerald-800/30', bannerImg: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'dairy', title: 'Daily Khata', description: 'Manage your daily accounts and ledgers', icon: 'solar:calendar-date-linear', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-100 dark:border-purple-800/30', bannerImg: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'translator', title: 'Translator', description: 'Translate text seamlessly across languages', icon: 'hugeicons:translate', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-100 dark:border-indigo-800/30', bannerImg: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'molecule-viewer', title: 'Chemistry Lab', description: 'Explore 3D molecular structures', icon: 'ph:flask-light', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-100 dark:border-indigo-800/30', bannerImg: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=1000&auto=format&fit=crop' },
+    { id: 'settings', title: 'Preferences', description: 'Customize your experience', icon: 'solar:settings-linear', color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-900/20', border: 'border-slate-100 dark:border-slate-800/30', bannerImg: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop' },
 ];
 
 const getCardPositionState = (idx: number, centerIdx: number, total: number) => {
@@ -232,7 +232,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                                        <BookOpen className="w-12 h-12 text-neutral-600" />
+                                        <AppIcon name="solar:book-linear" className="w-12 h-12 text-neutral-600" />
                                     </div>
                                 )}
                                 {/* Gradient Overlay for Text Readability - Stronger at bottom */}
@@ -249,7 +249,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                     <div className="flex items-center flex-wrap gap-3">
                                         {/* Trending Badge - Moved Bottom */}
                                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                                            <TrendingUp className="w-3 h-3" />
+                                            <AppIcon name="solar:graph-up-linear" className="w-3 h-3" />
                                             <span>Trending</span>
                                         </div>
 
@@ -281,7 +281,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         {/* Header */}
                         <div className="flex items-center justify-between mb-2.5 relative z-10 shrink-0">
                             <div className={`p-2 rounded-xl ${app.bg} ${app.color}`}>
-                                <app.icon className="w-5 h-5" />
+                                <AppIcon name={app.icon} className="w-5 h-5" />
                             </div>
                             <div className="flex items-center gap-1.5">
                                 {/* Pagination Dots */}
@@ -347,11 +347,11 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
                                         <div className="mt-auto pt-2 border-t border-amber-200/50 dark:border-neutral-800 flex items-center justify-between text-[9px] text-neutral-400 uppercase tracking-wider font-bold shrink-0">
                                             <span className="flex items-center gap-1 font-mono">
-                                                <Clock className="w-2.5 h-2.5" />
+                                                <AppIcon name="solar:clock-circle-linear" className="w-2.5 h-2.5" />
                                                 {new Date(currentNote.updatedAt).toLocaleDateString()}
                                             </span>
                                             <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover/note:scale-110 transition-transform">
-                                                <ArrowRight className="w-2.5 h-2.5" />
+                                                <AppIcon name="solar:arrow-right-linear" className="w-2.5 h-2.5" />
                                             </div>
                                         </div>
                                     </div>
@@ -368,7 +368,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         {/* Header */}
                         <div className="flex items-center justify-between mb-4 relative z-10 shrink-0">
                             <div className={`p-2.5 rounded-2xl ${app.bg} ${app.color} shadow-sm`}>
-                                <app.icon className="w-5 h-5" />
+                                <AppIcon name={app.icon} className="w-5 h-5" />
                             </div>
                             <div className="flex gap-1.5 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-full">
                                 {[0, 1, 2].map((idx) => (
@@ -401,7 +401,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                     
                                     <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${financeSummary.income > financeSummary.expense ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-red-100 text-red-600'}`}>
-                                            <TrendingUp className="w-4 h-4" />
+                                            <AppIcon name="solar:graph-up-linear" className="w-4 h-4" />
                                         </div>
                                         <div>
                                             <div className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase font-bold">Monthly Status</div>
@@ -451,7 +451,11 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                     {financeSummary.lastTransaction ? (
                                         <div className="flex flex-col items-center text-center w-full">
                                             <div className={`w-10 h-10 rounded-xl mb-2 flex items-center justify-center shadow-sm ${financeSummary.lastTransaction.type === 'income' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
-                                                {financeSummary.lastTransaction.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                                {financeSummary.lastTransaction.type === 'income' ? (
+                                                    <AppIcon name="solar:arrow-right-up-linear" className="w-5 h-5" />
+                                                ) : (
+                                                    <AppIcon name="solar:graph-down-linear" className="w-5 h-5" />
+                                                )}
                                             </div>
                                             <div className="font-bold text-neutral-900 dark:text-white text-sm line-clamp-1 w-full px-2 mb-0.5">
                                                 {financeSummary.lastTransaction.description || 'Transaction'}
@@ -479,7 +483,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                     <div className="flex flex-col h-full justify-between animate-fade-in relative overflow-hidden">
                         <div className="flex items-center gap-2 mb-3 relative z-10">
                             <div className={`p-2 rounded-xl ${app.bg} ${app.color}`}>
-                                <app.icon className="w-5 h-5" />
+                                <AppIcon name={app.icon} className="w-5 h-5" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-wider text-rose-500">Voice Chat</span>
                         </div>
@@ -501,7 +505,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                 </div>
                                 <div className="mt-3 flex items-center gap-2">
                                     <span className="px-2 py-1 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300 text-xs font-bold flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
+                                        <AppIcon name="solar:clock-circle-linear" className="w-3 h-3" />
                                         {new Date(recentConversation.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
@@ -509,7 +513,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10">
                                 <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center mb-2 animate-pulse ring-4 ring-rose-500/10">
-                                    <Mic className="w-6 h-6 text-rose-500" />
+                                    <AppIcon name="solar:microphone-3-linear" className="w-6 h-6 text-rose-500" />
                                 </div>
                                 <span className="text-sm font-bold text-neutral-700 dark:text-neutral-200">Start Conversation</span>
                             </div>
@@ -527,7 +531,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         {/* Header */}
                         <div className="flex items-center justify-between shrink-0">
                             <div className={`p-2.5 rounded-2xl ${app.bg} ${app.color} shadow-sm`}>
-                                <app.icon className="w-5 h-5" />
+                                <AppIcon name={app.icon} className="w-5 h-5" />
                             </div>
                             <div className="flex gap-1.5 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-full">
                                 {[0, 1, 2].map((idx) => (
@@ -604,7 +608,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="pt-2 border-t border-neutral-100 dark:border-white/10 flex items-center justify-between text-[9px] font-mono text-neutral-400 shrink-0">
                             <span>Daily Khata</span>
                             <span className="text-purple-500 font-bold flex items-center gap-1">
-                                Open <ArrowRight className="w-2.5 h-2.5" />
+                                Open <AppIcon name="solar:arrow-right-linear" className="w-2.5 h-2.5" />
                             </span>
                         </div>
                     </div>
@@ -616,7 +620,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                     <div className="flex flex-col h-full justify-between animate-fade-in">
                         <div className="flex items-center gap-2 mb-3">
                             <div className={`p-2 rounded-xl ${app.bg} ${app.color}`}>
-                                <app.icon className="w-5 h-5" />
+                                <AppIcon name={app.icon} className="w-5 h-5" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-wider text-indigo-500">Translator</span>
                         </div>
@@ -661,7 +665,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             {/* Header */}
                             <div className="flex items-center justify-between relative z-10 shrink-0">
                                 <div className="flex items-center gap-1.5">
-                                    <FlaskConical className="w-4 h-4 text-cyan-400" />
+                                    <AppIcon name="ph:flask-light" className="w-4 h-4 text-cyan-400" />
                                     <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-cyan-400">ChemLab 3D</span>
                                 </div>
                                 <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-mono font-bold text-cyan-300">
@@ -690,7 +694,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[8px] font-mono text-white/50 relative z-10">
                                 <span>3D Sandbox</span>
                                 <span className="text-cyan-400 font-bold flex items-center gap-1">
-                                    Launch <ArrowRight className="w-2.5 h-2.5" />
+                                    Launch <AppIcon name="solar:arrow-right-linear" className="w-2.5 h-2.5" />
                                 </span>
                             </div>
                         </div>
@@ -703,7 +707,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                     <div className="flex flex-col h-full justify-between relative z-10">
                         <div className="flex items-center justify-between shrink-0">
                             <div className={`p-2.5 rounded-2xl ${app.bg} ${app.color} shadow-sm`}>
-                                <app.icon className="w-5 h-5" />
+                                <AppIcon name={app.icon} className="w-5 h-5" />
                             </div>
                             <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
                                 Active
@@ -713,21 +717,21 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="my-auto py-1 flex flex-col justify-center gap-1.5">
                             <div className="flex items-baseline justify-between text-[11px] font-mono">
                                 <span className="text-neutral-400 flex items-center gap-1.5">
-                                    <Palette className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <AppIcon name="solar:palette-linear" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                     <span>Theme</span>
                                 </span>
                                 <span className="font-bold text-emerald-500 capitalize">{settingsSummary.theme}</span>
                             </div>
                             <div className="flex items-baseline justify-between text-[11px] font-mono pt-1.5 border-t border-neutral-100 dark:border-white/10">
                                 <span className="text-neutral-400 flex items-center gap-1.5">
-                                    <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <AppIcon name="solar:volume-loud-linear" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                     <span>Voice</span>
                                 </span>
                                 <span className="font-bold text-blue-400 capitalize">{settingsSummary.voice}</span>
                             </div>
                             <div className="flex items-baseline justify-between text-[11px] font-mono pt-1.5 border-t border-neutral-100 dark:border-white/10">
                                 <span className="text-neutral-400 flex items-center gap-1.5">
-                                    <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <AppIcon name="solar:shield-check-linear" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                     <span>Account</span>
                                 </span>
                                 <span className="font-bold text-cyan-400 capitalize">{settingsSummary.authStatus}</span>
@@ -737,7 +741,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="pt-2 border-t border-neutral-100 dark:border-white/10 flex items-center justify-between text-[9px] font-mono text-neutral-400 shrink-0">
                             <span>Preferences</span>
                             <span className="text-slate-400 font-bold flex items-center gap-1">
-                                Setup <ArrowRight className="w-2.5 h-2.5" />
+                                Setup <AppIcon name="solar:arrow-right-linear" className="w-2.5 h-2.5" />
                             </span>
                         </div>
                     </div>
@@ -774,24 +778,24 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
                 {app.id === 'molecule-viewer' && (
                     <div className="absolute top-2 right-2 opacity-10 dark:opacity-20 pointer-events-none">
-                        <FlaskConical className="w-16 h-16 rotate-12" />
+                        <AppIcon name="ph:flask-light" className="w-16 h-16 rotate-12" />
                     </div>
                 )}
 
                 {app.id === 'settings' && (
                     <div className="absolute -top-2 -right-2 opacity-5 dark:opacity-10 pointer-events-none">
-                        <Settings className="w-24 h-24 animate-spin-slow" />
+                        <AppIcon name="solar:settings-linear" className="w-24 h-24 animate-spin-slow" />
                     </div>
                 )}
 
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${app.bg} ${app.border} border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg shadow-sm relative z-10`}>
-                    <app.icon className={`w-7 h-7 ${app.color} transition-transform duration-500 group-hover:scale-110`} />
+                    <AppIcon name={app.icon} className={`w-7 h-7 ${app.color} transition-transform duration-500 group-hover:scale-110`} />
                 </div>
                 
                 <div className="mt-auto relative z-10">
                     <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
                         {app.title}
-                        <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-amber-500" />
+                        <AppIcon name="solar:arrow-right-linear" className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-amber-500" />
                     </h3>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium line-clamp-2 leading-relaxed group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors">
                         {app.description}
@@ -803,11 +807,11 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
     const renderHeroSlide = (app: typeof apps[0]) => {
         // Common Header for Hero Slides with consistent styling and alignment
-        const HeroHeader = ({ title, icon: Icon, color, subtitle, rightElement }: { title: string, icon: any, color: string, subtitle?: string, rightElement?: React.ReactNode }) => (
+        const HeroHeader = ({ title, icon, color, subtitle, rightElement }: { title: string, icon: string, color: string, subtitle?: string, rightElement?: React.ReactNode }) => (
             <div className="mb-2 sm:mb-3 md:mb-5 relative z-10 shrink-0">
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color} shrink-0`} />
+                        <AppIcon name={icon} className={`w-5 h-5 sm:w-6 sm:h-6 ${color} shrink-0`} />
                         <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white tracking-tight leading-tight drop-shadow-md truncate">
                             {title}
                         </h2>
@@ -841,13 +845,13 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         {/* Background Decorative Icon */}
                         <div className="absolute -right-10 -bottom-10 opacity-10 transform rotate-12 pointer-events-none">
-                            <Wallet className="w-36 h-36 md:w-64 md:h-64 text-emerald-500" />
+                            <AppIcon name="solar:wallet-linear" className="w-36 h-36 md:w-64 md:h-64 text-emerald-500" />
                         </div>
                         
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
                             <HeroHeader 
                                 title="Financial Overview" 
-                                icon={Wallet} 
+                                icon="solar:wallet-linear" 
                                 color="text-emerald-400" 
                                 subtitle={activeWalletName ? `${activeWalletName} • Track Income & Expenses` : "Track Income & Expenses"}
                                 rightElement={typeof financeSummary.count === 'number' ? (
@@ -916,9 +920,9 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex items-center gap-1.5 min-w-0">
                                             {financeSummary.lastTransaction.type === 'income' ? (
-                                                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                                <AppIcon name="solar:arrow-right-up-linear" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                             ) : (
-                                                <TrendingDown className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                                <AppIcon name="solar:graph-down-linear" className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                                             )}
                                             <span className="text-white/50 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">
                                                 Latest Activity
@@ -957,12 +961,12 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 return (
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-950 via-neutral-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         <div className="absolute -right-10 -top-10 opacity-10 transform -rotate-12 pointer-events-none">
-                            <FileText className="w-36 h-36 md:w-64 md:h-64 text-amber-500" />
+                            <AppIcon name="solar:notes-linear" className="w-36 h-36 md:w-64 md:h-64 text-amber-500" />
                         </div>
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
                             <HeroHeader 
                                 title="Quick Notes" 
-                                icon={FileText} 
+                                icon="solar:notes-linear" 
                                 color="text-amber-400" 
                                 subtitle="Capture Ideas & Structured Vault" 
                                 rightElement={
@@ -1023,7 +1027,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             {/* Telemetry Footer */}
                             <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-amber-200/60 font-mono">
                                 <span className="flex items-center gap-1.5 truncate">
-                                    <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                                    <AppIcon name="solar:clock-circle-linear" className="w-3 h-3 text-amber-400 shrink-0" />
                                     <span className="truncate">Auto-Saved Vault • Updated {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </span>
                                 <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -1054,7 +1058,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
                             <HeroHeader 
                                 title="Daily Ledger" 
-                                icon={ScrollText} 
+                                icon="solar:notes-linear" 
                                 color="text-purple-400" 
                                 subtitle="Due & Settled Khatas" 
                                 rightElement={
@@ -1113,7 +1117,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             {/* Telemetry Footer */}
                             <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-purple-200/60 font-mono">
                                 <span className="flex items-center gap-1.5 truncate">
-                                    <ScrollText className="w-3 h-3 text-purple-400 shrink-0" />
+                                    <AppIcon name="solar:notes-linear" className="w-3 h-3 text-purple-400 shrink-0" />
                                     <span className="truncate">Automated Khata Sync • Encrypted Records</span>
                                 </span>
                                 <span className="uppercase tracking-wider text-purple-300 shrink-0 ml-2">Tap to view ledger</span>
@@ -1135,14 +1139,14 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-950 via-slate-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         {/* Background Decorative Flask & Ambient Glow */}
                         <div className="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 pointer-events-none">
-                            <FlaskConical className="w-36 h-36 md:w-56 md:h-56 text-cyan-400" />
+                            <AppIcon name="ph:flask-light" className="w-36 h-36 md:w-56 md:h-56 text-cyan-400" />
                         </div>
                         <div className="absolute top-0 right-1/4 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
                         
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
                             <HeroHeader 
                                 title="Chemistry Lab" 
-                                icon={FlaskConical} 
+                                icon="ph:flask-light" 
                                 color="text-cyan-400" 
                                 subtitle="3D Molecular Simulation & Analysis" 
                                 rightElement={
@@ -1197,7 +1201,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             {/* Telemetry Footer */}
                             <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-cyan-200/60 font-mono">
                                 <span className="flex items-center gap-1.5 truncate">
-                                    <Layers className="w-3 h-3 text-cyan-400 shrink-0" />
+                                    <AppIcon name="solar:layers-minimalistic-linear" className="w-3 h-3 text-cyan-400 shrink-0" />
                                     <span className="truncate">Ball & Stick • Wireframe • 3D Orbit</span>
                                 </span>
                                 <span className="uppercase tracking-wider text-cyan-300 shrink-0 ml-2">Tap to inspect</span>
@@ -1210,24 +1214,24 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
             // --- SETTINGS HERO ---
             if (app.id === 'settings' && settingsSummary) {
                 const settingItems = [
-                    { label: "Theme", value: settingsSummary.theme, icon: Palette, color: "text-emerald-400" },
-                    { label: "Voice", value: settingsSummary.voice, icon: Mic, color: "text-blue-400" },
-                    { label: "Font", value: settingsSummary.font, icon: Sliders, color: "text-purple-400" },
-                    { label: "Density", value: settingsSummary.density, icon: LayoutGrid, color: "text-amber-400" },
-                    { label: "Radius", value: settingsSummary.radius, icon: CheckCircle2, color: "text-rose-400" },
-                    { label: "Account", value: settingsSummary.authStatus, icon: ShieldCheck, color: "text-cyan-400" },
+                    { label: "Theme", value: settingsSummary.theme, icon: "solar:palette-linear", color: "text-emerald-400" },
+                    { label: "Voice", value: settingsSummary.voice, icon: "solar:microphone-3-linear", color: "text-blue-400" },
+                    { label: "Font", value: settingsSummary.font, icon: "solar:text-field-linear", color: "text-purple-400" },
+                    { label: "Density", value: settingsSummary.density, icon: "solar:widget-linear", color: "text-amber-400" },
+                    { label: "Radius", value: settingsSummary.radius, icon: "solar:shield-check-linear", color: "text-rose-400" },
+                    { label: "Account", value: settingsSummary.authStatus, icon: "solar:user-linear", color: "text-cyan-400" },
                 ];
 
                 return (
                     <div className="absolute inset-0 bg-neutral-950 p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         <div className="absolute -right-8 -top-8 opacity-5 pointer-events-none">
-                            <Settings className="w-36 h-36 md:w-64 md:h-64 text-white animate-[spin_60s_linear_infinite]" />
+                            <AppIcon name="solar:settings-linear" className="w-36 h-36 md:w-64 md:h-64 text-white animate-[spin_60s_linear_infinite]" />
                         </div>
 
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
                             <HeroHeader 
                                 title="Preferences" 
-                                icon={Settings} 
+                                icon="solar:settings-linear" 
                                 color="text-slate-400" 
                                 subtitle="System & Interface Configuration" 
                                 rightElement={
@@ -1244,7 +1248,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                     {settingItems.map((item, sIdx) => (
                                         <div key={sIdx} className="flex flex-col min-w-0">
                                             <div className="flex items-center gap-1.5 mb-0.5">
-                                                <item.icon className="w-3 h-3 text-slate-400 shrink-0" />
+                                                <AppIcon name={item.icon} className="w-3 h-3 text-slate-400 shrink-0" />
                                                 <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-wider truncate">{item.label}</span>
                                             </div>
                                             <span className={`text-xs sm:text-sm font-mono font-semibold capitalize truncate ${item.color}`}>
@@ -1258,7 +1262,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             {/* Telemetry Footer */}
                             <div className="mt-auto pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[9px] text-slate-400 font-mono uppercase tracking-wider">
                                 <span className="flex items-center gap-1.5 truncate">
-                                    <Sliders className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <AppIcon name="solar:tuning-2-linear" className="w-3 h-3 text-slate-400 shrink-0" />
                                     <span className="truncate">6 Active Preferences Configured</span>
                                 </span>
                                 <span className="text-slate-300 shrink-0 ml-2">Tap to modify</span>
@@ -1273,10 +1277,10 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 return (
                     <div className="absolute inset-0 bg-gradient-to-br from-rose-900 via-rose-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-                            <Mic className="w-36 h-36 md:w-64 md:h-64 text-rose-500" />
+                            <AppIcon name="solar:microphone-3-linear" className="w-36 h-36 md:w-64 md:h-64 text-rose-500" />
                         </div>
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Voice Conversations" icon={Mic} color="text-rose-400" subtitle="Speech Transcription" />
+                            <HeroHeader title="Voice Conversations" icon="solar:microphone-3-linear" color="text-rose-400" subtitle="Speech Transcription" />
                             
                             <div className="space-y-2 sm:space-y-3 my-auto">
                                 <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-3 sm:p-4 max-w-2xl">
@@ -1288,7 +1292,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
                             <div className="flex gap-2.5 mt-auto pt-2 sm:pt-3 border-t border-white/5 items-center justify-between text-[8px] sm:text-[9px] font-mono text-rose-300/60 uppercase">
                                 <span className="flex items-center gap-1">
-                                    <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                    <AppIcon name="solar:clock-circle-linear" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                     {new Date(recentConversation.createdAt).toLocaleDateString()}
                                 </span>
                                 <span>{recentConversation.messages?.length || 0} Messages</span>
@@ -1338,10 +1342,10 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 return (
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-indigo-950 to-black p-4 sm:p-5 md:p-8 flex flex-col justify-between overflow-hidden">
                         <div className="absolute -right-10 -top-10 opacity-10 pointer-events-none">
-                            <Languages className="w-36 h-36 md:w-64 md:h-64 text-indigo-500" />
+                            <AppIcon name="hugeicons:translate" className="w-36 h-36 md:w-64 md:h-64 text-indigo-500" />
                         </div>
                         <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                            <HeroHeader title="Translation Stats" icon={Languages} color="text-indigo-400" subtitle="Multi-language Engine" />
+                            <HeroHeader title="Translation Stats" icon="hugeicons:translate" color="text-indigo-400" subtitle="Multi-language Engine" />
                             
                             <div className="my-auto flex flex-col gap-2">
                                 <div className="flex items-baseline justify-between">
@@ -1422,7 +1426,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
         const anonymousDetails: Record<string, {
             subtitle: string;
             tagline: string;
-            features: { title: string; desc: string; icon: any }[];
+            features: { title: string; desc: string; icon: string }[];
             badge: string;
             bgGradient: string;
             accentColor: string;
@@ -1431,8 +1435,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "Global Intelligence & News",
                 tagline: "Curated real-time feeds, breaking headlines, and offline reading.",
                 features: [
-                    { title: "Live Feeds", desc: "Top global channels", icon: Zap },
-                    { title: "Smart Reader", desc: "Clean reader view", icon: BookOpen }
+                    { title: "Live Feeds", desc: "Top global channels", icon: "solar:bolt-linear" },
+                    { title: "Smart Reader", desc: "Clean reader view", icon: "solar:book-linear" }
                 ],
                 badge: "Curated Headlines",
                 bgGradient: "from-blue-900 via-slate-950 to-black",
@@ -1442,8 +1446,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "Markdown Vault & Ideas",
                 tagline: "Capture inspirations, markdown documents, and structured logs.",
                 features: [
-                    { title: "Markdown Editor", desc: "Formatting & tables", icon: FileText },
-                    { title: "Local Vault", desc: "Instant offline access", icon: Database }
+                    { title: "Markdown Editor", desc: "Formatting & tables", icon: "solar:notes-linear" },
+                    { title: "Local Vault", desc: "Instant offline access", icon: "solar:database-linear" }
                 ],
                 badge: "Encrypted Storage",
                 bgGradient: "from-amber-900 via-amber-950 to-black",
@@ -1453,8 +1457,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "Budgets & Expense Tracking",
                 tagline: "Track income, categorize expenses, and monitor monthly cashflow.",
                 features: [
-                    { title: "Income & Expenses", desc: "Instant fast logging", icon: Wallet },
-                    { title: "Cashflow Metrics", desc: "Real-time balances", icon: TrendingUp }
+                    { title: "Income & Expenses", desc: "Instant fast logging", icon: "solar:wallet-money-linear" },
+                    { title: "Cashflow Metrics", desc: "Real-time balances", icon: "solar:graph-up-linear" }
                 ],
                 badge: "Private & Offline",
                 bgGradient: "from-emerald-900 via-emerald-950 to-black",
@@ -1464,8 +1468,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "Daily Ledger & Khata",
                 tagline: "Manage accounts, dues, settled payments, and ledger balances.",
                 features: [
-                    { title: "Ledger Accounts", desc: "Dues & payments", icon: ScrollText },
-                    { title: "PDF Statements", desc: "Export statements", icon: CheckCircle2 }
+                    { title: "Ledger Accounts", desc: "Dues & payments", icon: "solar:document-text-linear" },
+                    { title: "PDF Statements", desc: "Export statements", icon: "solar:check-circle-linear" }
                 ],
                 badge: "Zero Data Loss",
                 bgGradient: "from-purple-900 via-purple-950 to-black",
@@ -1475,8 +1479,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "Neural Multi-Language Hub",
                 tagline: "Lightning-fast translations across 100+ languages with voice playback.",
                 features: [
-                    { title: "100+ Languages", desc: "Neural engine", icon: Languages },
-                    { title: "Voice Audio", desc: "Pronunciation playback", icon: Volume2 }
+                    { title: "100+ Languages", desc: "Neural engine", icon: "hugeicons:translate" },
+                    { title: "Voice Audio", desc: "Pronunciation playback", icon: "solar:volume-loud-linear" }
                 ],
                 badge: "Neural Powered",
                 bgGradient: "from-indigo-900 via-indigo-950 to-black",
@@ -1486,8 +1490,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "Interactive 3D Chemistry",
                 tagline: "Simulate and inspect molecular geometries, weights, and atomic orbitals.",
                 features: [
-                    { title: "3D WebGL", desc: "Spatial rotation", icon: FlaskConical },
-                    { title: "Formula Data", desc: "Weight & structures", icon: Cpu }
+                    { title: "3D WebGL", desc: "Spatial rotation", icon: "ph:flask-light" },
+                    { title: "Formula Data", desc: "Weight & structures", icon: "solar:cpu-linear" }
                 ],
                 badge: "Virtual Sandbox",
                 bgGradient: "from-cyan-950 via-slate-950 to-black",
@@ -1497,8 +1501,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 subtitle: "System Preferences",
                 tagline: "Personalize visual themes, AI voice personas, and offline caching.",
                 features: [
-                    { title: "Theme Engine", desc: "Adaptive day & dark", icon: Palette },
-                    { title: "Voice Personas", desc: "Custom audio models", icon: Settings }
+                    { title: "Theme Engine", desc: "Adaptive day & dark", icon: "solar:palette-linear" },
+                    { title: "Voice Personas", desc: "Custom audio models", icon: "solar:settings-linear" }
                 ],
                 badge: "Personalized",
                 bgGradient: "from-neutral-900 via-neutral-950 to-black",
@@ -1510,8 +1514,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
             subtitle: "Digital Workspace App",
             tagline: app.description,
             features: [
-                { title: "Fast & Offline", desc: "Ready anytime", icon: Zap },
-                { title: "Secure Vault", desc: "Private storage", icon: ShieldCheck }
+                { title: "Fast & Offline", desc: "Ready anytime", icon: "solar:bolt-linear" },
+                { title: "Secure Vault", desc: "Private storage", icon: "solar:shield-check-linear" }
             ],
             badge: "Offline Persistent",
             bgGradient: "from-neutral-900 via-neutral-950 to-black",
@@ -1530,7 +1534,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 
                 {/* Background Decorative App Icon */}
                 <div className="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 pointer-events-none">
-                    <app.icon className={`w-32 h-32 md:w-56 md:h-56 ${details.accentColor}`} />
+                    <AppIcon name={app.icon} className={`w-32 h-32 md:w-56 md:h-56 ${details.accentColor}`} />
                 </div>
 
                 <div className="absolute inset-0 p-4 sm:p-5 md:p-8 flex flex-col justify-between relative z-10">
@@ -1551,7 +1555,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             {details.features.map((feat, fIdx) => (
                                 <div key={fIdx} className="p-2 sm:p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-2 min-w-0">
                                     <div className="p-1 rounded-lg bg-white/10 shrink-0">
-                                        <feat.icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${details.accentColor}`} />
+                                        <AppIcon name={feat.icon} className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${details.accentColor}`} />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[10px] sm:text-xs font-bold text-white truncate">{feat.title}</p>
@@ -1565,10 +1569,10 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                     {/* Bottom Action & Badge Row */}
                     <div className="mt-auto pt-2.5 sm:pt-3 border-t border-white/10 flex items-center justify-between">
                         <button className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white text-black font-bold rounded-full hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all duration-300 text-[11px] sm:text-xs shadow-md group/btn shrink-0">
-                            Open App <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                            Open App <AppIcon name="solar:arrow-right-linear" className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                         </button>
                         <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-[9px] sm:text-[10px] text-white/70 font-mono">
-                            <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                            <AppIcon name="solar:stars-minimalistic-linear" className="w-2.5 h-2.5 text-amber-400" />
                             <span>{details.badge}</span>
                         </div>
                     </div>
@@ -1728,7 +1732,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div>
                             <div className="flex justify-between items-center">
                                 <span className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400">
-                                    <Wallet className="w-4 h-4" />
+                                    <AppIcon name="solar:wallet-linear" className="w-4 h-4" />
                                 </span>
                                 <span className="text-[9px] font-mono font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded">Active Summary</span>
                             </div>
@@ -1764,7 +1768,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             </div>
                         </div>
                         <button onClick={() => onNavigate('finance')} className="mt-3.5 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] group-hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                            Manage Budgets <ChevronRight className="w-3.5 h-3.5" />
+                            Manage Budgets <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
@@ -1773,7 +1777,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div>
                             <div className="flex justify-between items-center">
                                 <span className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400">
-                                    <ScrollText className="w-4 h-4" />
+                                    <AppIcon name="solar:document-text-linear" className="w-4 h-4" />
                                 </span>
                                 <span className="text-[9px] font-mono font-bold text-purple-500 bg-purple-50 dark:bg-purple-950/20 px-1.5 py-0.5 rounded">Ledger Log</span>
                             </div>
@@ -1804,7 +1808,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             </div>
                         </div>
                         <button onClick={() => onNavigate('dairy')} className="mt-3.5 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] group-hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                            Open Ledger <ChevronRight className="w-3.5 h-3.5" />
+                            Open Ledger <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
@@ -1813,7 +1817,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div>
                             <div className="flex justify-between items-center">
                                 <span className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400">
-                                    <FileText className="w-4 h-4" />
+                                    <AppIcon name="solar:notes-linear" className="w-4 h-4" />
                                 </span>
                                 <span className="text-[9px] font-mono font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-1.5 py-0.5 rounded">Vault Files</span>
                             </div>
@@ -1846,7 +1850,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             </div>
                         </div>
                         <button onClick={() => onNavigate('notes')} className="mt-3.5 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] group-hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                            Launch Notes Vault <ChevronRight className="w-3.5 h-3.5" />
+                            Launch Notes Vault <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
@@ -1855,7 +1859,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div>
                             <div className="flex justify-between items-center">
                                 <span className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400">
-                                    <FlaskConical className="w-4 h-4" />
+                                    <AppIcon name="ph:flask-light" className="w-4 h-4" />
                                 </span>
                                 <span className="text-[9px] font-mono font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded">Scientific Log</span>
                             </div>
@@ -1886,7 +1890,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                             </div>
                         </div>
                         <button onClick={() => onNavigate('molecule-viewer')} className="mt-3.5 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] group-hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                            Open Molecule Lab <ChevronRight className="w-3.5 h-3.5" />
+                            Open Molecule Lab <AppIcon name="solar:alt-arrow-right-linear" className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>
@@ -1908,7 +1912,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="lg:w-1/3 bg-neutral-100 dark:bg-neutral-900 p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[var(--session-card-border)]">
                             <div>
                                 <span className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 inline-block">
-                                    <BookOpen className="w-6 h-6" />
+                                    <AppIcon name="solar:book-linear" className="w-6 h-6" />
                                 </span>
                                 <h3 className="text-2xl font-serif font-bold text-neutral-800 dark:text-white mt-4">Explore News Feed</h3>
                                 <p className="text-sm text-neutral-500 dark:text-[var(--session-text-muted)] mt-2">
@@ -1946,7 +1950,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="lg:w-1/3 bg-neutral-100 dark:bg-neutral-900 p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-l border-[var(--session-card-border)]">
                             <div>
                                 <span className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 inline-block">
-                                    <FileText className="w-6 h-6" />
+                                    <AppIcon name="solar:notes-linear" className="w-6 h-6" />
                                 </span>
                                 <h3 className="text-2xl font-serif font-bold text-neutral-800 dark:text-white mt-4">Intelligent Notes</h3>
                                 <p className="text-sm text-neutral-500 dark:text-[var(--session-text-muted)] mt-2">
@@ -1985,7 +1989,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="p-8 rounded-3xl bg-[var(--session-card-bg)] border border-[var(--session-card-border)] hover:border-[var(--session-accent-border)] transition-all flex flex-col justify-between">
                             <div>
                                 <span className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 inline-block">
-                                    <Wallet className="w-6 h-6" />
+                                    <AppIcon name="solar:wallet-linear" className="w-6 h-6" />
                                 </span>
                                 <h3 className="text-2xl font-serif font-bold text-neutral-800 dark:text-white mt-4">Unified Personal Finance</h3>
                                 <p className="text-sm text-neutral-500 dark:text-[var(--session-text-muted)] mt-2">
@@ -2006,7 +2010,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="p-8 rounded-3xl bg-[var(--session-card-bg)] border border-[var(--session-card-border)] hover:border-[var(--session-accent-border)] transition-all flex flex-col justify-between">
                             <div>
                                 <span className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-500 inline-block">
-                                    <Calendar className="w-6 h-6" />
+                                    <AppIcon name="solar:calendar-linear" className="w-6 h-6" />
                                 </span>
                                 <h3 className="text-2xl font-serif font-bold text-neutral-800 dark:text-white mt-4">Daily Khata Ledger</h3>
                                 <p className="text-sm text-neutral-500 dark:text-[var(--session-text-muted)] mt-2">
@@ -2030,7 +2034,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="p-6 rounded-3xl bg-[var(--session-card-bg)] border border-[var(--session-card-border)] hover:border-[var(--session-accent-border)] transition-all flex flex-col justify-between">
                             <div>
                                 <span className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 inline-block">
-                                    <Languages className="w-5 h-5" />
+                                    <AppIcon name="hugeicons:translate" className="w-5 h-5" />
                                 </span>
                                 <h3 className="text-lg font-bold text-neutral-800 dark:text-white mt-3">Neural Translator</h3>
                                 <p className="text-xs text-neutral-500 dark:text-[var(--session-text-muted)] mt-1">
@@ -2038,7 +2042,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                 </p>
                             </div>
                             <button onClick={() => onNavigate('translator')} className="mt-6 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                                Open Translator <ArrowRight className="w-3.5 h-3.5" />
+                                Open Translator <AppIcon name="solar:arrow-right-linear" className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
@@ -2046,7 +2050,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="p-6 rounded-3xl bg-[var(--session-card-bg)] border border-[var(--session-card-border)] hover:border-[var(--session-accent-border)] transition-all flex flex-col justify-between">
                             <div>
                                 <span className="p-2.5 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 text-cyan-500 inline-block">
-                                    <FlaskConical className="w-5 h-5" />
+                                    <AppIcon name="ph:flask-light" className="w-5 h-5" />
                                 </span>
                                 <h3 className="text-lg font-bold text-neutral-800 dark:text-white mt-3">Chemistry Sandbox</h3>
                                 <p className="text-xs text-neutral-500 dark:text-[var(--session-text-muted)] mt-1">
@@ -2054,7 +2058,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                 </p>
                             </div>
                             <button onClick={() => onNavigate('molecule-viewer')} className="mt-6 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                                Enter Sandbox <ArrowRight className="w-3.5 h-3.5" />
+                                Enter Sandbox <AppIcon name="solar:arrow-right-linear" className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
@@ -2062,7 +2066,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                         <div className="p-6 rounded-3xl bg-[var(--session-card-bg)] border border-[var(--session-card-border)] hover:border-[var(--session-accent-border)] transition-all flex flex-col justify-between">
                             <div>
                                 <span className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/20 text-slate-500 inline-block">
-                                    <Settings className="w-5 h-5" />
+                                    <AppIcon name="solar:settings-linear" className="w-5 h-5" />
                                 </span>
                                 <h3 className="text-lg font-bold text-neutral-800 dark:text-white mt-3">Preferences Engine</h3>
                                 <p className="text-xs text-neutral-500 dark:text-[var(--session-text-muted)] mt-1">
@@ -2070,7 +2074,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                                 </p>
                             </div>
                             <button onClick={() => onNavigate('settings')} className="mt-6 flex items-center gap-1 text-xs font-bold text-[var(--session-accent-text)] hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-none p-0 text-left">
-                                Configure System <ArrowRight className="w-3.5 h-3.5" />
+                                Configure System <AppIcon name="solar:arrow-right-linear" className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     </div>
@@ -2082,7 +2086,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div>
                         <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/10 text-emerald-600 dark:text-emerald-400 w-fit">
-                            <ShieldCheck className="w-5 h-5" />
+                            <AppIcon name="solar:shield-check-linear" className="w-5 h-5" />
                         </div>
                         <h3 className="text-lg font-bold text-neutral-800 dark:text-white mt-4">Zero Cloud Leakage</h3>
                         <p className="text-xs text-neutral-500 dark:text-[var(--session-text-muted)] mt-2 leading-relaxed">
@@ -2092,7 +2096,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
                     <div>
                         <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/10 text-amber-600 dark:text-amber-400 w-fit">
-                            <Database className="w-5 h-5" />
+                            <AppIcon name="solar:database-linear" className="w-5 h-5" />
                         </div>
                         <h3 className="text-lg font-bold text-neutral-800 dark:text-white mt-4">Persistent Offline Sync</h3>
                         <p className="text-xs text-neutral-500 dark:text-[var(--session-text-muted)] mt-2 leading-relaxed">
@@ -2102,7 +2106,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, user, userProfile, expl
 
                     <div>
                         <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/10 text-indigo-600 dark:text-indigo-400 w-fit">
-                            <Layers className="w-5 h-5" />
+                            <AppIcon name="solar:layers-minimalistic-linear" className="w-5 h-5" />
                         </div>
                         <h3 className="text-lg font-bold text-neutral-800 dark:text-white mt-4">Alternating Control Hub</h3>
                         <p className="text-xs text-neutral-500 dark:text-[var(--session-text-muted)] mt-2 leading-relaxed">

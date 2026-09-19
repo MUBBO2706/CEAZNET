@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction } from '../../types';
-import { ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownLeft, PlusCircle } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 
 interface DailyStatsItem {
     date: string;
@@ -138,20 +138,20 @@ const FinanceCalendar: React.FC<FinanceCalendarProps> = ({
                         <div className="flex flex-col gap-0.5 w-full mt-1">
                             {stats.income > 0 && (
                                 <div className="flex items-center justify-end gap-0.5 text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">
-                                    <ArrowDownLeft className="w-2 h-2" />
+                                    <AppIcon name="solar:arrow-left-down-linear" className="w-2 h-2" />
                                     <span className="truncate">{formatAmount(stats.income)}</span>
                                 </div>
                             )}
                             {stats.expense > 0 && (
                                 <div className="flex items-center justify-end gap-0.5 text-[9px] text-rose-600 dark:text-rose-400 font-bold">
-                                    <ArrowUpRight className="w-2 h-2" />
+                                    <AppIcon name="solar:arrow-right-up-linear" className="w-2 h-2" />
                                     <span className="truncate">{formatAmount(stats.expense)}</span>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="flex-1 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <PlusCircle className="w-4 h-4 text-indigo-400" />
+                            <AppIcon name="solar:add-circle-linear" className="w-4 h-4 text-indigo-400" />
                         </div>
                     )}
                 </div>
@@ -163,14 +163,14 @@ const FinanceCalendar: React.FC<FinanceCalendarProps> = ({
     return (
         <div className="w-auto -mx-4 border-y border-gray-200 dark:border-white/10">
             <div className="flex items-center justify-between p-4 px-4 border-b border-gray-200 dark:border-white/10">
-                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
+                    <AppIcon name="solar:alt-arrow-left-linear" className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
+                    <AppIcon name="solar:alt-arrow-right-linear" className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
             </div>
 

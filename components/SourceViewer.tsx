@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { GroundingChunk } from '../types';
 import { useDraggableSheet } from '../hooks/useDraggableSheet';
-import { X, ExternalLink, Globe, Link as LinkIcon, ArrowUpRight, ChevronRight } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 interface SourceViewerProps {
     sources: GroundingChunk[];
@@ -85,7 +85,7 @@ const SourceViewer: React.FC<SourceViewerProps> = ({ sources, onClose }) => {
                     className="group p-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white transition-all duration-200"
                     aria-label="Close"
                 >
-                    <X className="h-5 w-5 transition-transform group-hover:rotate-90" />
+                    <AppIcon name="solar:close-circle-linear" className="h-5 w-5 transition-transform group-hover:rotate-90" />
                 </button>
             </header>
 
@@ -93,7 +93,7 @@ const SourceViewer: React.FC<SourceViewerProps> = ({ sources, onClose }) => {
                 {processedSources.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-neutral-400 dark:text-neutral-600 opacity-70">
                         <div className="p-4 bg-neutral-100 dark:bg-neutral-800/50 rounded-full mb-4">
-                            <Globe className="h-8 w-8 stroke-[1.5]" />
+                            <AppIcon name="solar:global-linear" className="h-8 w-8" />
                         </div>
                         <p className="text-sm font-medium">No external sources linked.</p>
                     </div>
@@ -140,7 +140,7 @@ const SourceViewer: React.FC<SourceViewerProps> = ({ sources, onClose }) => {
                                         </h3>
                                         {/* Line 2: Subtitle (Hostname with .com) */}
                                         <div className="flex items-center gap-1.5">
-                                            <Globe className="w-3 h-3 text-neutral-400" />
+                                            <AppIcon name="solar:global-linear" className="w-3 h-3 text-neutral-400" />
                                             <span className="text-xs font-medium text-neutral-500 dark:text-neutral-500 truncate font-mono">
                                                 {hostname}
                                             </span>
@@ -149,7 +149,7 @@ const SourceViewer: React.FC<SourceViewerProps> = ({ sources, onClose }) => {
 
                                     {/* External Link Icon (Right Side) */}
                                     <div className="flex-shrink-0 self-center text-neutral-300 dark:text-neutral-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
-                                        <ChevronRight className="w-5 h-5" />
+                                        <AppIcon name="solar:alt-arrow-right-linear" className="w-5 h-5" />
                                     </div>
                                 </a>
                              )

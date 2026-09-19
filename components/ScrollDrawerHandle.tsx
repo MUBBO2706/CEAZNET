@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 
 export const ScrollDrawerHandle: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -241,7 +241,7 @@ export const ScrollDrawerHandle: React.FC = () => {
             >
                 {/* Compact Vertical Grip Icon */}
                 <div className="flex items-center justify-center text-gray-400 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                    <GripVertical className="w-3.5 h-3.5" />
+                    <AppIcon name="solar:reorder-linear" className="w-3.5 h-3.5" />
                 </div>
 
                 {/* Compact Percentage Badge & Direction Buttons on Hover */}
@@ -261,7 +261,7 @@ export const ScrollDrawerHandle: React.FC = () => {
                                 className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors cursor-pointer text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                                 title="Scroll Up"
                             >
-                                <ChevronUp className="w-3 h-3" />
+                                <AppIcon name="solar:alt-arrow-up-linear" className="w-3 h-3" />
                             </button>
                             <button
                                 type="button"
@@ -272,7 +272,7 @@ export const ScrollDrawerHandle: React.FC = () => {
                                 className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors cursor-pointer text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                                 title="Scroll Down"
                             >
-                                <ChevronDown className="w-3 h-3" />
+                                <AppIcon name="solar:alt-arrow-down-linear" className="w-3 h-3" />
                             </button>
                         </div>
                     </div>

@@ -4,7 +4,7 @@ import { NewsArticle } from '../types';
 import { useDynamicColors } from '../hooks/useDynamicColors';
 import { useCachedImage } from '../services/imageCachingService';
 import ArticleCardSkeleton from './ArticleCardSkeleton';
-import { Eye, Heart } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import LikeAnimation from './LikeAnimation';
 
 interface ArticleCardProps {
@@ -205,11 +205,11 @@ const ArticleCard = React.forwardRef<HTMLDivElement, ArticleCardProps>(({
                     <div className="mt-auto pt-4 flex items-center justify-between">
                         <div className={`flex items-center gap-4 text-sm font-medium ${variant === 'grid' ? 'text-neutral-500 dark:text-gray-400' : ''}`} style={subTextStyle} onClick={stopPropagation}>
                             <div className="flex items-center gap-1.5">
-                                <Eye className="h-5 w-5" />
+                                <AppIcon name="solar:eye-linear" className="h-5 w-5" />
                                 <span>{formatStat(article.views)}</span>
                             </div>
                              <button onClick={handleLikeClick} className="flex items-center gap-1.5 group">
-                                <Heart className={`h-5 w-5 transition-all ${isLiked ? 'text-red-500 fill-current' : 'group-hover:text-red-400'}`} />
+                                <AppIcon name={isLiked ? "solar:heart-bold" : "solar:heart-linear"} className={`h-5 w-5 transition-all ${isLiked ? 'text-red-500' : 'group-hover:text-red-400'}`} />
                                 <span>{formatStat(article.likes)}</span>
                             </button>
                         </div>
@@ -226,7 +226,7 @@ const ArticleCard = React.forwardRef<HTMLDivElement, ArticleCardProps>(({
                             aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}
                             title={isBookmarked ? "Remove bookmark" : "Bookmark article"}
                         >
-                           <BookmarkIcon color="currentColor" filled={isBookmarked} />
+                            <AppIcon name={isBookmarked ? "solar:bookmark-opened-linear" : "solar:bookmark-linear"} className="h-6 w-6" />
                         </button>
                     </div>
                 </div>

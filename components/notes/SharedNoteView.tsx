@@ -2,25 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getPublicSharedNote } from '../../services/dbService';
 import { Note } from '../../types';
 import { markdownToHtml } from './markdownUtils';
-import { 
-    Clock, 
-    Copy, 
-    Check, 
-    Share2, 
-    ArrowRight, 
-    FileText, 
-    Sparkles, 
-    ExternalLink, 
-    AlertCircle, 
-    Loader, 
-    Tag,
-    Sun,
-    Moon,
-    MoreVertical,
-    Info,
-    Calendar,
-    X
-} from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { AppIcon } from '../core/AppIcon';
 import { useToast } from '../ToastSystem';
 
 interface SharedNoteViewProps {
@@ -204,7 +187,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                         className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
                         title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                     >
-                        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                        {isDarkMode ? <AppIcon name="solar:sun-2-linear" className="w-[18px] h-[18px]" /> : <AppIcon name="solar:moon-linear" className="w-[18px] h-[18px]" />}
                     </button>
 
                     {/* Three Dots Dropdown Menu */}
@@ -215,7 +198,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                 className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer flex items-center justify-center"
                                 title="More Actions"
                             >
-                                <MoreVertical size={18} />
+                                <AppIcon name="solar:menu-dots-bold" className="w-[18px] h-[18px]" />
                             </button>
 
                             {isMenuOpen && (
@@ -228,7 +211,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                             }}
                                             className="w-full px-3 py-2 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                         >
-                                            <Info size={14} className="text-neutral-500 shrink-0" />
+                                            <AppIcon name="solar:info-circle-linear" className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
                                             <span>Link Info</span>
                                         </button>
 
@@ -239,7 +222,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                             }}
                                             className="w-full px-3 py-2 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                         >
-                                            {isCopiedText ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Copy size={14} className="shrink-0" />}
+                                            {isCopiedText ? <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <AppIcon name="solar:copy-linear" className="w-3.5 h-3.5 shrink-0" />}
                                             <span>{isCopiedText ? "Copied" : "Copy Note"}</span>
                                         </button>
 
@@ -250,7 +233,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                             }}
                                             className="w-full px-3 py-2 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                         >
-                                            {isCopiedLink ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Share2 size={14} className="shrink-0" />}
+                                            {isCopiedLink ? <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <AppIcon name="solar:share-linear" className="w-3.5 h-3.5 shrink-0" />}
                                             <span>{isCopiedLink ? "Link Copied" : "Copy Share Link"}</span>
                                         </button>
                                     </div>
@@ -265,7 +248,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
                         >
                             <span>Open Notes App</span>
-                            <ExternalLink size={13} />
+                            <AppIcon name="solar:plain-linear" className="w-[13px] h-[13px]" />
                         </button>
                     )}
                 </div>
@@ -281,7 +264,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                 ) : error || !note ? (
                     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                         <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center mb-4">
-                            <AlertCircle size={24} />
+                            <AppIcon name="solar:danger-circle-linear" className="w-6 h-6" />
                         </div>
                         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
                             Note Unavailable
@@ -295,7 +278,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                 className="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium text-xs hover:bg-amber-600 transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                             >
                                 <span>Open Notes App</span>
-                                <ArrowRight size={14} />
+                                <AppIcon name="solar:arrow-right-linear" className="w-3.5 h-3.5" />
                             </button>
                         )}
                     </div>
@@ -316,7 +299,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                             key={idx}
                                             className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border border-neutral-200/60 dark:border-neutral-800/60"
                                         >
-                                            <Tag size={10} />
+                                            <AppIcon name="solar:tag-linear" className="w-2.5 h-2.5" />
                                             <span>{tag}</span>
                                         </span>
                                     ))}
@@ -347,7 +330,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                         {/* Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                             <div className="flex items-center gap-2">
-                                <Info size={18} className="text-amber-500" />
+                                <AppIcon name="solar:info-circle-linear" className="w-[18px] h-[18px] text-amber-500" />
                                 <h3 className="font-bold text-sm sm:text-base text-neutral-900 dark:text-neutral-50">
                                     Link Information
                                 </h3>
@@ -356,7 +339,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                 onClick={() => setIsInfoModalOpen(false)}
                                 className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                             >
-                                <X size={18} />
+                                <AppIcon name="solar:close-circle-linear" className="w-[18px] h-[18px]" />
                             </button>
                         </div>
 
@@ -376,7 +359,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                     Created Date
                                 </span>
                                 <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
-                                    <Calendar size={14} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
+                                    <AppIcon name="solar:calendar-linear" className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 shrink-0" />
                                     <span>{formatDate(note.createdAt)}</span>
                                 </div>
                             </div>
@@ -387,7 +370,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                         Last Updated
                                     </span>
                                     <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
-                                        <Clock size={14} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
+                                        <AppIcon name="solar:clock-circle-linear" className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 shrink-0" />
                                         <span>{formatDate(note.updatedAt)}</span>
                                     </div>
                                 </div>
@@ -398,7 +381,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                     Link Expiration
                                 </span>
                                 <div className="flex items-center gap-2">
-                                    <Clock size={14} className={`${expiryTime ? 'text-amber-500' : 'text-neutral-400 dark:text-neutral-500'} shrink-0`} />
+                                    <AppIcon name="solar:clock-circle-linear" className={`w-3.5 h-3.5 ${expiryTime ? 'text-amber-500' : 'text-neutral-400 dark:text-neutral-500'} shrink-0`} />
                                     <span className={expiryTime ? "text-amber-600 dark:text-amber-400 font-medium" : "text-neutral-700 dark:text-neutral-300"}>
                                         {expiryTime ? formatDate(expiryTime) : 'Never Expires'}
                                     </span>

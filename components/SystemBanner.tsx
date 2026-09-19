@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
-import { AlertTriangle, Wrench, Beaker, ChevronDown, ChevronUp } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { useNavigate } from 'react-router-dom';
 import { SuspendedInfoModal } from './SuspendedInfoModal';
 import { setBannerThemeColor } from '../utils/themeColor';
@@ -35,9 +35,9 @@ interface SystemBannerData {
     is_active: boolean;
 }
 
-const PREDEFINED_BANNERS: Record<string, { icon: React.ElementType, title: string, description: React.ReactNode, colors: { bg: string, border: string, title: string, desc: string, icon: string, iconBg: string } }> = {
+const PREDEFINED_BANNERS: Record<string, { icon: string, title: string, description: React.ReactNode, colors: { bg: string, border: string, title: string, desc: string, icon: string, iconBg: string } }> = {
     'maintenance': {
-        icon: Wrench,
+        icon: 'solar:wrench-linear',
         title: 'System Maintenance',
         description: 'The system is currently undergoing scheduled maintenance. Some features may be temporarily unavailable.',
         colors: {
@@ -50,7 +50,7 @@ const PREDEFINED_BANNERS: Record<string, { icon: React.ElementType, title: strin
         }
     },
     'development': {
-        icon: Wrench,
+        icon: 'solar:wrench-linear',
         title: 'Under Development',
         description: 'This environment is actively under development. You may experience bugs or unexpected behavior.',
         colors: {
@@ -63,7 +63,7 @@ const PREDEFINED_BANNERS: Record<string, { icon: React.ElementType, title: strin
         }
     },
     'testing': {
-        icon: Beaker,
+        icon: 'solar:test-tube-minimalistic-linear',
         title: 'Beta Testing',
         description: 'You are currently using a testing environment. Please report any issues you encounter.',
         colors: {
@@ -76,7 +76,7 @@ const PREDEFINED_BANNERS: Record<string, { icon: React.ElementType, title: strin
         }
     },
     'alert': {
-        icon: AlertTriangle,
+        icon: 'solar:danger-triangle-linear',
         title: 'Important Alert',
         description: 'We are currently experiencing performance degradation. Our team is investigating the issue.',
         colors: {
@@ -183,7 +183,7 @@ export const SystemBanner: React.FC<{ isSuspended?: boolean }> = ({ isSuspended 
 
     if (isSuspended) {
         activeConfig = {
-            icon: AlertTriangle,
+            icon: 'solar:danger-triangle-linear',
             title: 'Account Suspended',
             description: (
                 <span>
@@ -247,8 +247,6 @@ export const SystemBanner: React.FC<{ isSuspended?: boolean }> = ({ isSuspended 
 
     if (!activeConfig) return null;
 
-    const Icon = activeConfig.icon;
-
     return (
         <div className="flex flex-col relative z-50">
             <div 
@@ -262,7 +260,7 @@ export const SystemBanner: React.FC<{ isSuspended?: boolean }> = ({ isSuspended 
             <div className="w-full pl-4 pr-4 sm:pr-6 lg:pr-8 py-2 md:py-2 flex items-start sm:items-center justify-between gap-2 sm:gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center flex-1 overflow-hidden gap-1 sm:gap-0 pt-0.5 sm:pt-0">
                     <div className="flex items-start sm:items-center gap-2 sm:gap-3 shrink-0 sm:pr-3">
-                        <Icon className={`w-4 h-4 shrink-0 mt-[1.5px] sm:mt-0 ${activeConfig.colors.icon}`} strokeWidth={2.5}/>
+                        <AppIcon name={activeConfig.icon} className={`w-4 h-4 shrink-0 mt-[1.5px] sm:mt-0 ${activeConfig.colors.icon}`} />
                         
                         <span className={`font-medium text-sm leading-tight shrink-0 pt-0.5 sm:pt-0 ${activeConfig.colors.title}`}>
                             {activeConfig.title}
@@ -275,7 +273,7 @@ export const SystemBanner: React.FC<{ isSuspended?: boolean }> = ({ isSuspended 
                 </div>
                 
                 <div className={`shrink-0 -mr-1 mt-1 sm:mt-0 self-center transition-transform md:hidden ${activeConfig.colors.icon}`}>
-                    {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                    {isCollapsed ? <AppIcon name="solar:alt-arrow-down-linear" className="w-4 h-4" /> : <AppIcon name="solar:alt-arrow-up-linear" className="w-4 h-4" />}
                 </div>
             </div>
             </div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sun, Moon } from 'lucide-react';
 import { updateBrowserThemeColor } from '../utils/themeColor';
+import { AppIcon } from './core/AppIcon';
 
 interface ThemeToggleProps {
     isCollapsed?: boolean;
@@ -81,9 +81,9 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ isCollapsed = false }) => {
             >
                 {/* Icons inside the slider thumb for a premium touch */}
                 {isDark ? (
-                    <Moon className={`text-slate-800 ${isCollapsed ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`} strokeWidth={2.5} />
+                    <AppIcon name="ph:moon-light" className={`text-slate-800 ${isCollapsed ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`} />
                 ) : (
-                    <Sun className={`text-amber-500 ${isCollapsed ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`} strokeWidth={2.5} />
+                    <AppIcon name="ph:sun-light" className={`text-amber-500 ${isCollapsed ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`} />
                 )}
             </div>
         </button>

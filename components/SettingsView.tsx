@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UIPreferences, UserProfile, View } from "../types";
-import {
-  Type,
-  Monitor,
-  Trash2,
-  Key,
-  Cpu,
-  Layout,
-  Maximize,
-  Minimize,
-  Globe,
-  RotateCw,
-  Zap,
-  Play,
-} from "lucide-react";
+import { AppIcon } from "./core/AppIcon";
 import { motion } from "motion/react";
 import ConfirmationModal from "./ConfirmationModal";
 import ApiKeyModal from "./ApiKeyModal";
@@ -283,9 +270,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                       `}
                     >
                       {layout === "comfortable" ? (
-                        <Maximize className="w-4 h-4" />
+                        <AppIcon name="solar:maximize-square-linear" className="w-4 h-4" />
                       ) : (
-                        <Minimize className="w-4 h-4" />
+                        <AppIcon name="solar:minimize-square-3-linear" className="w-4 h-4" />
                       )}
                       <span className="capitalize">{layout}</span>
                     </button>
@@ -474,7 +461,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                           title="Preview Charging Animation"
                           className="px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95 transition-all flex items-center gap-1.5 border border-amber-500/20"
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <AppIcon name="solar:play-linear" className="w-3.5 h-3.5 fill-current" />
                           <span>Preview</span>
                         </button>
                       )}
@@ -574,7 +561,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
                 <div className="flex flex-col justify-center min-w-0">
                   <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                    <Monitor className="w-3 h-3 text-blue-500 shrink-0" /> Platform
+                    <AppIcon name="solar:monitor-linear" className="w-3 h-3 text-blue-500 shrink-0" /> Platform
                   </div>
                   <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
                     {systemInfo.os}
@@ -594,7 +581,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
                 <div className="flex flex-col justify-center min-w-0">
                   <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                    <Globe className="w-3 h-3 text-emerald-500 shrink-0" /> Engine
+                    <AppIcon name="solar:global-linear" className="w-3 h-3 text-emerald-500 shrink-0" /> Engine
                   </div>
                   <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
                     {systemInfo.browser}
@@ -614,7 +601,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
                 <div className="flex flex-col justify-center min-w-0">
                   <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                    <Layout className="w-3 h-3 text-purple-500 shrink-0" /> Display
+                    <AppIcon name="solar:widget-linear" className="w-3 h-3 text-purple-500 shrink-0" /> Display
                   </div>
                   <div className="text-xs font-semibold text-gray-800 dark:text-white/80 truncate">
                     {systemInfo.screen}
@@ -634,7 +621,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="p-3.5 bg-gray-100/70 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
                 <div className="flex flex-col justify-center min-w-0">
                   <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-white/40 mb-1 flex items-center gap-1">
-                    <RotateCw className="w-3 h-3 text-amber-500 shrink-0" /> Network
+                    <AppIcon name="solar:restart-linear" className="w-3 h-3 text-amber-500 shrink-0" /> Network
                   </div>
                   <div className="text-xs font-semibold text-gray-800 dark:text-white/80 flex items-center gap-1.5 truncate">
                     <span
@@ -660,7 +647,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-gray-100/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 hover:bg-gray-200/60 dark:hover:bg-white/10 transition-all shadow-sm"
               >
                 <div className="flex items-center gap-2">
-                  <Key
+                  <AppIcon
+                    name="solar:key-linear"
                     className={`w-4 h-4 ${apiKey ? "text-emerald-500" : "text-gray-400"}`}
                   />
                   <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-white/80 whitespace-nowrap">
@@ -674,7 +662,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200/60 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all text-red-600 dark:text-red-400 shadow-sm"
               >
                 <div className="flex items-center gap-2">
-                  <Trash2 className="w-4 h-4" />
+                  <AppIcon name="solar:trash-bin-trash-linear" className="w-4 h-4" />
                   <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
                     Reset App
                   </span>

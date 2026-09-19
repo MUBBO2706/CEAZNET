@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Clock, MapPin, MonitorSmartphone, MonitorX } from 'lucide-react';
+import { AppIcon } from './core/AppIcon';
 import { getExactDeviceName } from '../utils/deviceUtils';
 
 interface Props {
@@ -109,7 +109,7 @@ const SessionTerminatedModal: React.FC<Props> = ({
         className="w-full max-w-sm flex flex-col items-center text-center"
         role="dialog"
       >
-        <MonitorX className="h-12 w-12 text-red-500 mb-6 drop-shadow-sm" />
+        <AppIcon name="solar:monitor-cross-linear" className="h-12 w-12 text-red-500 mb-6 drop-shadow-sm" />
 
         <h2
           id="session-terminated-title"
@@ -129,7 +129,7 @@ const SessionTerminatedModal: React.FC<Props> = ({
         >
           {/* Terminated by Device */}
           <div className="flex items-center justify-center gap-2 text-center">
-            <MonitorSmartphone className="w-4 h-4 text-gray-400 dark:text-neutral-500 shrink-0" />
+            <AppIcon name="solar:devices-linear" className="w-4 h-4 text-gray-400 dark:text-neutral-500 shrink-0" />
             <span>
               Terminated by{' '}
               <strong className="text-gray-900 dark:text-neutral-200 font-medium">
@@ -142,13 +142,13 @@ const SessionTerminatedModal: React.FC<Props> = ({
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-gray-500 dark:text-neutral-400">
             {locationInfo && (
               <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-gray-400 dark:text-neutral-500 shrink-0" />
+                <AppIcon name="solar:map-point-linear" className="w-3.5 h-3.5 text-gray-400 dark:text-neutral-500 shrink-0" />
                 <span>{locationInfo}</span>
               </div>
             )}
 
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-neutral-500 shrink-0" />
+              <AppIcon name="solar:clock-circle-linear" className="w-3.5 h-3.5 text-gray-400 dark:text-neutral-500 shrink-0" />
               <span>{formattedTime}</span>
             </div>
           </div>
@@ -164,7 +164,7 @@ const SessionTerminatedModal: React.FC<Props> = ({
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white transition-colors cursor-pointer"
         >
           Return to Home
-          <ArrowRight className="w-4 h-4" />
+          <AppIcon name="solar:arrow-right-linear" className="w-4 h-4" />
         </a>
       </div>
     </div>
