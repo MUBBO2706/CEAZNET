@@ -246,21 +246,21 @@ export const RealtimeDiffViewer: React.FC<RealtimeDiffViewerProps> = ({ prefix, 
               const newDisplay = formatRawValue(newVal);
 
               return (
-                <div key={key} className="my-1.5 flex flex-col gap-1">
-                  <div>
+                <div key={key} className="my-1 flex flex-col gap-0.5">
+                  <div className="flex items-baseline flex-wrap leading-relaxed">
                     <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
                     <span className="text-[var(--dev-console-text-muted)]">:</span>
                   </div>
-                  <div className="pl-3 sm:pl-4 flex flex-col gap-1">
-                    {/* Old (Removed) Value badge with strikethrough */}
-                    <div className="w-fit">
-                      <span className="inline-block bg-[var(--diff-removed-bg)] text-[var(--diff-removed-text)] border border-[var(--diff-removed-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed line-through break-all select-text">
-                        — {oldDisplay}
+                  <div className="pl-3 sm:pl-4 flex flex-col gap-0.5">
+                    {/* Old (Removed) Value with red text & strikethrough */}
+                    <div className="flex items-baseline">
+                      <span className="text-[var(--diff-removed-text)] font-mono leading-relaxed line-through break-all select-text">
+                        - {oldDisplay}
                       </span>
                     </div>
-                    {/* New (Added) Value badge with + */}
-                    <div className="w-fit flex items-baseline">
-                      <span className="inline-block bg-[var(--diff-added-bg)] text-[var(--diff-added-text)] border border-[var(--diff-added-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed break-all select-text">
+                    {/* New (Added) Value with green text & + prefix */}
+                    <div className="flex items-baseline">
+                      <span className="text-[var(--diff-added-text)] font-mono leading-relaxed break-all select-text">
                         + {newDisplay}
                       </span>
                       {!isLast && <span className="text-[var(--dev-console-text-muted)] ml-1">,</span>}
@@ -273,17 +273,13 @@ export const RealtimeDiffViewer: React.FC<RealtimeDiffViewerProps> = ({ prefix, 
             if (isAdded) {
               const newDisplay = formatRawValue(newVal);
               return (
-                <div key={key} className="my-1 flex flex-col gap-1">
-                  <div>
-                    <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
-                    <span className="text-[var(--dev-console-text-muted)]">:</span>
-                  </div>
-                  <div className="pl-3 sm:pl-4 w-fit flex items-baseline">
-                    <span className="inline-block bg-[var(--diff-added-bg)] text-[var(--diff-added-text)] border border-[var(--diff-added-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed break-all select-text">
-                      + {newDisplay}
-                    </span>
-                    {!isLast && <span className="text-[var(--dev-console-text-muted)] ml-1">,</span>}
-                  </div>
+                <div key={key} className="my-0.5 flex items-baseline flex-wrap leading-relaxed">
+                  <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
+                  <span className="text-[var(--dev-console-text-muted)]">: </span>
+                  <span className="ml-1 text-[var(--diff-added-text)] font-mono break-all select-text">
+                    + {newDisplay}
+                  </span>
+                  {!isLast && <span className="text-[var(--dev-console-text-muted)]">,</span>}
                 </div>
               );
             }
@@ -291,17 +287,13 @@ export const RealtimeDiffViewer: React.FC<RealtimeDiffViewerProps> = ({ prefix, 
             if (isRemoved) {
               const oldDisplay = formatRawValue(oldVal);
               return (
-                <div key={key} className="my-1 flex flex-col gap-1">
-                  <div>
-                    <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
-                    <span className="text-[var(--dev-console-text-muted)]">:</span>
-                  </div>
-                  <div className="pl-3 sm:pl-4 w-fit flex items-baseline">
-                    <span className="inline-block bg-[var(--diff-removed-bg)] text-[var(--diff-removed-text)] border border-[var(--diff-removed-border)] px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono leading-relaxed line-through break-all select-text">
-                      — {oldDisplay}
-                    </span>
-                    {!isLast && <span className="text-[var(--dev-console-text-muted)] ml-1">,</span>}
-                  </div>
+                <div key={key} className="my-0.5 flex items-baseline flex-wrap leading-relaxed">
+                  <span className="text-[var(--dev-console-syntax-property)]">&quot;{key}&quot;</span>
+                  <span className="text-[var(--dev-console-text-muted)]">: </span>
+                  <span className="ml-1 text-[var(--diff-removed-text)] font-mono line-through break-all select-text">
+                    - {oldDisplay}
+                  </span>
+                  {!isLast && <span className="text-[var(--dev-console-text-muted)]">,</span>}
                 </div>
               );
             }
