@@ -67,11 +67,16 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
                     args: [`> ${input}`]
                 });
                 
+                // Sanitize input for eval: strip module export keywords if present
+                const sanitizedInput = input
+                    .replace(/^\s*export\s+default\s+/gm, '')
+                    .replace(/^\s*export\s+(const|let|var|function|class|async\s+function)\s+/gm, '$1 ');
+
                 let result;
                 try {
-                    result = (window as any).eval(`(${input})`);
+                    result = (window as any).eval(`(${sanitizedInput})`);
                 } catch (e) {
-                    result = (window as any).eval(input);
+                    result = (window as any).eval(sanitizedInput);
                 }
                 
                 if (result instanceof Promise) {

@@ -710,22 +710,21 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                     ) : (
                         <div className="flex flex-col h-full">
                             {activeGroupNetId && (
-                                <div className="flex items-center px-2 sm:px-4 py-2 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text)] select-none font-semibold sticky top-0 text-[10px] sm:text-[11px] uppercase w-full shrink-0 justify-between">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <button 
-                                            onClick={() => {
-                                                setActiveGroupNetId(null);
-                                                setExpandedNetId(null);
-                                            }}
-                                            className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center transition-colors border-0 bg-transparent p-0 outline-none cursor-pointer shrink-0"
-                                            title="Back to all requests"
-                                        >
-                                            <ChevronLeft size={16} />
-                                        </button>
-                                        <div className="h-4 w-px bg-[var(--dev-console-border)]"></div>
-                                        <span className="truncate text-[var(--dev-console-text)] font-semibold">Group History</span>
-                                    </div>
-                                    <span className="text-[var(--dev-console-text-muted)] font-semibold shrink-0">
+                                <div className="flex items-center px-2 sm:px-4 py-2.5 bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text)] select-none sticky top-0 w-full shrink-0 justify-between">
+                                    <button 
+                                        onClick={() => {
+                                            setActiveGroupNetId(null);
+                                            setExpandedNetId(null);
+                                        }}
+                                        className="group flex items-center gap-2 text-[var(--dev-console-text)] hover:text-[#007fd4] transition-colors border-0 bg-transparent p-0 outline-none cursor-pointer shrink-0 min-w-0"
+                                        title="Back to all requests"
+                                    >
+                                        <ChevronLeft size={20} className="text-[var(--dev-console-text-muted)] group-hover:text-[#007fd4] transition-colors shrink-0" />
+                                        <span className="truncate text-[13.5px] sm:text-[14.5px] font-bold tracking-wide uppercase group-hover:text-[#007fd4] transition-colors">
+                                            Group History
+                                        </span>
+                                    </button>
+                                    <span className="text-[var(--dev-console-text-muted)] font-semibold text-xs sm:text-sm shrink-0 font-mono">
                                         ({groupParent ? (groupParent.count || 1) : 0})
                                     </span>
                                 </div>

@@ -5,7 +5,7 @@ import {
     AlertTriangle, AlertCircle, Info as InfoIcon, Search, Database, 
     Image, RotateCw, Cpu, Loader, MoreHorizontal, MoreVertical, 
     EyeOff, User, MapPin, Activity, Wifi, Smartphone, Key, 
-    Globe, Monitor, Compass, Download, ArrowLeftRight 
+    Globe, Monitor, Compass, Download, ArrowLeftRight, Upload 
 } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import { 
@@ -27,6 +27,7 @@ import { ConsoleTab } from './ConsoleTab';
 import { NetworkTab } from './NetworkTab';
 import { ImageCacheTab } from './ImageCacheTab';
 import { DevicesTab } from './DevicesTab';
+import { StorageTab } from './StorageTab';
 import { formatSize, safeStringifyWithTruncation } from './utils';
 
 export { initDevStore };
@@ -49,11 +50,11 @@ export const DevTools = () => {
         }
     });
     const [showHideConfirmation, setShowHideConfirmation] = useState(false);
-    const [activeTab, setActiveTab] = useState<'console' | 'network' | 'cache' | 'image-cache'>(() => {
+    const [activeTab, setActiveTab] = useState<'console' | 'network' | 'storage' | 'cache' | 'image-cache'>(() => {
         try {
             const saved = localStorage.getItem('devToolsActiveTab') ?? localStorage.getItem('devConsoleActiveTab');
-            if (saved && ['console', 'network', 'cache', 'image-cache'].includes(saved)) {
-                return saved as 'console' | 'network' | 'cache' | 'image-cache';
+            if (saved && ['console', 'network', 'storage', 'cache', 'image-cache'].includes(saved)) {
+                return saved as 'console' | 'network' | 'storage' | 'cache' | 'image-cache';
             }
         } catch {}
         return 'console';
@@ -84,9 +85,45 @@ export const DevTools = () => {
     
     // Device mapping count state (to support tab badge in DevTools header)
     const [deviceMappingsCount, setDeviceMappingsCount] = useState(0);
+    // Storage count state
+    const [storageCount, setStorageCount] = useState(() => {
+        try {
+            return localStorage.length;
+        } catch {
+            return 0;
+        }
+    });
     const [expandedNetId, setExpandedNetId] = useState<string | null>(null);
     const [highlightedNetId, setHighlightedNetId] = useState<string | null>(null);
     const [activeGroupNetId, setActiveGroupNetId] = useState<string | null>(null);
+    
+    // Global Header Refresh state
+    const [isGlobalRefreshing, setIsGlobalRefreshing] = useState(false);
+
+    const handleGlobalRefresh = async () => {
+        if (isGlobalRefreshing) return;
+        setIsGlobalRefreshing(true);
+        try {
+            if (activeTab === 'image-cache') {
+                await fetchImageCacheData();
+            } else if (activeTab === 'storage') {
+                window.dispatchEvent(new Event('storage-update'));
+                window.dispatchEvent(new Event('storage'));
+            } else if (activeTab === 'cache') {
+                window.dispatchEvent(new CustomEvent('devices-tab-refresh'));
+            } else if (activeTab === 'network' || activeTab === 'console') {
+                forceRender(n => n + 1);
+            }
+            // Broad broadcast
+            window.dispatchEvent(new Event('storage-update'));
+        } catch (e) {
+            console.error('Refresh failed:', e);
+        } finally {
+            setTimeout(() => {
+                setIsGlobalRefreshing(false);
+            }, 600);
+        }
+    };
     
     // Filters
     const [consoleFilter, setConsoleFilter] = useState('');
@@ -258,6 +295,10 @@ export const DevTools = () => {
             logs.length = 0;
         } else if (activeTab === 'image-cache') {
             setShowFlushConfirm(true);
+        } else if (activeTab === 'storage') {
+            window.dispatchEvent(new CustomEvent('dev-storage-clear'));
+        } else if (activeTab === 'cache') {
+            window.dispatchEvent(new CustomEvent('devices-tab-clear-audit'));
         } else {
             nets.length = 0;
             netStats.totalSent = 0;
@@ -505,6 +546,11 @@ export const DevTools = () => {
                             <span className="hidden sm:inline">Network</span>
                             {visibleNets.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{visibleNets.length}</span>}
                         </div>
+                        <div className="flex items-center gap-1.5 shrink-0" title="Storage Manager">
+                            <Database size={14} /> 
+                            <span className="hidden sm:inline">Storage</span>
+                            {storageCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{storageCount}</span>}
+                        </div>
                         <div className="flex items-center gap-1.5 shrink-0" title="Device Models Mapping">
                             <Smartphone size={14} /> 
                             <span className="hidden sm:inline">Devices</span>
@@ -541,22 +587,22 @@ export const DevTools = () => {
                             <button onClick={handleCopyAll} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors flex items-center justify-center bg-transparent border-0 outline-none focus:outline-none cursor-pointer" title={copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? "Copied All!" : "Copy All"}>
                                 {copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
                             </button>
-                            {activeTab === 'image-cache' && (
-                                <>
-                                    <button 
-                                        onClick={fetchImageCacheData}
-                                        disabled={isImageCacheLoading}
-                                        className="p-1 text-[#007fd4] hover:text-[#005a96] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-0 outline-none focus:outline-none flex items-center justify-center" 
-                                        title="Refresh Cache Analytics"
-                                    >
-                                        {isImageCacheLoading ? <Loader size={13} className="animate-spin" /> : <RotateCw size={13} />}
-                                    </button>
-                                </>
-                            )}
+                            <button 
+                                onClick={handleGlobalRefresh}
+                                disabled={isGlobalRefreshing || (activeTab === 'image-cache' && isImageCacheLoading)}
+                                className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-0 outline-none focus:outline-none flex items-center justify-center cursor-pointer" 
+                                title={`Refresh ${activeTab === 'storage' ? 'Storage Data' : activeTab === 'image-cache' ? 'Image Cache' : activeTab === 'cache' ? 'Devices Data' : activeTab === 'network' ? 'Network Logs' : 'Console Logs'}`}
+                            >
+                                {isGlobalRefreshing || (activeTab === 'image-cache' && isImageCacheLoading) ? (
+                                    <Loader size={13} className="animate-spin text-[#007fd4]" />
+                                ) : (
+                                    <RotateCw size={13} />
+                                )}
+                            </button>
                             <button 
                                 onClick={handleClear} 
                                 className={`p-1 rounded transition-colors cursor-pointer bg-transparent border-0 outline-none focus:outline-none ${
-                                    activeTab === 'image-cache' || activeTab === 'console' || activeTab === 'network'
+                                    activeTab === 'image-cache' || activeTab === 'console' || activeTab === 'network' || activeTab === 'storage'
                                         ? 'text-red-500 hover:text-red-400' 
                                         : 'hover:text-[var(--dev-console-text)]'
                                   }`} 
@@ -567,13 +613,15 @@ export const DevTools = () => {
                                         ? "Clear Console (Cmd/Ctrl+K)" 
                                         : activeTab === 'network' 
                                         ? "Clear Network Logs (Cmd/Ctrl+K)" 
+                                        : activeTab === 'storage'
+                                        ? "Clear Storage Data"
                                         : "Clear (Cmd/Ctrl+K)"
                                 }
                             >
                                 {activeTab === 'console' || activeTab === 'network' ? (
                                     <Ban size={13} className="text-red-500 hover:text-red-400" />
                                 ) : (
-                                    <Trash2 size={13} className={activeTab === 'image-cache' ? 'text-red-500' : ''} />
+                                    <Trash2 size={13} className={activeTab === 'image-cache' || activeTab === 'storage' ? 'text-red-500' : ''} />
                                 )}
                             </button>
                             <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
@@ -609,6 +657,16 @@ export const DevTools = () => {
                                     Network
                                 </span>
                                 {visibleNets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{visibleNets.length}</span>}
+                            </button>
+                            <button 
+                                onClick={() => { setActiveTab('storage'); }}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'storage' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
+                            >
+                                <Database size={14} className="shrink-0" />
+                                <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'storage' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
+                                    Storage
+                                </span>
+                                {storageCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{storageCount}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('cache'); }}
@@ -655,6 +713,15 @@ export const DevTools = () => {
                                     totalReceived={netStats.totalReceived}
                                     getEnvironmentStats={getEnvironmentStats}
                                     isOpen={isOpen}
+                                />
+                            )}
+
+                            {activeTab === 'storage' && (
+                                <StorageTab 
+                                    isOpen={isOpen && activeTab === 'storage'}
+                                    copiedId={copiedId}
+                                    handleCopy={handleCopy}
+                                    onStorageCountChange={setStorageCount}
                                 />
                             )}
 
