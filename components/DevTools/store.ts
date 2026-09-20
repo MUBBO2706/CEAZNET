@@ -136,14 +136,34 @@ export const netStats = {
     totalReceived: 0
 };
 
+export const originalConsole = typeof window !== 'undefined' ? {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console)
+} : {
+    log: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {}
+};
+
 export const listeners: (() => void)[] = [];
+let notifyScheduled = false;
+
 export const notify = () => {
-    listeners.forEach(l => {
-        try {
-            l();
-        } catch (e) {
-            console.error('[DevTools Store] Error notifying listener:', e);
-        }
+    if (notifyScheduled) return;
+    notifyScheduled = true;
+    const scheduleFn = typeof queueMicrotask === 'function' ? queueMicrotask : (fn: () => void) => setTimeout(fn, 0);
+    scheduleFn(() => {
+        notifyScheduled = false;
+        listeners.forEach(l => {
+            try {
+                l();
+            } catch (e) {
+                originalConsole.error('[DevTools Store] Error notifying listener:', e);
+            }
+        });
     });
 };
 
@@ -237,12 +257,6 @@ export const initDevStore = () => {
     isInitialized = true;
 
     // --- Console Overrides ---
-    const originalConsole = {
-        log: console.log,
-        info: console.info,
-        warn: console.warn,
-        error: console.error
-    };
 
     const addLog = (type: 'log' | 'info' | 'warn' | 'error', args: any[]) => {
         logs.push({

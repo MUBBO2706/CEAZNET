@@ -538,8 +538,6 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
         onSave(transaction);
     };
 
-    if (!isOpen) return null;
-
     const allTypeCategories = useMemo(() => {
         const customTypeCategories = customCategories
             .filter(c => !c.type || c.type === type)
@@ -741,6 +739,8 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
             </button>
         );
     };
+
+    if (!isOpen) return null;
 
     return (
         <div 
