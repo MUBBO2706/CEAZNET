@@ -8,20 +8,32 @@ export default defineConfig(async ({ mode }) => {
     
     // Generate/Retrieve a unique build ID based on the current timestamp
     let buildId = '';
+    const isProductionBuild = mode === 'production';
     const tempBuildIdPath = path.resolve(import.meta.dirname, '.build_id.tmp');
+    const publicDir = path.resolve(import.meta.dirname, 'public');
+    const versionJsonPath = path.join(publicDir, 'version.json');
+
     try {
       if (fs.existsSync(tempBuildIdPath)) {
         buildId = fs.readFileSync(tempBuildIdPath, 'utf8').trim();
-      } else {
+      } else if (fs.existsSync(versionJsonPath) && !isProductionBuild) {
+        try {
+          const existing = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
+          if (existing?.version) {
+            buildId = String(existing.version);
+          }
+        } catch {}
+      }
+
+      if (!buildId) {
         buildId = Date.now().toString();
         fs.writeFileSync(tempBuildIdPath, buildId, 'utf8');
       }
 
-      const publicDir = path.resolve(import.meta.dirname, 'public');
       if (!fs.existsSync(publicDir)) {
         fs.mkdirSync(publicDir, { recursive: true });
       }
-      fs.writeFileSync(path.join(publicDir, 'version.json'), JSON.stringify({ version: buildId }), 'utf8');
+      fs.writeFileSync(versionJsonPath, JSON.stringify({ version: buildId }), 'utf8');
 
       // Also write version.json to api/ folder so Vercel serverless builder automatically bundles it into the Lambda environment
       const apiDir = path.resolve(import.meta.dirname, 'api');

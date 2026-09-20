@@ -2572,7 +2572,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
                                                                         }}
                                                                     >
                                                                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${cat.color} ${cat.bg || 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                                            <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${cat.color}`}>
                                                                                 {IconComp ? (
                                                                                     <IconComp className="w-4 h-4" size={16} />
                                                                                 ) : (

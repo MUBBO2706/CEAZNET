@@ -15,13 +15,15 @@ const isDevelopmentEnvironment = (): boolean => {
     if (typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ === 'dev') {
         return true;
     }
-    // 3. Check dev hostnames (only localhost, 127.0.0.1 and AI Studio workspace preview url)
+    // 3. Check dev and preview hostnames (localhost, 127.0.0.1, AI Studio workspace URLs)
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
         if (
             hostname === 'localhost' ||
             hostname === '127.0.0.1' ||
-            hostname.includes('ais-dev-')
+            hostname.includes('ais-dev-') ||
+            hostname.includes('ais-pre-') ||
+            hostname.includes('.run.app')
         ) {
             return true;
         }
@@ -71,9 +73,9 @@ export const VersionUpdateModal: React.FC = () => {
 
     const [hasUpdate, setHasUpdate] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
-    const initialVersionRef = useRef<string | null>(
-        typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ !== 'dev' ? String(__BUILD_ID__) : null
-    );
+    const initialVersionRef = useRef<string | null>(null);
+    const latestDetectedVersionRef = useRef<string | null>(null);
+    const isFirstCheckRef = useRef<boolean>(true);
     const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastCheckTimeRef = useRef<number>(0);
@@ -89,22 +91,16 @@ export const VersionUpdateModal: React.FC = () => {
         if (isDev) return;
 
         const now = Date.now();
-        // Throttle automatic checks to at most once every 5 seconds
-        if (!isManual && now - lastCheckTimeRef.current < 5000) {
+        // Throttle automatic checks to at most once every 10 seconds
+        if (!isManual && now - lastCheckTimeRef.current < 10000) {
             return;
         }
         lastCheckTimeRef.current = now;
 
-        // 1. Proactively trigger Service Worker update check on network
+        // Proactively trigger Service Worker update check on network
         if (swRegistrationRef.current) {
             try {
                 swRegistrationRef.current.update().catch(() => {});
-                if (swRegistrationRef.current.waiting) {
-                    console.log('[Version Update] Service worker is waiting in background.');
-                    setHasUpdate(true);
-                    setIsVisible(true);
-                    return;
-                }
             } catch (swErr) {
                 console.debug('[Version Update] swRegistration update check error:', swErr);
             }
@@ -114,21 +110,16 @@ export const VersionUpdateModal: React.FC = () => {
                     if (reg) {
                         swRegistrationRef.current = reg;
                         reg.update().catch(() => {});
-                        if (reg.waiting) {
-                            console.log('[Version Update] Service worker waiting detected.');
-                            setHasUpdate(true);
-                            setIsVisible(true);
-                        }
                     }
                 }).catch(() => {});
             } catch {}
         }
 
-        const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__) : 'unknown');
+        let discoveredServerVersion: string | null = null;
 
-        // 2. Channel A: Live Serverless / Backend Version Control API endpoint
-        let detectedNewVersion = false;
+        // 1. Channel A: Live Serverless / Backend Version Control API endpoint
         try {
+            const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__) : 'unknown');
             const response = await fetchApi(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
                 method: 'GET',
                 cache: 'no-store',
@@ -141,28 +132,16 @@ export const VersionUpdateModal: React.FC = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                if (data?.hasUpdate) {
-                    console.log(`[Version Update] Live API update detected: ${data.message}`);
-                    detectedNewVersion = true;
-                    setHasUpdate(true);
-                    setIsVisible(true);
-                } else if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
-                    if (!initialVersionRef.current) {
-                        initialVersionRef.current = String(data.serverVersion);
-                    } else if (String(data.serverVersion) !== String(initialVersionRef.current)) {
-                        console.log(`[Version Update] Server version difference detected: ${initialVersionRef.current} vs ${data.serverVersion}`);
-                        detectedNewVersion = true;
-                        setHasUpdate(true);
-                        setIsVisible(true);
-                    }
+                if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
+                    discoveredServerVersion = String(data.serverVersion);
                 }
             }
         } catch (error) {
             console.debug('[Update Checker] API version check error:', error);
         }
 
-        // 3. Channel B: Static version.json served directly by CDN edge
-        if (!detectedNewVersion) {
+        // 2. Channel B: Static version.json served directly by CDN edge
+        if (!discoveredServerVersion) {
             try {
                 const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
                     method: 'GET',
@@ -177,32 +156,54 @@ export const VersionUpdateModal: React.FC = () => {
                 if (staticRes.ok) {
                     const staticData = await staticRes.json();
                     if (staticData?.version && staticData.version !== 'unknown') {
-                        const staticVer = String(staticData.version);
-                        if (!initialVersionRef.current) {
-                            initialVersionRef.current = staticVer;
-                        } else if (staticVer !== String(initialVersionRef.current)) {
-                            console.log(`[Version Update] Static version.json difference detected: ${initialVersionRef.current} vs ${staticVer}`);
-                            setHasUpdate(true);
-                            setIsVisible(true);
-                        }
+                        discoveredServerVersion = String(staticData.version);
                     }
                 }
             } catch (staticErr) {
                 console.debug('[Update Checker] Static version check error:', staticErr);
             }
         }
+
+        if (!discoveredServerVersion) return;
+
+        // On the initial check of this session/page load:
+        // Set baseline version so we never display a modal immediately on reload
+        if (isFirstCheckRef.current || !initialVersionRef.current) {
+            initialVersionRef.current = discoveredServerVersion;
+            isFirstCheckRef.current = false;
+            return;
+        }
+
+        // On subsequent checks: if the server has deployed a newer version while the app was open
+        if (discoveredServerVersion !== initialVersionRef.current) {
+            try {
+                const dismissed = sessionStorage.getItem('ceaznet_dismissed_version');
+                if (dismissed === discoveredServerVersion) {
+                    return;
+                }
+                const reloaded = sessionStorage.getItem('ceaznet_reloaded_version');
+                if (reloaded === discoveredServerVersion) {
+                    return;
+                }
+            } catch {}
+
+            console.log(`[Version Update] Newer version detected: ${initialVersionRef.current} -> ${discoveredServerVersion}`);
+            latestDetectedVersionRef.current = discoveredServerVersion;
+            setHasUpdate(true);
+            setIsVisible(true);
+        }
     }, [isDev]);
 
     useEffect(() => {
         if (isDev) return;
 
-        // Run check on initial load
+        // Run check on initial load to establish baseline version
         checkForUpdates(true);
 
-        // Periodically check every 20 seconds
+        // Periodically check every 45 seconds
         checkIntervalRef.current = setInterval(() => {
             checkForUpdates();
-        }, 20000);
+        }, 45000);
 
         // Check when window or tab gains focus/visibility
         const handleVisibilityChange = () => {
@@ -226,19 +227,11 @@ export const VersionUpdateModal: React.FC = () => {
             navigator.serviceWorker.ready.then((reg) => {
                 swRegistrationRef.current = reg;
 
-                // 1. If an updated worker is already waiting, trigger immediately
-                if (reg.waiting) {
-                    console.log('[Service Worker] Active waiting worker found.');
-                    setHasUpdate(true);
-                    setIsVisible(true);
-                }
-
-                // 2. Listen for newly discovered workers
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && (navigator.serviceWorker.controller || reg.waiting)) {
+                            if (newWorker.state === 'installed' && !isFirstCheckRef.current && (navigator.serviceWorker.controller || reg.waiting)) {
                                 console.log('[Service Worker] New content installed and available.');
                                 setHasUpdate(true);
                                 setIsVisible(true);
@@ -247,17 +240,8 @@ export const VersionUpdateModal: React.FC = () => {
                     }
                 });
 
-                // 3. Immediately ask service worker to check for updates on network
                 reg.update().catch(() => {});
             }).catch(() => {});
-
-            // Also listen to controllerchange event
-            const handleControllerChange = () => {
-                console.log('[Service Worker] Controller updated.');
-                setHasUpdate(true);
-                setIsVisible(true);
-            };
-            navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
             return () => {
                 if (checkIntervalRef.current) {
@@ -266,7 +250,6 @@ export const VersionUpdateModal: React.FC = () => {
                 document.removeEventListener('visibilitychange', handleVisibilityChange);
                 window.removeEventListener('focus', handleFocus);
                 window.removeEventListener('online', handleOnline);
-                navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
             };
         }
 
@@ -282,6 +265,12 @@ export const VersionUpdateModal: React.FC = () => {
 
     const handleUpdate = async () => {
         try {
+            if (latestDetectedVersionRef.current) {
+                try {
+                    sessionStorage.setItem('ceaznet_reloaded_version', latestDetectedVersionRef.current);
+                } catch {}
+            }
+
             // Signal waiting worker to activate immediately
             if (swRegistrationRef.current && swRegistrationRef.current.waiting) {
                 swRegistrationRef.current.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -300,20 +289,7 @@ export const VersionUpdateModal: React.FC = () => {
                 }
             }
 
-            // 2. Unregister Service Workers to guarantee bypass of old sw intercepts
-            if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-                try {
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    await Promise.all(
-                        registrations.map(reg => reg.unregister())
-                    );
-                    console.log('[Version Update] Unregistered Service Workers successfully.');
-                } catch (e) {
-                    console.debug('[Version Update] Error unregistering service workers:', e);
-                }
-            }
-
-            // 3. Perform hard reload with cache-busting timestamp
+            // 2. Perform hard reload with cache-busting timestamp
             const targetUrl = new URL(window.location.href);
             targetUrl.searchParams.set('v', Date.now().toString());
             window.location.replace(targetUrl.toString());
@@ -364,7 +340,14 @@ export const VersionUpdateModal: React.FC = () => {
                     <div className="flex items-center gap-1.5 justify-end">
                         <button
                             id="version-update-later-btn"
-                            onClick={() => setIsVisible(false)}
+                            onClick={() => {
+                                setIsVisible(false);
+                                if (latestDetectedVersionRef.current) {
+                                    try {
+                                        sessionStorage.setItem('ceaznet_dismissed_version', latestDetectedVersionRef.current);
+                                    } catch {}
+                                }
+                            }}
                             className="px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-neutral-500/5 transition-colors focus:outline-none cursor-pointer"
                             style={{ color: 'var(--update-popup-text-muted)' }}
                         >
