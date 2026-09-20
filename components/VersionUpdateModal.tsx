@@ -15,15 +15,12 @@ const isDevelopmentEnvironment = (): boolean => {
     if (typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ === 'dev') {
         return true;
     }
-    // 3. Check dev and preview hostnames (localhost, 127.0.0.1, AI Studio workspace URLs)
+    // 3. Check dev hostnames
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
         if (
             hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname.includes('ais-dev-') ||
-            hostname.includes('ais-pre-') ||
-            hostname.includes('.run.app')
+            hostname === '127.0.0.1'
         ) {
             return true;
         }
@@ -68,14 +65,16 @@ const playUpdateSound = () => {
 };
 
 export const VersionUpdateModal: React.FC = () => {
-    // Completely disable in development environments
+    // Completely disable in local development environments
     const isDev = isDevelopmentEnvironment();
 
     const [hasUpdate, setHasUpdate] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
-    const initialVersionRef = useRef<string | null>(null);
+    
+    // Initial build ID baked into the client JS bundle at compile time
+    const runningClientVersion = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ !== 'dev' ? String(__BUILD_ID__) : null;
+    const initialVersionRef = useRef<string | null>(runningClientVersion);
     const latestDetectedVersionRef = useRef<string | null>(null);
-    const isFirstCheckRef = useRef<boolean>(true);
     const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastCheckTimeRef = useRef<number>(0);
@@ -116,10 +115,11 @@ export const VersionUpdateModal: React.FC = () => {
         }
 
         let discoveredServerVersion: string | null = null;
+        let apiReportedUpdate = false;
 
         // 1. Channel A: Live Serverless / Backend Version Control API endpoint
         try {
-            const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__) : 'unknown');
+            const currentVerParam = initialVersionRef.current || 'unknown';
             const response = await fetchApi(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
                 method: 'GET',
                 cache: 'no-store',
@@ -134,6 +134,9 @@ export const VersionUpdateModal: React.FC = () => {
                 const data = await response.json();
                 if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
                     discoveredServerVersion = String(data.serverVersion);
+                }
+                if (data?.hasUpdate) {
+                    apiReportedUpdate = true;
                 }
             }
         } catch (error) {
@@ -166,16 +169,16 @@ export const VersionUpdateModal: React.FC = () => {
 
         if (!discoveredServerVersion) return;
 
-        // On the initial check of this session/page load:
-        // Set baseline version so we never display a modal immediately on reload
-        if (isFirstCheckRef.current || !initialVersionRef.current) {
+        // If client doesn't have a compile-time build ID yet, establish baseline from first server response
+        if (!initialVersionRef.current) {
             initialVersionRef.current = discoveredServerVersion;
-            isFirstCheckRef.current = false;
             return;
         }
 
-        // On subsequent checks: if the server has deployed a newer version while the app was open
-        if (discoveredServerVersion !== initialVersionRef.current) {
+        // Check if an update is detected (either API reported newer version or server version differs from client version)
+        const isNewerVersion = apiReportedUpdate || (discoveredServerVersion !== initialVersionRef.current);
+
+        if (isNewerVersion) {
             try {
                 const dismissed = sessionStorage.getItem('ceaznet_dismissed_version');
                 if (dismissed === discoveredServerVersion) {
@@ -197,13 +200,15 @@ export const VersionUpdateModal: React.FC = () => {
     useEffect(() => {
         if (isDev) return;
 
-        // Run check on initial load to establish baseline version
-        checkForUpdates(true);
+        // Run check on initial load (slightly deferred to let app mount smoothly)
+        const initialTimer = setTimeout(() => {
+            checkForUpdates(true);
+        }, 1500);
 
-        // Periodically check every 45 seconds
+        // Periodically check every 25 seconds
         checkIntervalRef.current = setInterval(() => {
             checkForUpdates();
-        }, 45000);
+        }, 25000);
 
         // Check when window or tab gains focus/visibility
         const handleVisibilityChange = () => {
@@ -227,14 +232,17 @@ export const VersionUpdateModal: React.FC = () => {
             navigator.serviceWorker.ready.then((reg) => {
                 swRegistrationRef.current = reg;
 
+                if (reg.waiting) {
+                    checkForUpdates(true);
+                }
+
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && !isFirstCheckRef.current && (navigator.serviceWorker.controller || reg.waiting)) {
-                                console.log('[Service Worker] New content installed and available.');
-                                setHasUpdate(true);
-                                setIsVisible(true);
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('[Service Worker] New worker installed on network.');
+                                checkForUpdates(true);
                             }
                         });
                     }
@@ -242,18 +250,10 @@ export const VersionUpdateModal: React.FC = () => {
 
                 reg.update().catch(() => {});
             }).catch(() => {});
-
-            return () => {
-                if (checkIntervalRef.current) {
-                    clearInterval(checkIntervalRef.current);
-                }
-                document.removeEventListener('visibilitychange', handleVisibilityChange);
-                window.removeEventListener('focus', handleFocus);
-                window.removeEventListener('online', handleOnline);
-            };
         }
 
         return () => {
+            clearTimeout(initialTimer);
             if (checkIntervalRef.current) {
                 clearInterval(checkIntervalRef.current);
             }

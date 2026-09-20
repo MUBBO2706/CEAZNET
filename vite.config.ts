@@ -16,16 +16,7 @@ export default defineConfig(async ({ mode }) => {
     try {
       if (fs.existsSync(tempBuildIdPath)) {
         buildId = fs.readFileSync(tempBuildIdPath, 'utf8').trim();
-      } else if (fs.existsSync(versionJsonPath) && !isProductionBuild) {
-        try {
-          const existing = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
-          if (existing?.version) {
-            buildId = String(existing.version);
-          }
-        } catch {}
-      }
-
-      if (!buildId) {
+      } else {
         buildId = Date.now().toString();
         fs.writeFileSync(tempBuildIdPath, buildId, 'utf8');
       }
@@ -77,7 +68,8 @@ export default defineConfig(async ({ mode }) => {
           includeAssets: ['logo.png'],
           workbox: {
             maximumFileSizeToCacheInBytes: 52428800, // 50MB
-            navigateFallbackDenylist: [/^\/api/]
+            navigateFallbackDenylist: [/^\/api/],
+            globIgnores: ['**/version.json']
           },
           manifest: {
             name: 'Ceaznet',

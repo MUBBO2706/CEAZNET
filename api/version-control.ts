@@ -44,16 +44,7 @@ export default async function handler(req: any, res: any) {
       console.warn('[Vercel Serverless] Failed to read version.json from filesystem:', fsErr);
     }
 
-    // 2. Fallback to Vercel deployment identifiers if filesystem returned unknown
-    if (serverVersion === 'unknown') {
-      if (process.env.VERCEL_GIT_COMMIT_SHA) {
-        serverVersion = process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 10);
-      } else if (process.env.VERCEL_DEPLOYMENT_ID) {
-        serverVersion = process.env.VERCEL_DEPLOYMENT_ID;
-      }
-    }
-
-    // 3. If still unknown, try fetching via HTTP from the current host
+    // 2. Try fetching version.json via HTTP from current host (CDN Edge has latest public/version.json)
     if (serverVersion === 'unknown' && req.headers.host) {
       try {
         const host = req.headers.host;
@@ -64,10 +55,21 @@ export default async function handler(req: any, res: any) {
         });
         if (response.ok) {
           const parsed = await response.json();
-          serverVersion = parsed.version || 'unknown';
+          if (parsed.version) {
+            serverVersion = String(parsed.version);
+          }
         }
       } catch (httpErr) {
         console.warn('[Vercel Serverless] Failed to fetch version.json via HTTP:', httpErr);
+      }
+    }
+
+    // 3. Fallback to Vercel deployment identifiers if filesystem and HTTP both returned unknown
+    if (serverVersion === 'unknown') {
+      if (process.env.VERCEL_GIT_COMMIT_SHA) {
+        serverVersion = process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 10);
+      } else if (process.env.VERCEL_DEPLOYMENT_ID) {
+        serverVersion = process.env.VERCEL_DEPLOYMENT_ID;
       }
     }
 
