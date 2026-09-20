@@ -83,6 +83,65 @@ const SORT_OPTIONS: CustomSelectOption[] = [
     }
 ];
 
+interface CategoryItemRowProps {
+    category: UnifiedCategory;
+    onOpenDetail: (id: string, type: 'expense' | 'income' | 'transfer') => void;
+}
+
+const CategoryItemRow: React.FC<CategoryItemRowProps> = React.memo(({ category, onOpenDetail }) => {
+    const IconComponent = LUCIDE_ICON_MAP[category.iconName] || Tag;
+    return (
+        <div
+            onClick={() => onOpenDetail(category.id, category.type)}
+            className="group flex items-center justify-between gap-3.5 sm:gap-4 px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 hover:bg-black/[0.025] dark:hover:bg-white/[0.035] transition-colors duration-150 cursor-pointer select-none"
+        >
+            {/* Left: Icon matching main TransactionItem (No background highlight) + Info */}
+            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-150">
+                    <IconComponent className={`w-6 h-6 sm:w-6.5 sm:h-6.5 ${category.color}`} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base sm:text-[15px] font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {category.label}
+                        </h3>
+                        {category.isCustom && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
+                                Custom
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-0.5 text-xs sm:text-[11px] text-gray-500 dark:text-gray-400">
+                        <span className="capitalize font-semibold text-gray-700 dark:text-gray-300">
+                            {category.type}
+                        </span>
+                        <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0"></span>
+                        <span>
+                            {category.txCount} {category.txCount === 1 ? 'transaction' : 'transactions'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right: Volume Total and Navigation indicator */}
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                <div className="text-right flex flex-col items-end gap-0.5">
+                    <div className="font-mono font-bold text-base sm:text-[15px] text-gray-900 dark:text-white tabular-nums">
+                        ₹{Math.round(category.txTotal).toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                        Volume
+                    </div>
+                </div>
+
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </div>
+        </div>
+    );
+});
+
 export const CategoryManagerView: React.FC<CategoryManagerViewProps> = ({
     user,
     onBack,
@@ -593,60 +652,13 @@ export const CategoryManagerView: React.FC<CategoryManagerViewProps> = ({
                     </div>
                 ) : (
                     <div className="-mx-3.5 sm:-mx-6 lg:-mx-8 border-t border-b border-gray-100 dark:border-gray-800/80 divide-y divide-gray-100 dark:divide-gray-800/80">
-                        {displayedCategories.map(category => {
-                            const IconComponent = LUCIDE_ICON_MAP[category.iconName] || Tag;
-                            return (
-                                <div
-                                    key={category.id}
-                                    onClick={() => handleOpenDetail(category.id, category.type)}
-                                    className="group flex items-center justify-between gap-3.5 sm:gap-4 px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 hover:bg-black/[0.025] dark:hover:bg-white/[0.035] transition-colors duration-150 cursor-pointer select-none"
-                                >
-                                    {/* Left: Icon matching main TransactionItem (No background highlight) + Info */}
-                                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
-                                        <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-150">
-                                            <IconComponent className={`w-6 h-6 sm:w-6.5 sm:h-6.5 ${category.color}`} />
-                                        </div>
-
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="text-base sm:text-[15px] font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                                    {category.label}
-                                                </h3>
-                                                {category.isCustom && (
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
-                                                        Custom
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="flex items-center gap-2 mt-0.5 text-xs sm:text-[11px] text-gray-500 dark:text-gray-400">
-                                                <span className="capitalize font-semibold text-gray-700 dark:text-gray-300">
-                                                    {category.type}
-                                                </span>
-                                                <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0"></span>
-                                                <span>
-                                                    {category.txCount} {category.txCount === 1 ? 'transaction' : 'transactions'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Right: Volume Total and Navigation indicator */}
-                                    <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                                        <div className="text-right flex flex-col items-end gap-0.5">
-                                            <div className="font-mono font-bold text-base sm:text-[15px] text-gray-900 dark:text-white tabular-nums">
-                                                ₹{Math.round(category.txTotal).toLocaleString('en-IN')}
-                                            </div>
-                                            <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
-                                                Volume
-                                            </div>
-                                        </div>
-
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 group-hover:translate-x-0.5 transition-all shrink-0" />
-                                    </div>
-                                </div>
-                            );
-                        })}
+                        {displayedCategories.map(category => (
+                            <CategoryItemRow
+                                key={`${category.type}_${category.id}`}
+                                category={category}
+                                onOpenDetail={handleOpenDetail}
+                            />
+                        ))}
                     </div>
                 )}
 

@@ -3,7 +3,7 @@
 
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Transaction, Vehicle } from '../../types';
 import { 
     X, Save, Calendar, Clock, Tag, CreditCard, AlignLeft, IndianRupee, ChevronDown, 
@@ -540,104 +540,116 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
     if (!isOpen) return null;
 
-    const customTypeCategories = customCategories
-        .filter(c => !c.type || c.type === type)
-        .map(c => {
-            const conf = getCategoryConfig(c.id, type, customCategories);
-            return {
-                id: c.id,
-                label: c.label || c.id,
-                icon: conf?.icon || Sparkles,
-                bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30',
-                color: conf?.color || 'text-indigo-500',
-                isCustom: true
-            };
-        });
+    const allTypeCategories = useMemo(() => {
+        const customTypeCategories = customCategories
+            .filter(c => !c.type || c.type === type)
+            .map(c => {
+                const conf = getCategoryConfig(c.id, type, customCategories);
+                return {
+                    id: c.id,
+                    label: c.label || c.id,
+                    icon: conf?.icon || Sparkles,
+                    iconName: conf?.iconName || c.iconName,
+                    bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30',
+                    color: conf?.color || 'text-indigo-500',
+                    isCustom: true
+                };
+            });
 
-    const allTypeCategoriesMap = new Map<string, any>();
-    (CATEGORY_CONFIG[type] || []).forEach(c => allTypeCategoriesMap.set(c.id.toLowerCase(), c));
-    customTypeCategories.forEach(c => allTypeCategoriesMap.set(c.id.toLowerCase(), c));
-    const allTypeCategories = Array.from(allTypeCategoriesMap.values());
+        const allTypeCategoriesMap = new Map<string, any>();
+        (CATEGORY_CONFIG[type] || []).forEach(c => allTypeCategoriesMap.set(c.id.toLowerCase(), c));
+        customTypeCategories.forEach(c => allTypeCategoriesMap.set(c.id.toLowerCase(), c));
+        return Array.from(allTypeCategoriesMap.values());
+    }, [type, customCategories]);
     
-    // --- Determine Visible Categories (Up to 11 slots for smooth carousel) ---
-    let visibleCategories: typeof allTypeCategories = [];
+    const recentTypeCategories = useMemo(() => {
+        let list = recentCategoryIds
+            .map(id => allTypeCategories.find(c => c.id === id))
+            .filter((c): c is typeof allTypeCategories[0] => !!c);
 
-    if (category) {
-        const lowerCat = category.toLowerCase().trim();
-        const normCat = lowerCat.replace(/[_\s-]+/g, ' ');
-        const activeCat = allTypeCategories.find(c => 
-            c.id.toLowerCase() === lowerCat || 
-            (c.label || '').toLowerCase() === lowerCat ||
-            c.id.toLowerCase().replace(/[_\s-]+/g, ' ') === normCat ||
-            (c.label || '').toLowerCase().replace(/[_\s-]+/g, ' ') === normCat
-        );
-        if (activeCat) {
-            visibleCategories.push(activeCat);
-        } else {
-            const conf = getCategoryConfig(category, type, customCategories);
-            if (conf) {
-                visibleCategories.push({
-                    id: conf.id || category,
-                    label: conf.label || category,
-                    icon: conf.icon || Sparkles,
-                    bg: conf.bg || 'bg-indigo-100 dark:bg-indigo-900/30',
-                    color: conf.color || 'text-indigo-500',
-                    isCustom: conf.isCustom ?? true
-                });
+        if (category) {
+            const recentIdx = list.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
+            if (recentIdx > 0) {
+                const selected = list[recentIdx];
+                const remaining = list.filter((_, idx) => idx !== recentIdx);
+                list = [selected, ...remaining];
             }
         }
-    }
+        return list;
+    }, [allTypeCategories, recentCategoryIds, category]);
 
-    let recentTypeCategories = recentCategoryIds
-        .map(id => allTypeCategories.find(c => c.id === id))
-        .filter((c): c is typeof allTypeCategories[0] => !!c);
+    // --- Determine Visible Categories (Up to 11 slots for smooth carousel) ---
+    const visibleCategories = useMemo(() => {
+        let list: typeof allTypeCategories = [];
 
-    if (category) {
-        const recentIdx = recentTypeCategories.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
-        if (recentIdx > 0) {
-            const selected = recentTypeCategories[recentIdx];
-            const remaining = recentTypeCategories.filter((_, idx) => idx !== recentIdx);
-            recentTypeCategories = [selected, ...remaining];
+        if (category) {
+            const lowerCat = category.toLowerCase().trim();
+            const normCat = lowerCat.replace(/[_\s-]+/g, ' ');
+            const activeCat = allTypeCategories.find(c => 
+                c.id.toLowerCase() === lowerCat || 
+                (c.label || '').toLowerCase() === lowerCat ||
+                c.id.toLowerCase().replace(/[_\s-]+/g, ' ') === normCat ||
+                (c.label || '').toLowerCase().replace(/[_\s-]+/g, ' ') === normCat
+            );
+            if (activeCat) {
+                list.push(activeCat);
+            } else {
+                const conf = getCategoryConfig(category, type, customCategories);
+                if (conf) {
+                    list.push({
+                        id: conf.id || category,
+                        label: conf.label || category,
+                        icon: conf.icon || Sparkles,
+                        iconName: conf.iconName,
+                        bg: conf.bg || 'bg-indigo-100 dark:bg-indigo-900/30',
+                        color: conf.color || 'text-indigo-500',
+                        isCustom: conf.isCustom ?? true
+                    });
+                }
+            }
         }
-    }
 
-    for (const cat of recentTypeCategories) {
-        if (visibleCategories.length >= 11) break;
-        if (!visibleCategories.some(c => c.id === cat.id)) {
-            visibleCategories.push(cat);
+        for (const cat of recentTypeCategories) {
+            if (list.length >= 11) break;
+            if (!list.some(c => c.id === cat.id)) {
+                list.push(cat);
+            }
         }
-    }
 
-    const standardTypeCategories = CATEGORY_CONFIG[type] || [];
-    for (const cat of standardTypeCategories) {
-        if (visibleCategories.length >= 11) break;
-        if (!visibleCategories.some(c => c.id === cat.id)) {
-            visibleCategories.push(cat);
+        const standardTypeCategories = CATEGORY_CONFIG[type] || [];
+        for (const cat of standardTypeCategories) {
+            if (list.length >= 11) break;
+            if (!list.some(c => c.id === cat.id)) {
+                list.push(cat);
+            }
         }
-    }
 
-    for (const cat of customTypeCategories) {
-        if (visibleCategories.length >= 11) break;
-        if (!visibleCategories.some(c => c.id === cat.id)) {
-            visibleCategories.push(cat);
+        for (const cat of allTypeCategories.filter(c => c.isCustom)) {
+            if (list.length >= 11) break;
+            if (!list.some(c => c.id === cat.id)) {
+                list.push(cat);
+            }
         }
-    }
 
-    visibleCategories = visibleCategories.slice(0, 11);
+        return list.slice(0, 11);
+    }, [allTypeCategories, category, recentTypeCategories, type, customCategories]);
     
-    let filteredCategories = allTypeCategories.filter(c => 
-        c.label.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
-        c.id.toLowerCase().includes(categorySearchQuery.toLowerCase())
-    );
+    const filteredCategories = useMemo(() => {
+        let list = allTypeCategories.filter(c => 
+            c.label.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
+            c.id.toLowerCase().includes(categorySearchQuery.toLowerCase())
+        );
 
-    if (category) {
-        const selectedIdx = filteredCategories.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
-        if (selectedIdx > 0) {
-            const selected = filteredCategories[selectedIdx];
-            const remaining = filteredCategories.filter((_, idx) => idx !== selectedIdx);
-            filteredCategories = [selected, ...remaining];
+        if (category) {
+            const selectedIdx = list.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
+            if (selectedIdx > 0) {
+                const selected = list[selectedIdx];
+                const remaining = list.filter((_, idx) => idx !== selectedIdx);
+                list = [selected, ...remaining];
+            }
         }
-    }
+        return list;
+    }, [allTypeCategories, categorySearchQuery, category]);
 
     const selectedPaymentMethod = PAYMENT_METHODS.find(m => m.id === method) || PAYMENT_METHODS[0];
     const PaymentIcon = selectedPaymentMethod.icon;

@@ -31,14 +31,14 @@ interface TransactionListProps {
     totalCount?: number;
 }
 
-const CategoryIcon: React.FC<{ categoryId: string, type: string, className?: string, customCategories?: CustomCategoryItem[] }> = ({ categoryId, type, className, customCategories = [] }) => {
+const CategoryIcon: React.FC<{ categoryId: string, type: string, className?: string, customCategories?: CustomCategoryItem[] }> = React.memo(({ categoryId, type, className, customCategories = [] }) => {
     const categoryData = getCategoryConfig(categoryId, type, customCategories);
     if (categoryData) {
         const IconComponent = categoryData.icon;
         return <IconComponent className={className} />;
     }
     return <AppIcon name="solar:question-circle-linear" className={className} />;
-}
+});
 
 export const TransactionItem = React.memo<{
     t: Transaction;
@@ -92,6 +92,9 @@ export const TransactionItem = React.memo<{
         if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
         return `${Math.floor(diff / 86400)}d ago`;
     }, [dateObj]);
+
+    const categoryConfig = useMemo(() => getCategoryConfig(t.category, t.type, customCategories), [t.category, t.type, customCategories]);
+    const categoryLabel = categoryConfig?.label || t.category.replace(/_/g, ' ');
 
     return (
         <div className={`border-b border-gray-100 dark:border-gray-800/80 transition-colors duration-150
@@ -148,7 +151,7 @@ export const TransactionItem = React.memo<{
                             </p>
                         </div>
                         <div className="flex items-center gap-2 text-xs lg:text-[10px] font-medium text-gray-500 dark:text-gray-400 flex-wrap">
-                            <span className="capitalize truncate max-w-[80px]">{t.category}</span>
+                            <span className="capitalize truncate max-w-[100px]">{categoryLabel}</span>
                             <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0"></span>
                             <span className="opacity-70 truncate max-w-[80px]">{t.payment_method}</span>
                             {mileage && (

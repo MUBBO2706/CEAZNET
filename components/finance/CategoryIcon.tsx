@@ -8,7 +8,14 @@ export interface CategoryIconProps {
     className?: string;
     color?: string;
     size?: number | string;
+    style?: React.CSSProperties;
 }
+
+// Global cache for icons that have already been loaded into Iconify memory
+const loadedIconSet = new Set<string>();
+
+// Module-level cache for universal icon components to preserve stable function references across re-renders
+const universalIconCache = new Map<string, React.ComponentType<any>>();
 
 /**
  * Universal CategoryIcon Component
@@ -16,35 +23,38 @@ export interface CategoryIconProps {
  * 1. Iconify strings (e.g. 'solar:cart-large-minimalistic-bold-duotone', 'ph:coffee-duotone', 'hugeicons:car-02', 'tabler:tools')
  * 2. Standard Lucide-React icon names (e.g. 'Tag', 'Fuel', 'ShoppingBag')
  */
-export const CategoryIcon: React.FC<CategoryIconProps> = ({ 
+export const CategoryIcon: React.FC<CategoryIconProps> = React.memo(({ 
     name, 
     className = 'w-4 h-4', 
     color, 
-    size 
+    size,
+    style 
 }) => {
+    const isIconify = Boolean(name && name.includes(':'));
     const [hasError, setHasError] = useState(false);
-    const [isLoaded, setIsLoaded] = useState<boolean>(() => {
-        if (!name) return true;
-        if (!name.includes(':')) return true; // Lucide icon
-        return iconLoaded(name);
-    });
+    
+    // Check if icon is already loaded in Iconify memory / persistent set
+    const isInitiallyLoaded = !isIconify || loadedIconSet.has(name) || (typeof iconLoaded === 'function' && iconLoaded(name));
+    const [isLoaded, setIsLoaded] = useState<boolean>(isInitiallyLoaded);
 
-    // Handle Iconify async loading and error states
+    // Handle Iconify async loading without unmounting or blinking
     useEffect(() => {
         setHasError(false);
-        if (!name || !name.includes(':')) {
+        if (!isIconify) {
             setIsLoaded(true);
             return;
         }
 
-        if (iconLoaded(name)) {
+        if (loadedIconSet.has(name) || (typeof iconLoaded === 'function' && iconLoaded(name))) {
+            loadedIconSet.add(name);
             setIsLoaded(true);
             return;
         }
-        
-        setIsLoaded(false);
+
+        let isCancelled = false;
         // Preload icon SVG from Iconify API
-        loadIcons([name], (loaded, missing) => {
+        loadIcons([name], (_loaded, missing) => {
+            if (isCancelled) return;
             const isMissing = missing && missing.some(m => {
                 const iconStr = m.provider ? `${m.provider}:${m.prefix}:${m.name}` : `${m.prefix}:${m.name}`;
                 return iconStr === name;
@@ -53,26 +63,30 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
             if (isMissing) {
                 setHasError(true);
             } else {
+                loadedIconSet.add(name);
                 setIsLoaded(true);
             }
         });
-    }, [name]);
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [name, isIconify]);
+
+    const combinedStyle = color ? { color, ...style } : style;
 
     if (!name || hasError) {
-        return <AppIcon name="solar:tag-linear" className={className} style={color ? { color } : undefined} />;
+        return <AppIcon name="solar:tag-linear" className={className} style={combinedStyle} />;
     }
 
     // 1. Check if it's an Iconify icon (contains ':')
-    if (name.includes(':')) {
+    if (isIconify) {
         return (
-            <div className={`relative inline-flex items-center justify-center ${className}`} style={color ? { color } : undefined}>
-                {!isLoaded && (
-                    <span className="absolute inset-0 bg-gray-200/80 dark:bg-white/10 animate-pulse rounded" />
-                )}
+            <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`} style={combinedStyle}>
                 <Icon 
                     icon={name} 
-                    className={`w-full h-full transition-opacity duration-150 ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
-                    style={color ? { color } : undefined}
+                    className="w-full h-full" 
+                    style={combinedStyle}
                     width={size || '100%'}
                     height={size || '100%'}
                     onError={() => setHasError(true)}
@@ -107,26 +121,36 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
     }
 
     if (LucideComponent) {
-        return <LucideComponent className={className} style={color ? { color } : undefined} size={size} />;
+        return <LucideComponent className={className} style={combinedStyle} size={size} />;
     }
 
     // 3. Fallback to Tag icon
-    return <AppIcon name="solar:tag-linear" className={className} style={color ? { color } : undefined} />;
-};
+    return <AppIcon name="solar:tag-linear" className={className} style={combinedStyle} />;
+});
 
 /**
- * Factory function to create a React component for any icon name string
+ * Factory function to create a cached React component for any icon name string.
+ * Uses universalIconCache to guarantee referential equality and prevent React unmount/remount cycles.
  */
 export const createUniversalIconComponent = (iconName: string) => {
-    return function DynamicUniversalIcon(props: { className?: string; style?: React.CSSProperties; size?: number | string }) {
-        return (
-            <CategoryIcon 
-                name={iconName} 
-                className={props.className} 
-                size={props.size}
-            />
-        );
-    };
+    const key = iconName || 'solar:tag-linear';
+    let CachedComp = universalIconCache.get(key);
+    if (!CachedComp) {
+        CachedComp = React.memo(function DynamicUniversalIcon(props: { className?: string; style?: React.CSSProperties; size?: number | string; color?: string }) {
+            return (
+                <CategoryIcon 
+                    name={key} 
+                    className={props.className} 
+                    style={props.style}
+                    color={props.color}
+                    size={props.size}
+                />
+            );
+        });
+        CachedComp.displayName = `UniversalIcon_${key.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+        universalIconCache.set(key, CachedComp);
+    }
+    return CachedComp;
 };
 
 export default CategoryIcon;
