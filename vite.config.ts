@@ -28,6 +28,12 @@ export default defineConfig(async ({ mode }) => {
       if (fs.existsSync(apiDir)) {
         fs.writeFileSync(path.join(apiDir, 'version.json'), JSON.stringify({ version: buildId }), 'utf8');
       }
+
+      // Also ensure dist/version.json is updated if dist directory exists
+      const distDir = path.resolve(import.meta.dirname, 'dist');
+      if (fs.existsSync(distDir)) {
+        fs.writeFileSync(path.join(distDir, 'version.json'), JSON.stringify({ version: buildId }), 'utf8');
+      }
     } catch (err: any) {
       console.warn('[Vite Config] Failed to handle buildId configuration:', err.message);
       buildId = Date.now().toString();

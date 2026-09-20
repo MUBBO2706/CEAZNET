@@ -910,20 +910,27 @@ Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in 
       const clientVersion = req.query.currentVersion as string;
       
       const candidatePaths = [
-        path.join(process.cwd(), 'dist', 'version.json'),
         path.join(process.cwd(), 'public', 'version.json'),
+        path.join(process.cwd(), 'dist', 'version.json'),
+        path.join(process.cwd(), 'api', 'version.json'),
         path.join(process.cwd(), 'version.json'),
       ];
 
       let serverVersion = 'unknown';
+      let highestTimestamp = 0;
       for (const p of candidatePaths) {
         if (fs.existsSync(p)) {
           try {
             const fileContent = fs.readFileSync(p, 'utf8');
             const parsed = JSON.parse(fileContent);
             if (parsed.version) {
-              serverVersion = parsed.version;
-              break;
+              const num = parseInt(parsed.version, 10);
+              if (!isNaN(num) && num > highestTimestamp) {
+                highestTimestamp = num;
+                serverVersion = String(num);
+              } else if (serverVersion === 'unknown') {
+                serverVersion = String(parsed.version);
+              }
             }
           } catch {}
         }

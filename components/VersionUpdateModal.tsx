@@ -72,8 +72,9 @@ export const VersionUpdateModal: React.FC = () => {
     const [hasUpdate, setHasUpdate] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const initialVersionRef = useRef<string | null>(
-        typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ !== 'dev' ? __BUILD_ID__ : null
+        typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ !== 'dev' ? String(__BUILD_ID__) : null
     );
+    const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastCheckTimeRef = useRef<number>(0);
 
@@ -88,15 +89,46 @@ export const VersionUpdateModal: React.FC = () => {
         if (isDev) return;
 
         const now = Date.now();
-        // Throttle automatic checks to at most once every 15 seconds to prevent spam during window focus/visibility events
-        if (!isManual && now - lastCheckTimeRef.current < 15000) {
+        // Throttle automatic checks to at most once every 5 seconds
+        if (!isManual && now - lastCheckTimeRef.current < 5000) {
             return;
         }
         lastCheckTimeRef.current = now;
 
+        // 1. Proactively trigger Service Worker update check on network
+        if (swRegistrationRef.current) {
+            try {
+                swRegistrationRef.current.update().catch(() => {});
+                if (swRegistrationRef.current.waiting) {
+                    console.log('[Version Update] Service worker is waiting in background.');
+                    setHasUpdate(true);
+                    setIsVisible(true);
+                    return;
+                }
+            } catch (swErr) {
+                console.debug('[Version Update] swRegistration update check error:', swErr);
+            }
+        } else if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+            try {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg) {
+                        swRegistrationRef.current = reg;
+                        reg.update().catch(() => {});
+                        if (reg.waiting) {
+                            console.log('[Version Update] Service worker waiting detected.');
+                            setHasUpdate(true);
+                            setIsVisible(true);
+                        }
+                    }
+                }).catch(() => {});
+            } catch {}
+        }
+
+        const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__) : 'unknown');
+
+        // 2. Channel A: Live Serverless / Backend Version Control API endpoint
+        let detectedNewVersion = false;
         try {
-            // Version Control API endpoint: ALWAYS used as primary to bypass client-side PWA / Service Worker caching of static version.json
-            const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'unknown');
             const response = await fetchApi(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
                 method: 'GET',
                 cache: 'no-store',
@@ -111,20 +143,53 @@ export const VersionUpdateModal: React.FC = () => {
                 const data = await response.json();
                 if (data?.hasUpdate) {
                     console.log(`[Version Update] Live API update detected: ${data.message}`);
+                    detectedNewVersion = true;
                     setHasUpdate(true);
-                    setIsVisible(true); // Ensure modal pops up when an update is found
+                    setIsVisible(true);
                 } else if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
                     if (!initialVersionRef.current) {
                         initialVersionRef.current = String(data.serverVersion);
                     } else if (String(data.serverVersion) !== String(initialVersionRef.current)) {
                         console.log(`[Version Update] Server version difference detected: ${initialVersionRef.current} vs ${data.serverVersion}`);
+                        detectedNewVersion = true;
                         setHasUpdate(true);
-                        setIsVisible(true); // Ensure modal pops up when an update is found
+                        setIsVisible(true);
                     }
                 }
             }
         } catch (error) {
-            console.debug('[Update Checker] Error checking for version updates:', error);
+            console.debug('[Update Checker] API version check error:', error);
+        }
+
+        // 3. Channel B: Static version.json served directly by CDN edge
+        if (!detectedNewVersion) {
+            try {
+                const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+
+                if (staticRes.ok) {
+                    const staticData = await staticRes.json();
+                    if (staticData?.version && staticData.version !== 'unknown') {
+                        const staticVer = String(staticData.version);
+                        if (!initialVersionRef.current) {
+                            initialVersionRef.current = staticVer;
+                        } else if (staticVer !== String(initialVersionRef.current)) {
+                            console.log(`[Version Update] Static version.json difference detected: ${initialVersionRef.current} vs ${staticVer}`);
+                            setHasUpdate(true);
+                            setIsVisible(true);
+                        }
+                    }
+                }
+            } catch (staticErr) {
+                console.debug('[Update Checker] Static version check error:', staticErr);
+            }
         }
     }, [isDev]);
 
@@ -132,42 +197,77 @@ export const VersionUpdateModal: React.FC = () => {
         if (isDev) return;
 
         // Run check on initial load
-        checkForUpdates();
+        checkForUpdates(true);
 
-        // Periodically check every 45 seconds
+        // Periodically check every 20 seconds
         checkIntervalRef.current = setInterval(() => {
             checkForUpdates();
-        }, 45000);
+        }, 20000);
 
         // Check when window or tab gains focus/visibility
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                checkForUpdates();
+                checkForUpdates(true);
             }
         };
         const handleFocus = () => {
-            checkForUpdates();
+            checkForUpdates(true);
+        };
+        const handleOnline = () => {
+            checkForUpdates(true);
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('focus', handleFocus);
+        window.addEventListener('online', handleOnline);
 
         // Service Worker Update Listener (PWA) in production
         if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
             navigator.serviceWorker.ready.then((reg) => {
+                swRegistrationRef.current = reg;
+
+                // 1. If an updated worker is already waiting, trigger immediately
+                if (reg.waiting) {
+                    console.log('[Service Worker] Active waiting worker found.');
+                    setHasUpdate(true);
+                    setIsVisible(true);
+                }
+
+                // 2. Listen for newly discovered workers
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('[Service Worker] New content is available; please refresh.');
+                            if (newWorker.state === 'installed' && (navigator.serviceWorker.controller || reg.waiting)) {
+                                console.log('[Service Worker] New content installed and available.');
                                 setHasUpdate(true);
                                 setIsVisible(true);
                             }
                         });
                     }
                 });
+
+                // 3. Immediately ask service worker to check for updates on network
+                reg.update().catch(() => {});
             }).catch(() => {});
+
+            // Also listen to controllerchange event
+            const handleControllerChange = () => {
+                console.log('[Service Worker] Controller updated.');
+                setHasUpdate(true);
+                setIsVisible(true);
+            };
+            navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+            return () => {
+                if (checkIntervalRef.current) {
+                    clearInterval(checkIntervalRef.current);
+                }
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+                window.removeEventListener('focus', handleFocus);
+                window.removeEventListener('online', handleOnline);
+                navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+            };
         }
 
         return () => {
@@ -176,11 +276,17 @@ export const VersionUpdateModal: React.FC = () => {
             }
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('online', handleOnline);
         };
     }, [checkForUpdates, isDev]);
 
     const handleUpdate = async () => {
         try {
+            // Signal waiting worker to activate immediately
+            if (swRegistrationRef.current && swRegistrationRef.current.waiting) {
+                swRegistrationRef.current.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+
             // 1. Clear Cache Storage to purge old index.html and assets
             if (typeof window !== 'undefined' && 'caches' in window) {
                 try {

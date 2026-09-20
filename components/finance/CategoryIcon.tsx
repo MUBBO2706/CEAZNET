@@ -18,6 +18,28 @@ const loadedIconSet = new Set<string>();
 const universalIconCache = new Map<string, React.ComponentType<any>>();
 
 /**
+ * Utility to extract an exact pixel size from either a size prop or Tailwind class name
+ */
+const parseNumericSize = (size?: number | string, className?: string): number => {
+    if (typeof size === 'number' && !isNaN(size) && size > 0) return size;
+    if (typeof size === 'string') {
+        const parsed = parseFloat(size);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (className) {
+        const customMatch = className.match(/w-\[(\d+)px\]/);
+        if (customMatch) return parseInt(customMatch[1], 10);
+        
+        const twMatch = className.match(/w-([0-9.]+)/);
+        if (twMatch) {
+            const val = parseFloat(twMatch[1]);
+            if (!isNaN(val) && val > 0) return Math.round(val * 4);
+        }
+    }
+    return 16;
+};
+
+/**
  * Universal CategoryIcon Component
  * Renders icons from:
  * 1. Iconify strings (e.g. 'solar:cart-large-minimalistic-bold-duotone', 'ph:coffee-duotone', 'hugeicons:car-02', 'tabler:tools')
@@ -74,21 +96,33 @@ export const CategoryIcon: React.FC<CategoryIconProps> = React.memo(({
     }, [name, isIconify]);
 
     const combinedStyle = color ? { color, ...style } : style;
+    const resolvedPx = parseNumericSize(size, className);
+    const sanitizedClassName = className
+        ? className.replace(/\bw-4\.5\b/g, 'w-[18px]').replace(/\bh-4\.5\b/g, 'h-[18px]')
+        : 'w-4 h-4';
+
+    const baseBoxStyle: React.CSSProperties = {
+        width: `${resolvedPx}px`,
+        height: `${resolvedPx}px`,
+        minWidth: `${resolvedPx}px`,
+        minHeight: `${resolvedPx}px`,
+        ...combinedStyle
+    };
 
     if (!name || hasError) {
-        return <AppIcon name="solar:tag-linear" className={className} style={combinedStyle} />;
+        return <AppIcon name="solar:tag-linear" className={sanitizedClassName} style={baseBoxStyle} />;
     }
 
     // 1. Check if it's an Iconify icon (contains ':')
     if (isIconify) {
         return (
-            <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`} style={combinedStyle}>
+            <div className={`relative inline-flex items-center justify-center shrink-0 ${sanitizedClassName}`} style={baseBoxStyle}>
                 <Icon 
                     icon={name} 
-                    className="w-full h-full" 
+                    className="w-full h-full object-contain" 
                     style={combinedStyle}
-                    width={size || '100%'}
-                    height={size || '100%'}
+                    width={resolvedPx}
+                    height={resolvedPx}
                     onError={() => setHasError(true)}
                 />
             </div>
@@ -121,11 +155,11 @@ export const CategoryIcon: React.FC<CategoryIconProps> = React.memo(({
     }
 
     if (LucideComponent) {
-        return <LucideComponent className={className} style={combinedStyle} size={size} />;
+        return <LucideComponent className={sanitizedClassName} style={baseBoxStyle} size={resolvedPx} />;
     }
 
     // 3. Fallback to Tag icon
-    return <AppIcon name="solar:tag-linear" className={className} style={combinedStyle} />;
+    return <AppIcon name="solar:tag-linear" className={sanitizedClassName} style={baseBoxStyle} />;
 });
 
 /**
