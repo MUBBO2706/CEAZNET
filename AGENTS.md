@@ -153,3 +153,18 @@ The source code for all edge functions used in this application is strictly pres
 - These are listed here so you know exactly which edge functions are actively being used without needing to query for them.
 - If you need to debug or modify the source code of any specific edge function in the future, fetch it from the Task Manager's API endpoint.
 - The API endpoint returns the edge function data in an `export.json` format. You must fetch and parse this JSON response to read the source code.
+
+---
+
+## 5. Version Control System Integrity & Fix Logging
+
+### A. Strictly Preserve Version Control & Update System
+- **Current State:** The version control and update notification system (implemented across `/components/VersionUpdateModal.tsx`, `/api/version-control.ts`, `/server.ts`, and `vite.config.ts`) has been fully tested, calibrated, and is functioning properly as required.
+- **Hands-Off Directive:** In future updates, feature additions, or codebase modifications, **DO NOT** modify, tamper with, or break the version control logic, interval timers (60s polling / 30s visibility throttle), concurrency guards, or Vercel commit SHA versioning mechanisms unless explicitly requested by the user.
+
+### B. Problem Resolution Logging in `version.md`
+- Whenever you fix an issue, bug, or user-reported problem in the application, you **MUST** record a short, concise entry in `/version.md` with:
+  1. **Timestamp:** Current local date and time of the fix.
+  2. **User Problem Reported:** Short and concise description of what issue the user faced/reported.
+  3. **Resolution Implemented:** Short and concise description of what was fixed and how it was resolved.
+
