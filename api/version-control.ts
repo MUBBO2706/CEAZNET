@@ -11,49 +11,48 @@ export default async function handler(req: any, res: any) {
     const clientVersion = req.query.currentVersion;
     let serverVersion = 'unknown';
 
-    // 1. Try local filesystem (for local dev or if files are bundled/included in serverless context)
-    // Check all candidate locations and pick the highest/latest timestamp so stale cache files never mask newer builds
-    try {
-      const candidatePaths = [
-        path.join(process.cwd(), 'public', 'version.json'),
-        path.join(process.cwd(), 'dist', 'version.json'),
-        path.join(process.cwd(), 'api', 'version.json'),
-        path.join(__dirname, 'version.json'),
-        path.join(process.cwd(), 'version.json'),
-      ];
-
-      let highestTimestamp = 0;
-      for (const p of candidatePaths) {
-        if (fs.existsSync(p)) {
-          try {
-            const fileContent = fs.readFileSync(p, 'utf8');
-            const parsed = JSON.parse(fileContent);
-            if (parsed.version) {
-              const num = parseInt(parsed.version, 10);
-              if (!isNaN(num) && num > highestTimestamp) {
-                highestTimestamp = num;
-                serverVersion = String(num);
-              } else if (serverVersion === 'unknown') {
-                serverVersion = String(parsed.version);
-              }
-            }
-          } catch {}
-        }
-      }
-    } catch (fsErr) {
-      console.warn('[Vercel Serverless] Failed to read version.json from filesystem:', fsErr);
+    // 1. Primary: Check Vercel deployment identifiers first (most authoritative on Vercel deployments)
+    if (process.env.VERCEL_GIT_COMMIT_SHA) {
+      serverVersion = process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 10);
+    } else if (process.env.VERCEL_DEPLOYMENT_ID) {
+      serverVersion = process.env.VERCEL_DEPLOYMENT_ID;
     }
 
-    // 2. Fallback to Vercel deployment identifiers if filesystem returned unknown
+    // 2. Secondary: Check local filesystem candidate locations (for local dev / containers)
     if (serverVersion === 'unknown') {
-      if (process.env.VERCEL_GIT_COMMIT_SHA) {
-        serverVersion = process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 10);
-      } else if (process.env.VERCEL_DEPLOYMENT_ID) {
-        serverVersion = process.env.VERCEL_DEPLOYMENT_ID;
+      try {
+        const candidatePaths = [
+          path.join(process.cwd(), 'public', 'version.json'),
+          path.join(process.cwd(), 'dist', 'version.json'),
+          path.join(process.cwd(), 'api', 'version.json'),
+          path.join(__dirname, 'version.json'),
+          path.join(process.cwd(), 'version.json'),
+        ];
+
+        let highestTimestamp = 0;
+        for (const p of candidatePaths) {
+          if (fs.existsSync(p)) {
+            try {
+              const fileContent = fs.readFileSync(p, 'utf8');
+              const parsed = JSON.parse(fileContent);
+              if (parsed.version) {
+                const num = parseInt(parsed.version, 10);
+                if (!isNaN(num) && num > highestTimestamp) {
+                  highestTimestamp = num;
+                  serverVersion = String(num);
+                } else if (serverVersion === 'unknown') {
+                  serverVersion = String(parsed.version);
+                }
+              }
+            } catch {}
+          }
+        }
+      } catch (fsErr) {
+        console.warn('[Vercel Serverless] Failed to read version.json from filesystem:', fsErr);
       }
     }
 
-    // 3. If still unknown, try fetching via HTTP from the current host
+    // 3. Fallback: If still unknown, try fetching via HTTP from the current host
     if (serverVersion === 'unknown' && req.headers.host) {
       try {
         const host = req.headers.host;

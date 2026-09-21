@@ -6,17 +6,27 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(async ({ mode }) => {
     const env = loadEnv(mode, '.', '');
     
-    // Generate/Retrieve a unique build ID based on the current timestamp
+    // Generate/Retrieve a unique build ID based on git commit SHA or timestamp
     let buildId = '';
     const isProductionBuild = mode === 'production';
     const tempBuildIdPath = path.resolve(import.meta.dirname, '.build_id.tmp');
     const publicDir = path.resolve(import.meta.dirname, 'public');
     const versionJsonPath = path.join(publicDir, 'version.json');
 
+    // 1. Check for Git Commit SHA from Vercel or deployment environment
+    const vercelCommitSha = process.env.VERCEL_GIT_COMMIT_SHA || env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA;
+    const vercelDeployId = process.env.VERCEL_DEPLOYMENT_ID || env.VERCEL_DEPLOYMENT_ID;
+
+    if (vercelCommitSha) {
+      buildId = vercelCommitSha.substring(0, 10);
+    } else if (vercelDeployId) {
+      buildId = vercelDeployId;
+    }
+
     try {
-      if (fs.existsSync(tempBuildIdPath)) {
+      if (!buildId && fs.existsSync(tempBuildIdPath)) {
         buildId = fs.readFileSync(tempBuildIdPath, 'utf8').trim();
-      } else if (fs.existsSync(versionJsonPath) && !isProductionBuild) {
+      } else if (!buildId && fs.existsSync(versionJsonPath) && !isProductionBuild) {
         try {
           const existing = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
           if (existing?.version) {

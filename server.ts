@@ -908,31 +908,41 @@ Example: {"icon": "milk", "confidence": 0.95, "reason": "Dudh refers to milk in 
   app.get(["/api/version-control", "/api/version/check"], async (req, res) => {
     try {
       const clientVersion = req.query.currentVersion as string;
-      
-      const candidatePaths = [
-        path.join(process.cwd(), 'public', 'version.json'),
-        path.join(process.cwd(), 'dist', 'version.json'),
-        path.join(process.cwd(), 'api', 'version.json'),
-        path.join(process.cwd(), 'version.json'),
-      ];
-
       let serverVersion = 'unknown';
-      let highestTimestamp = 0;
-      for (const p of candidatePaths) {
-        if (fs.existsSync(p)) {
-          try {
-            const fileContent = fs.readFileSync(p, 'utf8');
-            const parsed = JSON.parse(fileContent);
-            if (parsed.version) {
-              const num = parseInt(parsed.version, 10);
-              if (!isNaN(num) && num > highestTimestamp) {
-                highestTimestamp = num;
-                serverVersion = String(num);
-              } else if (serverVersion === 'unknown') {
-                serverVersion = String(parsed.version);
+
+      // 1. Primary: Check Vercel deployment identifiers first
+      if (process.env.VERCEL_GIT_COMMIT_SHA) {
+        serverVersion = process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 10);
+      } else if (process.env.VERCEL_DEPLOYMENT_ID) {
+        serverVersion = process.env.VERCEL_DEPLOYMENT_ID;
+      }
+
+      // 2. Secondary: Check filesystem candidate locations
+      if (serverVersion === 'unknown') {
+        const candidatePaths = [
+          path.join(process.cwd(), 'public', 'version.json'),
+          path.join(process.cwd(), 'dist', 'version.json'),
+          path.join(process.cwd(), 'api', 'version.json'),
+          path.join(process.cwd(), 'version.json'),
+        ];
+
+        let highestTimestamp = 0;
+        for (const p of candidatePaths) {
+          if (fs.existsSync(p)) {
+            try {
+              const fileContent = fs.readFileSync(p, 'utf8');
+              const parsed = JSON.parse(fileContent);
+              if (parsed.version) {
+                const num = parseInt(parsed.version, 10);
+                if (!isNaN(num) && num > highestTimestamp) {
+                  highestTimestamp = num;
+                  serverVersion = String(num);
+                } else if (serverVersion === 'unknown') {
+                  serverVersion = String(parsed.version);
+                }
               }
-            }
-          } catch {}
+            } catch {}
+          }
         }
       }
 

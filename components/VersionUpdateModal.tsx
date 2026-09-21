@@ -67,6 +67,19 @@ const playUpdateSound = () => {
     }
 };
 
+const getActiveClientVersion = (): string => {
+    if (typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ && __BUILD_ID__ !== 'dev' && __BUILD_ID__ !== 'unknown') {
+        return String(__BUILD_ID__);
+    }
+    try {
+        const stored = localStorage.getItem('ceaznet_app_version');
+        if (stored && stored !== 'unknown' && stored !== 'dev') {
+            return stored;
+        }
+    } catch {}
+    return 'unknown';
+};
+
 export const VersionUpdateModal: React.FC = () => {
     // Completely disable in development environments
     const isDev = isDevelopmentEnvironment();
@@ -76,6 +89,7 @@ export const VersionUpdateModal: React.FC = () => {
     const initialVersionRef = useRef<string | null>(null);
     const latestDetectedVersionRef = useRef<string | null>(null);
     const isFirstCheckRef = useRef<boolean>(true);
+    const isCheckingRef = useRef<boolean>(false);
     const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastCheckTimeRef = useRef<number>(0);
@@ -90,60 +104,47 @@ export const VersionUpdateModal: React.FC = () => {
     const checkForUpdates = useCallback(async (isManual = false) => {
         if (isDev) return;
 
+        // Prevent parallel concurrent requests
+        if (isCheckingRef.current) return;
+
         const now = Date.now();
-        // Throttle automatic checks to at most once every 10 seconds
-        if (!isManual && now - lastCheckTimeRef.current < 10000) {
+        // Strict 30-second interval:
+        // Do not fire if less than 30 seconds have passed since the previous request (unless manual/initial)
+        if (!isManual && now - lastCheckTimeRef.current < 30000) {
             return;
         }
+
+        isCheckingRef.current = true;
         lastCheckTimeRef.current = now;
 
-        // Proactively trigger Service Worker update check on network
-        if (swRegistrationRef.current) {
-            try {
-                swRegistrationRef.current.update().catch(() => {});
-            } catch (swErr) {
-                console.debug('[Version Update] swRegistration update check error:', swErr);
-            }
-        } else if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-            try {
-                navigator.serviceWorker.getRegistration().then(reg => {
-                    if (reg) {
-                        swRegistrationRef.current = reg;
-                        reg.update().catch(() => {});
-                    }
-                }).catch(() => {});
-            } catch {}
-        }
-
-        let discoveredServerVersion: string | null = null;
-
-        // 1. Channel A: Live Serverless / Backend Version Control API endpoint
         try {
-            const currentVerParam = initialVersionRef.current || (typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__) : 'unknown');
-            const response = await fetchApi(`/api/version-control?currentVersion=${encodeURIComponent(currentVerParam)}&t=${Date.now()}`, {
-                method: 'GET',
-                cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
+            // Proactively trigger Service Worker update check on network
+            if (swRegistrationRef.current) {
+                try {
+                    swRegistrationRef.current.update().catch(() => {});
+                } catch (swErr) {
+                    console.debug('[Version Update] swRegistration update check error:', swErr);
                 }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
-                    discoveredServerVersion = String(data.serverVersion);
-                }
+            } else if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistration().then(reg => {
+                        if (reg) {
+                            swRegistrationRef.current = reg;
+                            reg.update().catch(() => {});
+                        }
+                    }).catch(() => {});
+                } catch {}
             }
-        } catch (error) {
-            console.debug('[Update Checker] API version check error:', error);
-        }
 
-        // 2. Channel B: Static version.json served directly by CDN edge
-        if (!discoveredServerVersion) {
+            let discoveredServerVersion: string | null = null;
+            let apiHasUpdate: boolean | null = null;
+
+            // Determine client version to report
+            const activeVersion = initialVersionRef.current || getActiveClientVersion();
+
+            // 1. Channel A: Live Serverless / Backend Version Control API endpoint
             try {
-                const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
+                const response = await fetchApi(`/api/version-control?currentVersion=${encodeURIComponent(activeVersion)}&t=${Date.now()}`, {
                     method: 'GET',
                     cache: 'no-store',
                     headers: {
@@ -153,44 +154,99 @@ export const VersionUpdateModal: React.FC = () => {
                     }
                 });
 
-                if (staticRes.ok) {
-                    const staticData = await staticRes.json();
-                    if (staticData?.version && staticData.version !== 'unknown') {
-                        discoveredServerVersion = String(staticData.version);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data?.serverVersion && data.serverVersion !== 'unknown' && data.serverVersion !== 'dev') {
+                        discoveredServerVersion = String(data.serverVersion);
+                    }
+                    if (typeof data?.hasUpdate === 'boolean') {
+                        apiHasUpdate = data.hasUpdate;
                     }
                 }
-            } catch (staticErr) {
-                console.debug('[Update Checker] Static version check error:', staticErr);
+            } catch (error) {
+                console.debug('[Update Checker] API version check error:', error);
             }
-        }
 
-        if (!discoveredServerVersion) return;
+            // 2. Channel B: Static version.json served directly by CDN edge
+            if (!discoveredServerVersion) {
+                try {
+                    const staticRes = await fetch(`/version.json?t=${Date.now()}`, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
 
-        // On the initial check of this session/page load:
-        // Set baseline version so we never display a modal immediately on reload
-        if (isFirstCheckRef.current || !initialVersionRef.current) {
-            initialVersionRef.current = discoveredServerVersion;
-            isFirstCheckRef.current = false;
-            return;
-        }
+                    if (staticRes.ok) {
+                        const staticData = await staticRes.json();
+                        if (staticData?.version && staticData.version !== 'unknown' && staticData.version !== 'dev') {
+                            discoveredServerVersion = String(staticData.version);
+                        }
+                    }
+                } catch (staticErr) {
+                    console.debug('[Update Checker] Static version check error:', staticErr);
+                }
+            }
 
-        // On subsequent checks: if the server has deployed a newer version while the app was open
-        if (discoveredServerVersion !== initialVersionRef.current) {
-            try {
-                const dismissed = sessionStorage.getItem('ceaznet_dismissed_version');
-                if (dismissed === discoveredServerVersion) {
+            if (!discoveredServerVersion) return;
+
+            // On initial check of this session/page load:
+            if (isFirstCheckRef.current || !initialVersionRef.current) {
+                // If client active version was unknown or dev, align with discovered server version
+                if (activeVersion === 'unknown' || activeVersion === 'dev') {
+                    initialVersionRef.current = discoveredServerVersion;
+                    try {
+                        localStorage.setItem('ceaznet_app_version', discoveredServerVersion);
+                    } catch {}
+                } else {
+                    initialVersionRef.current = activeVersion;
+                }
+                isFirstCheckRef.current = false;
+
+                // If on initial load the version matches the server, persist it and exit
+                if (discoveredServerVersion === initialVersionRef.current) {
+                    try {
+                        localStorage.setItem('ceaznet_app_version', discoveredServerVersion);
+                    } catch {}
                     return;
                 }
-                const reloaded = sessionStorage.getItem('ceaznet_reloaded_version');
-                if (reloaded === discoveredServerVersion) {
-                    return;
-                }
-            } catch {}
+            }
 
-            console.log(`[Version Update] Newer version detected: ${initialVersionRef.current} -> ${discoveredServerVersion}`);
-            latestDetectedVersionRef.current = discoveredServerVersion;
-            setHasUpdate(true);
-            setIsVisible(true);
+            // Check if server deployed a newer version while this session was active
+            const isDifferentVersion = discoveredServerVersion !== initialVersionRef.current;
+            const updateAvailable = (apiHasUpdate === true || isDifferentVersion) && isDifferentVersion;
+
+            if (updateAvailable) {
+                try {
+                    const dismissed = sessionStorage.getItem('ceaznet_dismissed_version');
+                    if (dismissed === discoveredServerVersion) {
+                        return;
+                    }
+                    const reloaded = sessionStorage.getItem('ceaznet_reloaded_version');
+                    if (reloaded === discoveredServerVersion) {
+                        return;
+                    }
+                    const persisted = localStorage.getItem('ceaznet_app_version');
+                    if (persisted === discoveredServerVersion && initialVersionRef.current === discoveredServerVersion) {
+                        return;
+                    }
+                } catch {}
+
+                console.log(`[Version Update] Newer version detected: ${initialVersionRef.current} -> ${discoveredServerVersion}`);
+                latestDetectedVersionRef.current = discoveredServerVersion;
+                setHasUpdate(true);
+                setIsVisible(true);
+            } else {
+                // Up to date - persist active version
+                try {
+                    localStorage.setItem('ceaznet_app_version', discoveredServerVersion);
+                } catch {}
+            }
+        } finally {
+            isCheckingRef.current = false;
         }
     }, [isDev]);
 
@@ -200,26 +256,29 @@ export const VersionUpdateModal: React.FC = () => {
         // Run check on initial load to establish baseline version
         checkForUpdates(true);
 
-        // Periodically check every 45 seconds
+        // Periodically check every 60 seconds (1 minute interval)
         checkIntervalRef.current = setInterval(() => {
-            checkForUpdates();
-        }, 45000);
+            checkForUpdates(false);
+        }, 60000);
 
-        // Check when window or tab gains focus/visibility
+        // Check when window or tab gains visibility, strictly throttled to 30 seconds
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                checkForUpdates(true);
+                const now = Date.now();
+                if (now - lastCheckTimeRef.current >= 30000) {
+                    checkForUpdates(false);
+                }
             }
         };
-        const handleFocus = () => {
-            checkForUpdates(true);
-        };
+
         const handleOnline = () => {
-            checkForUpdates(true);
+            const now = Date.now();
+            if (now - lastCheckTimeRef.current >= 30000) {
+                checkForUpdates(false);
+            }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('focus', handleFocus);
         window.addEventListener('online', handleOnline);
 
         // Service Worker Update Listener (PWA) in production
@@ -242,15 +301,6 @@ export const VersionUpdateModal: React.FC = () => {
 
                 reg.update().catch(() => {});
             }).catch(() => {});
-
-            return () => {
-                if (checkIntervalRef.current) {
-                    clearInterval(checkIntervalRef.current);
-                }
-                document.removeEventListener('visibilitychange', handleVisibilityChange);
-                window.removeEventListener('focus', handleFocus);
-                window.removeEventListener('online', handleOnline);
-            };
         }
 
         return () => {
@@ -258,16 +308,17 @@ export const VersionUpdateModal: React.FC = () => {
                 clearInterval(checkIntervalRef.current);
             }
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('focus', handleFocus);
             window.removeEventListener('online', handleOnline);
         };
     }, [checkForUpdates, isDev]);
 
     const handleUpdate = async () => {
         try {
-            if (latestDetectedVersionRef.current) {
+            const targetVersion = latestDetectedVersionRef.current;
+            if (targetVersion) {
                 try {
-                    sessionStorage.setItem('ceaznet_reloaded_version', latestDetectedVersionRef.current);
+                    localStorage.setItem('ceaznet_app_version', targetVersion);
+                    sessionStorage.setItem('ceaznet_reloaded_version', targetVersion);
                 } catch {}
             }
 
