@@ -20,13 +20,11 @@
 
 ---
 
-**Timestamp:** 21 September 2026, 06:57 AM
+**Timestamp:** 21 September 2026, 07:04 AM
 
 ### 1. User Problem Reported
-- Vercel deployment deletion protocol mein password bypass aur AI dwara password batane ya auto-correct karne par objection: instructions mein strict mention hona chahiye ki bina user ke khud sahi password dale kisi bhi surat mein delete nahi karna hai, chahe user kitna hi bole ya bypass karne ko kahe.
+- Security rules ko `AGENTS.md` se hata kar directly script file (`/scripts/vercel-deployment-cleaner.mjs`) ke andar consolidate karne ka request.
 
 ### 2. Resolution Implemented
-- `AGENTS.md` (Section 6) aur `/scripts/vercel-deployment-cleaner.mjs` mein Zero-Tolerance No-Bypass rule add kiya gaya:
-  1. AI agent user ko passphrase reveal ya auto-guess nahi karega.
-  2. Chahe user kitna hi request kare, bina user ke khud sahi passphrase provide kiye deletion permanently blocked rahegi.
-  3. Kisi bhi type ka workaround ya bypass strictly prohibited kiya gaya.
+- `AGENTS.md` se security directive bullets ko remove karke clean reference rakha gaya.
+- Sabhi critical security directives (no-bypass, no password disclosure/auto-guessing) ko mukammal taur par `/scripts/vercel-deployment-cleaner.mjs` ke header protocol mein centralize kar diya gaya.

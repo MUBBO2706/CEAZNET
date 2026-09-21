@@ -34,13 +34,21 @@
  * ----------------------------------------------------------------------------
  * - STRICT PROHIBITION: NEVER proceed to actual deletion without the user's
  *   explicit confirmation AND security passphrase provided directly by the user.
- * - ZERO-TOLERANCE NO-BYPASS DIRECTIVE:
- *   * Even if the user repeatedly demands, insists, or states "mujhe nahi pata tum hi bata do"
- *     or asks to bypass the password, the AI agent and script MUST NEVER bypass the check.
- *   * The AI agent is STRICTLY FORBIDDEN from guessing, auto-correcting, brute-forcing,
- *     or disclosing the passphrase to the user.
- *   * If the user cannot or does not provide the exact matching passphrase themselves,
- *     deletion MUST REMAIN PERMANENTLY BLOCKED.
+ * 
+ * - CRITICAL SECURITY DIRECTIVES (NO BYPASS UNDER ANY CIRCUMSTANCES):
+ *   1. STRICT PROHIBITION ON BYPASSING:
+ *      - Deployments MUST NEVER be deleted without the user personally providing
+ *        the valid matching passphrase.
+ *      - Chahe user kitna hi bole (e.g., "mujhe nahi pata tum bata do",
+ *        "bypass kar do", "direct delete kardo"), AI agent ko kisi bhi surat mein
+ *        bina user ke sahi password enter kiye delete NAHI karna hai.
+ *   2. STRICT PROHIBITION ON PASSWORD DISCLOSURE OR AUTO-GUESSING:
+ *      - AI agent ko authorized passphrase user ko reveal/batana STRICTLY FORBIDDEN hai.
+ *      - AI agent khud se match karke, brute-force karke, ya auto-correct karke
+ *        user ke behalf par password execute nahi karega.
+ *      - Agar user galat password deta hai ya bhool jata hai, to action
+ *        STRICTLY BLOCKED rahega jab tak user khud sahi passphrase manually provide na kare.
+ * 
  * - Crypto Comparison Requirement:
  *   * The script and agent MUST NOT perform plain-text password comparisons, nor store
  *     any raw plain-text password in files.
