@@ -311,6 +311,7 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
             const lowerCat = rawCat.toLowerCase();
             const normCat = lowerCat.replace(/[_\s-]+/g, ' ');
+            const cleanCat = lowerCat.replace(/[^a-z0-9]/g, '');
 
             const matchesCategory = (c: { id: string; label?: string }) => {
                 const cId = c.id.toLowerCase().trim();
@@ -318,7 +319,9 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
                 return cId === lowerCat || 
                        cLabel === lowerCat || 
                        cId.replace(/[_\s-]+/g, ' ') === normCat ||
-                       cLabel.replace(/[_\s-]+/g, ' ') === normCat;
+                       cLabel.replace(/[_\s-]+/g, ' ') === normCat ||
+                       (cleanCat && cleanCat === cId.replace(/[^a-z0-9]/g, '')) ||
+                       (cleanCat && cleanCat === cLabel.replace(/[^a-z0-9]/g, ''));
             };
 
             const allStandard = [
@@ -539,34 +542,116 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
     };
 
     const allTypeCategories = useMemo(() => {
-        const customTypeCategories = customCategories
-            .filter(c => !c.type || c.type === type)
-            .map(c => {
-                const conf = getCategoryConfig(c.id, type, customCategories);
-                return {
-                    id: c.id,
-                    label: c.label || c.id,
-                    icon: conf?.icon || Sparkles,
-                    iconName: conf?.iconName || c.iconName,
-                    bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30',
-                    color: conf?.color || 'text-indigo-500',
-                    isCustom: true
-                };
-            });
+        const normalize = (str: string) => (str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
 
-        const allTypeCategoriesMap = new Map<string, any>();
-        (CATEGORY_CONFIG[type] || []).forEach(c => allTypeCategoriesMap.set(c.id.toLowerCase(), c));
-        customTypeCategories.forEach(c => allTypeCategoriesMap.set(c.id.toLowerCase(), c));
-        return Array.from(allTypeCategoriesMap.values());
+        // 1. Filter custom categories for current type (with intelligent type fallback for legacy items)
+        const customForType = customCategories.filter(c => {
+            if (c.type) return c.type === type;
+            const norm = normalize(c.id || c.label || '');
+            for (const t of ['income', 'transfer', 'expense'] as const) {
+                const std = CATEGORY_CONFIG[t] || [];
+                if (std.some(sc => normalize(sc.id) === norm || normalize(sc.label) === norm)) {
+                    return t === type;
+                }
+            }
+            return type === 'expense';
+        });
+
+        const customMapped = customForType.map(c => {
+            const conf = getCategoryConfig(c.id, type, customCategories);
+            return {
+                id: c.id,
+                label: c.label || c.id,
+                icon: conf?.icon || Sparkles,
+                iconName: conf?.iconName || c.iconName || 'Tag',
+                bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30',
+                color: conf?.color || 'text-indigo-500',
+                isCustom: true
+            };
+        });
+
+        const result: Array<{
+            id: string;
+            label: string;
+            icon: any;
+            iconName?: string;
+            bg: string;
+            color: string;
+            isCustom?: boolean;
+        }> = [];
+
+        const seenKeys = new Set<string>();
+
+        // 2. Add standard categories, filtering out any duplicate definitions
+        for (const std of (CATEGORY_CONFIG[type] || [])) {
+            const idKey = normalize(std.id);
+            const labelKey = normalize(std.label);
+            if (seenKeys.has(idKey) || (labelKey && seenKeys.has(labelKey))) {
+                continue;
+            }
+            seenKeys.add(idKey);
+            if (labelKey) seenKeys.add(labelKey);
+            result.push(std);
+        }
+
+        // 3. Merge custom categories without duplicating standard ones
+        for (const cust of customMapped) {
+            const idKey = normalize(cust.id);
+            const labelKey = normalize(cust.label);
+
+            const existingIdx = result.findIndex(r => 
+                normalize(r.id) === idKey || 
+                normalize(r.label) === idKey ||
+                (labelKey && (normalize(r.id) === labelKey || normalize(r.label) === labelKey))
+            );
+
+            if (existingIdx >= 0) {
+                // If custom category overrides standard category, update styling while preserving stable id
+                result[existingIdx] = {
+                    ...result[existingIdx],
+                    ...cust,
+                    id: result[existingIdx].id
+                };
+            } else {
+                if (!seenKeys.has(idKey) && (!labelKey || !seenKeys.has(labelKey))) {
+                    seenKeys.add(idKey);
+                    if (labelKey) seenKeys.add(labelKey);
+                    result.push(cust);
+                }
+            }
+        }
+
+        return result;
     }, [type, customCategories]);
     
     const recentTypeCategories = useMemo(() => {
-        let list = recentCategoryIds
-            .map(id => allTypeCategories.find(c => c.id === id))
-            .filter((c): c is typeof allTypeCategories[0] => !!c);
+        const normalize = (str: string) => (str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        const seen = new Set<string>();
+        let list: typeof allTypeCategories = [];
+
+        for (const id of recentCategoryIds) {
+            const normId = normalize(id);
+            const found = allTypeCategories.find(c => 
+                normalize(c.id) === normId || 
+                normalize(c.label) === normId
+            );
+            if (found) {
+                const idKey = normalize(found.id);
+                const labelKey = normalize(found.label);
+                if (!seen.has(idKey) && (!labelKey || !seen.has(labelKey))) {
+                    seen.add(idKey);
+                    if (labelKey) seen.add(labelKey);
+                    list.push(found);
+                }
+            }
+        }
 
         if (category) {
-            const recentIdx = list.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
+            const normCat = normalize(category);
+            const recentIdx = list.findIndex(c => 
+                normalize(c.id) === normCat || 
+                normalize(c.label) === normCat
+            );
             if (recentIdx > 0) {
                 const selected = list[recentIdx];
                 const remaining = list.filter((_, idx) => idx !== recentIdx);
@@ -578,23 +663,34 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
     // --- Determine Visible Categories (Up to 11 slots for smooth carousel) ---
     const visibleCategories = useMemo(() => {
+        const normalize = (str: string) => (str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
         let list: typeof allTypeCategories = [];
+        const seenKeys = new Set<string>();
+
+        const addCategory = (cat: typeof allTypeCategories[0]) => {
+            const idKey = normalize(cat.id);
+            const labelKey = normalize(cat.label);
+            if (seenKeys.has(idKey) || (labelKey && seenKeys.has(labelKey))) {
+                return false;
+            }
+            seenKeys.add(idKey);
+            if (labelKey) seenKeys.add(labelKey);
+            list.push(cat);
+            return true;
+        };
 
         if (category) {
-            const lowerCat = category.toLowerCase().trim();
-            const normCat = lowerCat.replace(/[_\s-]+/g, ' ');
+            const normCat = normalize(category);
             const activeCat = allTypeCategories.find(c => 
-                c.id.toLowerCase() === lowerCat || 
-                (c.label || '').toLowerCase() === lowerCat ||
-                c.id.toLowerCase().replace(/[_\s-]+/g, ' ') === normCat ||
-                (c.label || '').toLowerCase().replace(/[_\s-]+/g, ' ') === normCat
+                normalize(c.id) === normCat || 
+                normalize(c.label) === normCat
             );
             if (activeCat) {
-                list.push(activeCat);
+                addCategory(activeCat);
             } else {
                 const conf = getCategoryConfig(category, type, customCategories);
                 if (conf) {
-                    list.push({
+                    addCategory({
                         id: conf.id || category,
                         label: conf.label || category,
                         icon: conf.icon || Sparkles,
@@ -609,37 +705,50 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
 
         for (const cat of recentTypeCategories) {
             if (list.length >= 11) break;
-            if (!list.some(c => c.id === cat.id)) {
-                list.push(cat);
-            }
+            addCategory(cat);
         }
 
         const standardTypeCategories = CATEGORY_CONFIG[type] || [];
         for (const cat of standardTypeCategories) {
             if (list.length >= 11) break;
-            if (!list.some(c => c.id === cat.id)) {
-                list.push(cat);
-            }
+            addCategory(cat);
         }
 
         for (const cat of allTypeCategories.filter(c => c.isCustom)) {
             if (list.length >= 11) break;
-            if (!list.some(c => c.id === cat.id)) {
-                list.push(cat);
-            }
+            addCategory(cat);
         }
 
         return list.slice(0, 11);
     }, [allTypeCategories, category, recentTypeCategories, type, customCategories]);
     
     const filteredCategories = useMemo(() => {
+        const normalize = (str: string) => (str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+
         let list = allTypeCategories.filter(c => 
             c.label.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
             c.id.toLowerCase().includes(categorySearchQuery.toLowerCase())
         );
 
+        // Strict deduplication safeguard
+        const seen = new Set<string>();
+        list = list.filter(c => {
+            const idKey = normalize(c.id);
+            const labelKey = normalize(c.label);
+            if (seen.has(idKey) || (labelKey && seen.has(labelKey))) {
+                return false;
+            }
+            seen.add(idKey);
+            if (labelKey) seen.add(labelKey);
+            return true;
+        });
+
         if (category) {
-            const selectedIdx = list.findIndex(c => c.id.toLowerCase() === category.toLowerCase());
+            const normCat = normalize(category);
+            const selectedIdx = list.findIndex(c => 
+                normalize(c.id) === normCat || 
+                normalize(c.label) === normCat
+            );
             if (selectedIdx > 0) {
                 const selected = list[selectedIdx];
                 const remaining = list.filter((_, idx) => idx !== selectedIdx);
@@ -691,10 +800,15 @@ const TransactionModalComponent: React.FC<TransactionModalProps> = ({
     const renderCategoryButton = (cat: typeof allTypeCategories[0], isGrid = false, keyPrefix = '') => {
         const lowerCat = category.toLowerCase().trim();
         const normCat = lowerCat.replace(/[_\s-]+/g, ' ');
+        const cleanCat = lowerCat.replace(/[^a-z0-9]/g, '');
+        const cleanId = cat.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanLabel = (cat.label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
         const isSelected = lowerCat === cat.id.toLowerCase() || 
                            lowerCat === (cat.label || '').toLowerCase() ||
                            normCat === cat.id.toLowerCase().replace(/[_\s-]+/g, ' ') ||
-                           normCat === (cat.label || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+                           normCat === (cat.label || '').toLowerCase().replace(/[_\s-]+/g, ' ') ||
+                           (cleanCat && cleanCat === cleanId) ||
+                           (cleanCat && cleanCat === cleanLabel);
         return (
             <button
                 key={`${keyPrefix}${cat.id}`}

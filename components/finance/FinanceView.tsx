@@ -1426,17 +1426,34 @@ const FinanceView: React.FC<FinanceViewProps> = ({ user, onBack, searchQuery = '
         // Add custom categories
         customCategories.forEach(c => categorySet.add(c.id));
 
-        return Array.from(categorySet).map(cat => {
+        const seenKeys = new Set<string>();
+        const list: Array<{
+            id: string;
+            label: string;
+            icon: any;
+            iconName: string;
+            color: string;
+            bg: string;
+        }> = [];
+
+        Array.from(categorySet).forEach(cat => {
             const conf = getCategoryConfig(cat, undefined, customCategories);
-            return {
-                id: cat,
-                label: conf?.label || cat,
-                icon: conf?.icon,
-                iconName: conf?.iconName || 'Tag',
-                color: conf?.color || 'text-indigo-500',
-                bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30'
-            };
-        }).sort((a, b) => a.label.localeCompare(b.label));
+            const label = conf?.label || cat;
+            const normKey = label.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!seenKeys.has(normKey)) {
+                seenKeys.add(normKey);
+                list.push({
+                    id: conf?.id || cat,
+                    label,
+                    icon: conf?.icon,
+                    iconName: conf?.iconName || 'Tag',
+                    color: conf?.color || 'text-indigo-500',
+                    bg: conf?.bg || 'bg-indigo-100 dark:bg-indigo-900/30'
+                });
+            }
+        });
+
+        return list.sort((a, b) => a.label.localeCompare(b.label));
     }, [transactions, customCategories]);
 
     const filteredCategoriesList = useMemo(() => {

@@ -1,5 +1,23 @@
 # Version Control Updates & Fixes Log
 
+**Timestamp:** 22 September 2026, 04:30 PM
+
+---
+
+### 1. User Problem Reported (Aapne Kya Bataya)
+- **Duplicate Finance Categories:** Transaction modal mein categories (khas karke Income categories jaise 'Mobile Repair' aur custom/preset categories) double-double show ho rahi thin.
+
+---
+
+### 2. Resolution Implemented (Humne Kya Kiya)
+- **Duplicate Config Entry Removed:** `components/finance/categories.ts` ke `RAW_CATEGORY_CONFIG.income` array se duplicate `{ id: 'MobileRepair', label: 'Mobile Repair' }` entry ko permanently remove kiya.
+- **Normalized Deduplication in Transaction Modal:** `TransactionModal.tsx` ke andar `allTypeCategories`, `recentTypeCategories`, `visibleCategories`, aur `filteredCategories` mein alphanumeric normalized deduplication safeguard lagaya, jisse agar koi category casing, spacing, ya underscore (`Mobile Repair` vs `MobileRepair` / `Mobile_Repair`) ke fark se aaye toh duplicate na bane.
+- **Custom Category Type Isolation:** Custom categories agar bina `type` ke exist karti hain toh unka inferred type check kiya taaki expense categories income grid mein bleed hokar duplicate na hon.
+- **Safe Fallback & Historical Matching:** `categories.ts` ke `getCategoryConfig` aur `TransactionModal.tsx` ke `matchesCategory` ko update kiya taaki legacy database transactions bina kisi issue ke match aur display hon.
+- **Filter List Deduplication:** `FinanceView.tsx` ke `availableCategories` filter list ko bhi deduplicate kiya taaki pure app mein consistency bani rahe.
+
+---
+
 **Timestamp:** 21 September 2026, 06:05 PM
 
 ---

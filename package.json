@@ -29,6 +29,7 @@
     "axios": "^1.16.1",
     "chart.js": "^4.5.1",
     "cheerio": "^1.2.0",
+    "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "detectincognitojs": "^1.7.0",
     "express": "^5.2.1",
@@ -57,6 +58,7 @@
     "vite": "^6.2.0"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/express": "^5.0.6",
     "@types/jsdom": "^28.0.3",
     "@types/mozilla-readability": "^0.2.1",

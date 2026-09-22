@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastSystem';
 import { SessionDetailsView, SessionItem, parseDeviceAndOS, getSessionActions } from './Profile/SessionDetailsView';
+import { BatteryUsageTrends } from './Profile/BatteryUsageTrends';
 import ConfirmationModal from './ConfirmationModal';
 import metadata from '../metadata.json';
 import { fetchUserSessions, fetchSessionStats, invalidateUserSessionsCache, SessionStats } from '../utils/sessionApi';
@@ -1059,7 +1060,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {/* Clean Horizontal Divider */}
           <hr className="border-t border-gray-200 dark:border-white/10" />
 
-          {/* --- SECTION 3: ACTIVE SESSIONS & SECURITY --- */}
+          {/* --- SECTION 3: BATTERY TELEMETRY & HISTORICAL TRENDS --- */}
+          <motion.div variants={itemVariants} className="w-full">
+            <BatteryUsageTrends
+              sessions={sessions}
+              userFullName={userProfile.full_name}
+              onRefreshSessions={() => fetchSessions(true)}
+              isLoading={isLoadingSessions}
+            />
+          </motion.div>
+
+          {/* Clean Horizontal Divider */}
+          <hr className="border-t border-gray-200 dark:border-white/10" />
+
+          {/* --- SECTION 4: ACTIVE SESSIONS & SECURITY --- */}
           <motion.div variants={itemVariants} className="space-y-4 w-full">
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-2">
               <h2 className="text-xs font-bold text-gray-900 dark:text-white font-mono uppercase tracking-widest leading-none flex items-center gap-2">

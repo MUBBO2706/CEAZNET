@@ -149,7 +149,6 @@ export const RAW_CATEGORY_CONFIG: {
         { id: 'Udhar taken', label: 'Udhar taken', iconName: 'hugeicons:yen-receive', color: colors.teal.t, bg: colors.teal.b },
         { id: 'Salary', label: 'Salary', iconName: 'solar:hand-money-linear', color: colors.green.t, bg: colors.green.b },
         { id: 'Mobile Repair', label: 'Mobile Repair', iconName: 'solar:smartphone-update-bold-duotone', color: colors.cyan.t, bg: colors.cyan.b },
-        { id: 'MobileRepair', label: 'Mobile Repair', iconName: 'solar:smartphone-update-bold-duotone', color: colors.cyan.t, bg: colors.cyan.b },
         { id: 'Balance', label: 'Balance', iconName: 'solar:scale-bold-duotone', color: colors.teal.t, bg: colors.teal.b },
         { id: 'Business', label: 'Business Profit', iconName: 'solar:banknote-2-bold-duotone', color: colors.blue.t, bg: colors.blue.b },
         { id: 'Freelance', label: 'Freelancing', iconName: 'solar:laptop-minimalistic-bold-duotone', color: colors.purple.t, bg: colors.purple.b },
@@ -248,12 +247,14 @@ export function getCategoryConfig(
     const trimmed = categoryId.trim();
     const lower = trimmed.toLowerCase();
     const normalizedLower = lower.replace(/[_\s-]+/g, ' ');
+    const cleanLower = lower.replace(/[^a-z0-9]/g, '');
 
     const matchesKey = (idOrLabel?: string) => {
         if (!idOrLabel) return false;
         const l = idOrLabel.toLowerCase().trim();
         if (l === lower) return true;
         if (l.replace(/[_\s-]+/g, ' ') === normalizedLower) return true;
+        if (cleanLower && l.replace(/[^a-z0-9]/g, '') === cleanLower) return true;
         return false;
     };
 
