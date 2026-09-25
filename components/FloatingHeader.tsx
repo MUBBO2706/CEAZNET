@@ -769,7 +769,7 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = (props) => {
                                 </div>
                             )}
 
-                            {(isHomeView || isExploreView || isNotesView || isFinanceView || isDairyView || isGalleryView || isTranslatorView || (isVoiceHistoryView && !props.expandedVoiceTitle) || isMoleculeView || isSupportView || isVoiceSettingsView || (isProfileView && props.supportHeaderState?.title)) && (
+                            {(isHomeView || isExploreView || isNotesView || (isFinanceView && (props.financeViewMode === 'list' || !props.financeViewMode)) || isDairyView || isGalleryView || isTranslatorView || (isVoiceHistoryView && !props.expandedVoiceTitle) || isMoleculeView || isSupportView || isVoiceSettingsView || (isProfileView && props.supportHeaderState?.title)) && (
                                 <div className="w-px h-5 bg-neutral-200 dark:bg-gray-700 mx-1"></div>
                             )}
 

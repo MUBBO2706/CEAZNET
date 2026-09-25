@@ -132,6 +132,11 @@ The AI should not push directly into the "Production" project tasks to avoid bre
 ## 3. General AI Assistant Directives (Self Notes)
 
 - **Loading Icons & Spinners (Strict Directive):** **NEVER** import or use `Loader2` from `lucide-react`. **ALWAYS** use the standard `Loader` icon (`import { Loader } from 'lucide-react'`) with `animate-spin` whenever a loading spinner or progress indicator is needed across the entire application.
+- **UI Icons & Hover Styling Directives (Strict Directive):** Whenever implementing or updating UI features across the application:
+  1. **Search Across All Libraries:** Search across all icon libraries (via `AppIcon` supporting solar linear, lucide, etc.) to select the best matching, semantically accurate icon for the UI element.
+  2. **Avoid Bold & Filled Icons:** Strictly avoid bold, heavy, or solid/filled icons. Always prefer sleek outline / linear icons (e.g. `solar:*-linear`).
+  3. **No Background Fill or Highlights Around Icons:** Do NOT place background hover highlights or pill/circle hover fills around icons (e.g., avoid `hover:bg-gray-100`, `hover:bg-white/10`). Icons must sit cleanly without background boxes.
+  4. **Icon-Only Highlighting on Hover:** Only the icon itself should react and highlight on hover (e.g., crisp color shift such as `text-gray-400 hover:text-indigo-600` or subtle scaling `group-hover:scale-110 transition-transform`).
 - **Think Before Modifying:** Always use `view_file` to inspect the contents of files before applying targeted edits.
 - **Verify Context Boundaries:** Avoid overwriting complex existing frontend behavior just to add small UI hooks. Refactor cleanly if needed, but respect the codebase's existing layout structures.
 - **Self-Correction & Quality Confidence:** Avoid verbose apologies. If a step fails or a directory listing errors out, silently implement the fix (e.g., resolving paths, checking absolute vs relative context) before modifying the codebase. Keep the user workspace uninterrupted and pristine.

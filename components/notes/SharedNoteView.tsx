@@ -222,7 +222,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                             }}
                                             className="w-full px-3 py-2 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                         >
-                                            {isCopiedText ? <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <AppIcon name="solar:copy-linear" className="w-3.5 h-3.5 shrink-0" />}
+                                            {isCopiedText ? <AppIcon name="ph:check-light" className="w-3.5 h-3.5 text-emerald-500 shrink-0 stroke-[2.5]" /> : <AppIcon name="solar:copy-linear" className="w-3.5 h-3.5 shrink-0" />}
                                             <span>{isCopiedText ? "Copied" : "Copy Note"}</span>
                                         </button>
 
@@ -233,7 +233,7 @@ export const SharedNoteView: React.FC<SharedNoteViewProps> = ({ onNavigateHome }
                                             }}
                                             className="w-full px-3 py-2 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                         >
-                                            {isCopiedLink ? <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <AppIcon name="solar:share-linear" className="w-3.5 h-3.5 shrink-0" />}
+                                            {isCopiedLink ? <AppIcon name="ph:check-light" className="w-3.5 h-3.5 text-emerald-500 shrink-0 stroke-[2.5]" /> : <AppIcon name="solar:share-linear" className="w-3.5 h-3.5 shrink-0" />}
                                             <span>{isCopiedLink ? "Link Copied" : "Copy Share Link"}</span>
                                         </button>
                                     </div>

@@ -138,46 +138,63 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-fadeIn"
+            onClick={onClose}
+        >
             <div 
-                className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl overflow-hidden flex flex-col font-sans transition-all"
+                className="w-full max-w-md bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col font-sans transition-all"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/50 dark:bg-neutral-900/50">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                             <AppIcon name="solar:share-linear" size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 leading-tight">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
                                 Share Note
                             </h3>
-                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
                                 Anyone with this link can view this note anonymously
                             </p>
                         </div>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                        title="Close"
+                    >
+                        <AppIcon name="heroicons:x-mark" className="w-4 h-4" />
+                    </button>
                 </div>
 
                 {/* Modal Body */}
                 <div className="p-5 flex flex-col gap-4">
-                    {/* Note Title Preview */}
-                    <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-800">
-                        <span className="block text-[10px] uppercase font-mono font-semibold text-neutral-400 dark:text-neutral-505 mb-1">
-                            Note Title
-                        </span>
-                        <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                            {note.title || 'Untitled Note'}
-                        </p>
+                    {/* Note Title Preview Card */}
+                    <div className="p-3.5 rounded-xl bg-amber-500/[0.04] dark:bg-white/[0.03] border border-amber-500/15 dark:border-white/10 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 dark:bg-white/5 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <AppIcon name="solar:document-text-linear" size={16} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <span className="block text-[10px] uppercase font-mono font-semibold text-gray-400 dark:text-gray-400">
+                                Note Title
+                            </span>
+                            <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate mt-0.5">
+                                {note.title || 'Untitled Note'}
+                            </p>
+                        </div>
                     </div>
 
-                    {/* Side-by-Side Expiration Settings & Link Copy Block */}
-                    <div className="grid grid-cols-2 gap-4 items-stretch w-full">
+                    {/* Expiration Settings & Link Copy Block */}
+                    <div className="grid grid-cols-2 gap-3.5 items-stretch w-full">
                         {/* Expiration Settings (Left Column) */}
                         <div className="flex flex-col justify-between gap-1.5 min-w-0 relative h-full">
-                            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                                <AppIcon name="solar:clock-circle-linear" size={13} className="text-amber-500 shrink-0" />
+                            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                <AppIcon name="solar:clock-circle-linear" size={14} className="text-amber-500 shrink-0" />
                                 <span className="truncate">Expiration</span>
                             </label>
 
@@ -186,15 +203,15 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                 <button
                                     type="button"
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className="w-full h-9 px-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs font-medium flex items-center justify-between gap-1 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer shadow-2xs"
+                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-gray-800 dark:text-gray-200 text-xs font-semibold flex items-center justify-between gap-1 hover:border-amber-500/40 dark:hover:border-amber-400/40 transition-colors cursor-pointer shadow-xs"
                                 >
                                     <span className="truncate">{getSelectedLabel()}</span>
-                                    <AppIcon name="solar:alt-arrow-down-linear" size={14} className={`text-neutral-400 shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <AppIcon name="solar:alt-arrow-down-linear" size={14} className={`text-gray-400 shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* Custom Dropdown Content */}
                                 {isDropdownOpen && (
-                                    <div className="absolute left-0 right-0 bottom-full mb-1 sm:bottom-auto sm:top-full sm:mt-1 z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-lg max-h-48 overflow-y-auto animate-fadeIn">
+                                    <div className="absolute left-0 right-0 bottom-full mb-1.5 sm:bottom-auto sm:top-full sm:mt-1.5 z-50 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-fadeIn divide-y divide-gray-100 dark:divide-white/5 py-1">
                                         {durationOptions.map((opt) => (
                                             <button
                                                 key={opt.value}
@@ -203,12 +220,12 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                                     setDurationType(opt.value);
                                                     setIsDropdownOpen(false);
                                                 }}
-                                                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800/80 transition-colors flex items-center justify-between ${
-                                                    durationType === opt.value ? 'bg-amber-500/5 text-amber-600 dark:text-amber-400 font-semibold' : 'text-neutral-700 dark:text-neutral-300'
+                                                className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between cursor-pointer ${
+                                                    durationType === opt.value ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                                                 }`}
                                             >
                                                 <span>{opt.label}</span>
-                                                {durationType === opt.value && <AppIcon name="ph:check-light" size={12} className="shrink-0" />}
+                                                {durationType === opt.value && <AppIcon name="ph:check-light" size={13} className="shrink-0 stroke-[2.5]" />}
                                             </button>
                                         ))}
                                     </div>
@@ -216,11 +233,11 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                             </div>
                         </div>
 
-                        {/* Public Share Link Block (Right Column) */}
+                        {/* Public Share Link Copy Block (Right Column) */}
                         <div className="flex flex-col justify-between gap-1.5 min-w-0 h-full">
-                            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center justify-between">
+                            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
                                 <span className="flex items-center gap-1.5 truncate">
-                                    <AppIcon name="solar:global-linear" size={13} className="text-amber-500 shrink-0" />
+                                    <AppIcon name="solar:global-linear" size={14} className="text-amber-500 shrink-0" />
                                     <span className="truncate">Public Link</span>
                                 </span>
                             </label>
@@ -228,18 +245,26 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                             <div className="flex flex-col gap-1.5 flex-1 justify-end">
                                 <button
                                     onClick={handleCopy}
-                                    className="w-full h-9 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                                    className={`w-full h-10 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] ${
+                                        copied 
+                                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
+                                            : 'bg-amber-500 hover:bg-amber-600 text-white'
+                                    }`}
                                 >
-                                    {copied ? <AppIcon name="ph:check-light" size={14} className="shrink-0" /> : <AppIcon name="ph:copy-light" size={14} className="shrink-0" />}
-                                    <span className="truncate">{copied ? "Copied" : "Copy Link"}</span>
+                                    {copied ? (
+                                        <AppIcon name="ph:check-light" size={14} className="shrink-0 stroke-[2.5]" />
+                                    ) : (
+                                        <AppIcon name="solar:copy-linear" size={14} className="shrink-0" />
+                                    )}
+                                    <span className="truncate">{copied ? "Copied!" : "Copy Link"}</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Custom Duration Fields Row (Shown below when custom selected) */}
+                    {/* Custom Duration Fields Row (Shown when custom is selected) */}
                     {durationType === 'custom' && (
-                        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-center gap-2.5 animate-fadeIn">
+                        <div className="p-3.5 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 flex items-center gap-3 animate-fadeIn">
                             <div className="flex-1 min-w-0">
                                 <span className="block text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 mb-1">
                                     Duration Value
@@ -249,7 +274,7 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                     min="1"
                                     value={customQty}
                                     onChange={(e) => setCustomQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                    className="w-full h-8 px-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                    className="w-full h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-gray-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
                                 />
                             </div>
                             <div className="w-28 shrink-0 relative" ref={unitDropdownRef}>
@@ -259,14 +284,14 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                 <button
                                     type="button"
                                     onClick={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
-                                    className="w-full h-8 px-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs font-medium flex items-center justify-between gap-1 cursor-pointer"
+                                    className="w-full h-9 px-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-gray-900 dark:text-white text-xs font-semibold flex items-center justify-between gap-1 cursor-pointer"
                                 >
                                     <span>{getUnitLabel()}</span>
-                                    <AppIcon name="solar:alt-arrow-down-linear" size={12} className="text-neutral-400 shrink-0" />
+                                    <AppIcon name="solar:alt-arrow-down-linear" size={12} className="text-gray-400 shrink-0" />
                                 </button>
 
                                 {isUnitDropdownOpen && (
-                                    <div className="absolute right-0 bottom-full mb-1 z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg w-28 py-1">
+                                    <div className="absolute right-0 bottom-full mb-1.5 z-50 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl w-28 py-1">
                                         {[
                                             { v: 'm', l: 'Minutes' },
                                             { v: 'h', l: 'Hours' },
@@ -280,8 +305,8 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                                                     setCustomUnit(u.v);
                                                     setIsUnitDropdownOpen(false);
                                                 }}
-                                                className={`w-full text-left px-2.5 py-1 text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800/80 transition-colors ${
-                                                    customUnit === u.v ? 'text-amber-500 font-semibold' : 'text-neutral-700 dark:text-neutral-300'
+                                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors cursor-pointer ${
+                                                    customUnit === u.v ? 'text-amber-500 font-bold bg-amber-500/10' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                                                 }`}
                                             >
                                                 {u.l}
@@ -293,42 +318,57 @@ export const ShareNoteModal: React.FC<ShareNoteModalProps> = ({ isOpen, onClose,
                         </div>
                     )}
 
-                    {/* Optional URL Preview (For verification) */}
-                    <div className="flex items-center gap-1.5 p-1.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50">
-                        <span className="text-[10px] uppercase font-mono text-neutral-400 dark:text-neutral-500 px-1 shrink-0">
-                            URL Preview:
+                    {/* URL Preview Card with One-Click Select & Copy */}
+                    <div className="flex items-center gap-2 p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03]">
+                        <span className="text-[10px] uppercase font-mono font-bold text-gray-400 dark:text-gray-400 px-1 shrink-0">
+                            URL:
                         </span>
                         <input
                             type="text"
                             readOnly
                             value={shareUrl}
                             onClick={(e) => (e.target as HTMLInputElement).select()}
-                            className="flex-1 bg-transparent text-[11px] font-mono text-neutral-500 dark:text-neutral-400 focus:outline-none truncate select-all"
+                            className="flex-1 bg-transparent text-[11px] font-mono text-gray-600 dark:text-gray-300 focus:outline-none truncate select-all"
                         />
+                        <button
+                            type="button"
+                            onClick={handleCopy}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+                            title="Copy link"
+                        >
+                            {copied ? (
+                                <AppIcon name="ph:check-light" size={13} className="text-emerald-500 stroke-[2.5]" />
+                            ) : (
+                                <AppIcon name="solar:copy-linear" size={13} />
+                            )}
+                        </button>
                     </div>
 
-                    {/* Additional Options */}
-                    <div className="pt-2 flex items-center justify-between gap-3 text-xs border-t border-neutral-100 dark:border-neutral-800/80 mt-1">
+                    {/* Modal Footer Controls */}
+                    <div className="pt-3 flex items-center justify-between gap-3 text-xs border-t border-black/5 dark:border-white/10 mt-1">
                         <button
+                            type="button"
                             onClick={handlePreviewLink}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium cursor-pointer"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/5 transition-all font-semibold cursor-pointer group"
                         >
-                            <AppIcon name="ph:eye-light" size={14} className="text-neutral-500" />
+                            <AppIcon name="ph:eye-light" size={14} className="text-gray-400 group-hover:text-amber-500 transition-colors" />
                             <span>Preview</span>
                         </button>
 
                         <div className="flex items-center gap-2">
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="px-3.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium cursor-pointer"
+                                className="px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
+                                type="button"
                                 onClick={handleDirectShare}
-                                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] transition-all"
                             >
-                                <AppIcon name="solar:share-linear" size={13} />
+                                <AppIcon name="solar:share-linear" size={14} />
                                 <span>Share</span>
                             </button>
                         </div>

@@ -222,7 +222,7 @@ const VehicleManagerModal: React.FC<VehicleManagerModalProps> = ({
                                         type="submit" 
                                         className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2 cursor-pointer"
                                     >
-                                        <AppIcon name="solar:check-read-linear" className="w-4 h-4" /> 
+                                        <AppIcon name="ph:check-light" className="w-4 h-4 stroke-[2.5]" /> 
                                         {editingId ? 'Update Vehicle' : 'Save Vehicle'}
                                     </button>
                                 </div>

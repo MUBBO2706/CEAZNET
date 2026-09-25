@@ -132,7 +132,7 @@ export const TransactionItem = React.memo<{
                                 'text-indigo-600 dark:text-indigo-400'
                             ) : ''}`}>
                             {isSelectionMode ? (
-                                isSelected ? <AppIcon name="solar:check-read-linear" className="w-6 h-6 lg:w-4 lg:h-4" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
+                                isSelected ? <AppIcon name="ph:check-light" className="w-6 h-6 lg:w-4 lg:h-4 stroke-[2.5]" /> : <div className="w-5 h-5 lg:w-4 lg:h-4 rounded-full border-2 border-gray-400 dark:border-gray-600" />
                             ) : (
                                 <CategoryIcon categoryId={t.category} type={t.type} className="w-6 h-6 lg:w-5 lg:h-5" customCategories={customCategories} />
                             )}
@@ -207,7 +207,7 @@ export const TransactionItem = React.memo<{
                                         isExpense ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300' :
                                         'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
                                     }`}>
-                                        <AppIcon name="solar:check-circle-linear" className="w-3 h-3" />
+                                        <AppIcon name="ph:check-light" className="w-3 h-3 stroke-[2.5]" />
                                         {t.type}
                                     </span>
                                     <button
@@ -452,9 +452,8 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
 
     const isServerPaginated = Boolean(onLoadMore);
 
-    // Optimization 2: Lazy Loading State for client-only fallback
+    // Lazy Loading State for client-only fallback
     const [displayLimit, setDisplayLimit] = useState(15); 
-    const observerTarget = useRef<HTMLDivElement>(null);
 
     const dateKeys = useMemo(() => Object.keys(grouped), [grouped]);
     const visibleKeys = isServerPaginated ? dateKeys : dateKeys.slice(0, displayLimit);
@@ -467,31 +466,49 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
         }
     }, [transactions, isServerPaginated]);
 
-    // Optimization 3: Intersection Observer for Infinite Scroll
+    const currentVisibleCount = useMemo(() => {
+        if (isServerPaginated) {
+            return transactions.length;
+        }
+        return visibleKeys.reduce((sum, key) => sum + (grouped[key]?.length || 0), 0);
+    }, [isServerPaginated, transactions.length, visibleKeys, grouped]);
+
+    const displayTotal = useMemo(() => {
+        if (totalCount !== undefined && totalCount > 0) {
+            return totalCount;
+        }
+        return transactions.length;
+    }, [totalCount, transactions.length]);
+
+    // Sentinel Ref & Observer for Automatic Infinite Scroll
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+
     useEffect(() => {
-        if (!effectiveHasMore) return;
+        if (!effectiveHasMore || isLoadingMore) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting) {
-                    if (isServerPaginated) {
-                        if (!isLoadingMore && onLoadMore) {
-                            onLoadMore();
-                        }
-                    } else {
-                        setDisplayLimit((prev) => prev + 10);
+                if (entries[0]?.isIntersecting) {
+                    if (isServerPaginated && onLoadMore) {
+                        onLoadMore();
+                    } else if (!isServerPaginated) {
+                        setDisplayLimit((prev) => prev + 15);
                     }
                 }
             },
-            { threshold: 0.1, rootMargin: '250px' }
+            { threshold: 0.1, rootMargin: '160px' }
         );
 
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
+        const currentSentinel = sentinelRef.current;
+        if (currentSentinel) {
+            observer.observe(currentSentinel);
         }
 
-        return () => observer.disconnect();
-    }, [effectiveHasMore, isServerPaginated, isLoadingMore, onLoadMore, dateKeys.length]);
+        return () => {
+            if (currentSentinel) observer.unobserve(currentSentinel);
+            observer.disconnect();
+        };
+    }, [effectiveHasMore, isLoadingMore, isServerPaginated, onLoadMore]);
 
     // Refs for Long Press Logic
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -624,42 +641,24 @@ const TransactionList: React.FC<TransactionListProps> = React.memo(({
                 );
             })}
             
-            {/* Sentinel for Infinite Scroll & Load More Controls */}
+            {/* Automatic Infinite Scroll Sentinel & Direct Loader */}
             {effectiveHasMore && (
-                <div ref={observerTarget} className="py-4 flex flex-col justify-center items-center gap-2">
-                    {isLoadingMore ? (
-                        <div className="flex items-center gap-2 text-sm font-medium py-2 text-gray-500 dark:text-gray-400">
-                            <Loader className="w-4 h-4 animate-spin" />
-                            <span>Loading more transactions...</span>
-                        </div>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => onLoadMore && onLoadMore()}
-                            className="flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-xl border transition-all cursor-pointer"
-                            style={{
-                                backgroundColor: 'var(--finance-loadmore-btn-bg)',
-                                color: 'var(--finance-loadmore-btn-text)',
-                                borderColor: 'var(--finance-loadmore-btn-border)'
-                            }}
-                        >
-                            <span>Load More Transactions</span>
-                            {totalCount !== undefined && totalCount > 0 && (
-                                <span className="text-xs opacity-75 font-normal">
-                                    ({transactions.length} of {totalCount})
-                                </span>
-                            )}
-                        </button>
-                    )}
+                <div 
+                    ref={sentinelRef} 
+                    className="py-6 flex items-center justify-center gap-2 text-xs font-semibold"
+                    style={{ color: 'var(--finance-loadmore-btn-text)' }}
+                >
+                    <Loader className="w-3.5 h-3.5 animate-spin" />
+                    <span>Loading more transactions...</span>
                 </div>
             )}
 
-            {!effectiveHasMore && isServerPaginated && transactions.length >= 30 && (
+            {!effectiveHasMore && transactions.length > 0 && (
                 <div 
-                    className="py-4 text-center text-xs opacity-60 font-normal" 
+                    className="py-6 text-center text-xs opacity-60 font-medium" 
                     style={{ color: 'var(--finance-loader-text)' }}
                 >
-                    All {totalCount || transactions.length} transactions loaded
+                    All {displayTotal} transactions loaded
                 </div>
             )}
         </div>

@@ -39,12 +39,14 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ isOpen,
 
     if (isIncome) {
         gradient = 'from-emerald-500 to-teal-600';
-        iconName = 'arrow-down-left';
+        iconName = 'solar:arrow-down-left-linear';
         sign = '+';
     } else if (isExpense) {
         gradient = 'from-rose-500 to-pink-600';
-        iconName = 'arrow-up-right';
+        iconName = 'solar:arrow-up-right-linear';
         sign = '-';
+    } else {
+        iconName = 'solar:transfer-horizontal-linear';
     }
 
     return (
@@ -67,9 +69,9 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ isOpen,
                         {/* Close Button */}
                         <button 
                             onClick={onClose} 
-                            className="absolute top-4 right-4 p-2 text-white group"
+                            className="absolute top-4 right-4 p-1 text-white/80 hover:text-white transition-colors cursor-pointer group"
                         >
-                            <AppIcon name="x" className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+                            <AppIcon name="solar:close-circle-linear" className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
                         </button>
 
                         {/* Icon Bubble */}
@@ -98,10 +100,10 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ isOpen,
                     <div className="px-8 pb-8 pt-6">
                         <div className="bg-gray-50/50 dark:bg-black/20 rounded-2xl p-6 shadow-inner border border-gray-100/50 dark:border-white/5">
                             <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-                                <DetailRow label="Category" value={transaction.category} iconName="tag" />
-                                <DetailRow label="Payment" value={transaction.payment_method} iconName="credit-card" />
-                                <DetailRow label="Date" value={dateStr} iconName="calendar" />
-                                <DetailRow label="Time" value={timeStr} iconName="clock" />
+                                <DetailRow label="Category" value={transaction.category} iconName="solar:tag-linear" />
+                                <DetailRow label="Payment" value={transaction.payment_method} iconName="solar:card-linear" />
+                                <DetailRow label="Date" value={dateStr} iconName="solar:calendar-linear" />
+                                <DetailRow label="Time" value={timeStr} iconName="solar:clock-circle-linear" />
                                 
                                 <div className="col-span-2 pt-4 mt-2 border-t border-dashed border-gray-200 dark:border-gray-700/50 flex justify-between items-center">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">ID</span>
@@ -117,25 +119,25 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ isOpen,
                             <div className="flex-1 grid grid-cols-2 gap-3">
                                 <button 
                                     onClick={() => { onClose(); onEdit(transaction); }}
-                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-bold text-xs uppercase tracking-wide hover:bg-gray-200 dark:hover:bg-white/20 transition-all active:scale-[0.98] group"
+                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-bold text-xs uppercase tracking-wide hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-[0.98] group cursor-pointer"
                                 >
-                                    <AppIcon name="pen" className="w-4 h-4 group-hover:scale-110 transition-transform" /> Edit
+                                    <AppIcon name="solar:pen-linear" className="w-4 h-4 group-hover:scale-110 transition-transform" /> Edit
                                 </button>
                                 {onDuplicate && (
                                     <button 
                                         onClick={() => onDuplicate(transaction)}
-                                        className="flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-bold text-xs uppercase tracking-wide hover:bg-indigo-100 dark:hover:bg-indigo-500/30 transition-all active:scale-[0.98] group"
+                                        className="flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-bold text-xs uppercase tracking-wide hover:text-indigo-700 dark:hover:text-indigo-200 transition-all active:scale-[0.98] group cursor-pointer"
                                     >
-                                        <AppIcon name="copy" className="w-4 h-4 group-hover:scale-110 transition-transform" /> Copy
+                                        <AppIcon name="solar:copy-linear" className="w-4 h-4 group-hover:scale-110 transition-transform" /> Copy
                                     </button>
                                 )}
                             </div>
                             <button 
                                 onClick={() => onDelete(transaction.id)}
-                                className="flex items-center justify-center p-3 rounded-xl bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-500/30 transition-all active:scale-[0.98] group"
+                                className="flex items-center justify-center p-3 rounded-xl bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold hover:text-red-700 dark:hover:text-red-300 transition-all active:scale-[0.98] group cursor-pointer"
                                 title="Delete"
                             >
-                                <AppIcon name="trash-2" className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                <AppIcon name="solar:trash-bin-trash-linear" className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </button>
                         </div>
                     </div>

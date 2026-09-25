@@ -58,7 +58,7 @@ const CustomSelect = ({ value, options, onChange, label }: { value: any, options
                             }`}
                         >
                             {option.label}
-                            {value === option.value && <AppIcon name="solar:check-read-linear" className="w-4 h-4" />}
+                            {value === option.value && <AppIcon name="ph:check-light" className="w-4 h-4 stroke-[2.5]" />}
                         </button>
                     ))}
                 </div>

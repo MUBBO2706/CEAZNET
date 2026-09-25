@@ -228,7 +228,7 @@ const FinancialFitnessCard: React.FC<FinancialFitnessCardProps> = ({
                     ) : (
                         <>
                             {stats.isUnderBudget ? (
-                                <AppIcon name="solar:check-circle-linear" className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                <AppIcon name="solar:verified-check-linear" className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
                             ) : (
                                 <AppIcon name="solar:danger-circle-linear" className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
                             )}

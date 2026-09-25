@@ -199,7 +199,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                                                 )}
                                             </div>
                                             {isSelected && (
-                                                <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                <AppIcon name="ph:check-light" className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 stroke-[2.5]" />
                                             )}
                                         </button>
                                     );
