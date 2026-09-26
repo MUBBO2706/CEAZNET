@@ -446,6 +446,15 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
     const [showColorPicker, setShowColorPicker] = useState(false);
     const selectedNoteRef = useRef<Partial<Note> | null>(null);
 
+    // Smooth Origin-Aware Morphing & Scale Animation States
+    type AnimPhase = 'idle' | 'entering-start' | 'entering-active' | 'exiting';
+    const [animPhase, setAnimPhase] = useState<AnimPhase>('idle');
+    const originRectRef = useRef<{ left: number; top: number; width: number; height: number; borderRadius?: string; isFromFab?: boolean } | null>(null);
+    const closingTargetRef = useRef<{ left: number; top: number; width: number; height: number; borderRadius?: string } | null>(null);
+    const closingTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const enterTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const isClosingRef = useRef(false);
+
     useEffect(() => {
         selectedNoteRef.current = selectedNote;
     }, [selectedNote]);
@@ -530,11 +539,57 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
         }
     };
 
-    const handleOpenNote = useCallback((note?: Note) => {
+    const handleOpenNote = useCallback((note?: Note, sourceEventOrEl?: React.MouseEvent | HTMLElement) => {
         if (!note && isSuspended) {
             addToast("Create note blocked: Account suspended.", "error");
             return;
         }
+
+        if (closingTimerRef.current) {
+            clearTimeout(closingTimerRef.current);
+            closingTimerRef.current = null;
+        }
+        if (enterTimerRef.current) {
+            clearTimeout(enterTimerRef.current);
+            enterTimerRef.current = null;
+        }
+        isClosingRef.current = false;
+
+        // Measure origin element bounding rect relative to portal container
+        const currentPortal = portalTarget || document.getElementById('main-content-area') || document.body;
+        let originElement: HTMLElement | null = null;
+
+        if (sourceEventOrEl) {
+            if ('currentTarget' in sourceEventOrEl) {
+                originElement = (sourceEventOrEl as React.MouseEvent).currentTarget as HTMLElement;
+            } else if (sourceEventOrEl instanceof HTMLElement) {
+                originElement = sourceEventOrEl;
+            }
+        }
+
+        if (!originElement && note) {
+            originElement = document.getElementById(`note-${note.id}`);
+        } else if (!originElement && !note) {
+            originElement = document.querySelector('[data-note-fab]') || document.querySelector('[data-note-new-card]');
+        }
+
+        if (originElement && currentPortal) {
+            const elRect = originElement.getBoundingClientRect();
+            const containerRect = currentPortal.getBoundingClientRect();
+            const isFab = originElement.hasAttribute('data-note-fab');
+            originRectRef.current = {
+                left: elRect.left - containerRect.left,
+                top: elRect.top - containerRect.top,
+                width: elRect.width,
+                height: elRect.height,
+                borderRadius: isFab ? '9999px' : (getComputedStyle(originElement).borderRadius || '24px'),
+                isFromFab: isFab
+            };
+        } else {
+            originRectRef.current = null;
+        }
+
+        closingTargetRef.current = null;
 
         if (note) {
             setSelectedNote(note);
@@ -573,7 +628,19 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                 window.history.pushState({ noteId: newId }, '', `/notes/${newId}`);
             }
         }
-    }, [isSuspended, addToast, user]);
+
+        // Trigger scale zoom-in animation
+        setAnimPhase('entering-start');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setAnimPhase('entering-active');
+            });
+        });
+
+        enterTimerRef.current = setTimeout(() => {
+            setAnimPhase('idle');
+        }, 400);
+    }, [isSuspended, addToast, user, portalTarget]);
 
     const getEditorContent = () => {
         if (editorRef.current) {
@@ -583,11 +650,18 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
     };
 
     const handleCloseNote = useCallback((fromUrl?: boolean | React.MouseEvent | React.KeyboardEvent) => {
-        if (!selectedNoteRef.current) return;
+        if (!selectedNoteRef.current || isClosingRef.current) return;
         const noteToClose = selectedNoteRef.current;
+        isClosingRef.current = true;
+
+        if (enterTimerRef.current) {
+            clearTimeout(enterTimerRef.current);
+            enterTimerRef.current = null;
+        }
 
         const isNewNote = !notes.some(n => n.id === noteToClose.id);
         const currentContent = getEditorContent();
+        let wasNewNoteSaved = false;
 
         if (setSearchQuery) {
             setSearchQuery('');
@@ -597,11 +671,21 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
 
         if (!isPopState) {
             if (isNewNote && (noteToClose.title?.trim() || currentContent?.trim())) {
-                const noteToSave: Partial<Note> = {
-                    ...noteToClose,
-                    content: currentContent
+                wasNewNoteSaved = true;
+                const noteToSave: Note = {
+                    id: noteToClose.id || crypto.randomUUID(),
+                    user_id: user?.id,
+                    title: noteToClose.title || '',
+                    content: currentContent,
+                    tags: noteToClose.tags || [],
+                    isPinned: noteToClose.isPinned || false,
+                    colorTheme: noteToClose.colorTheme || 'default',
+                    createdAt: noteToClose.createdAt || new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
                 };
                 setIsSaving(true);
+                // Prepend to notes list state immediately so the new card slot is rendered for closing morph
+                setNotes(prev => [noteToSave, ...prev.filter(n => n.id !== noteToSave.id)]);
                 handleSaveNote(noteToSave).then(() => {
                     addToast('Note created.', 'success');
                 }).catch((err) => {
@@ -624,14 +708,62 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
             }
         }
 
+        // Measure destination element for zoom-out scale animation
+        const currentPortal = portalTarget || document.getElementById('main-content-area') || document.body;
+        let destRect: { left: number; top: number; width: number; height: number; borderRadius?: string } | null = null;
+
+        if (currentPortal) {
+            const containerRect = currentPortal.getBoundingClientRect();
+            let destElement: HTMLElement | null = null;
+
+            if (wasNewNoteSaved) {
+                // Target newly created card in slot 1 or by ID
+                destElement = document.getElementById(`note-${noteToClose.id}`) ||
+                              document.querySelector('.notes-grid-container > div:first-child') ||
+                              document.querySelector('[data-note-card]');
+            } else if (!isNewNote) {
+                // Target existing note card
+                destElement = document.getElementById(`note-${noteToClose.id}`);
+            } else {
+                // Cancelled/Empty new note: target + button or New Note card
+                destElement = document.querySelector('[data-note-fab]') || document.querySelector('[data-note-new-card]');
+            }
+
+            if (destElement) {
+                const elRect = destElement.getBoundingClientRect();
+                const isFab = destElement.hasAttribute('data-note-fab');
+                destRect = {
+                    left: elRect.left - containerRect.left,
+                    top: elRect.top - containerRect.top,
+                    width: elRect.width,
+                    height: elRect.height,
+                    borderRadius: isFab ? '9999px' : (getComputedStyle(destElement).borderRadius || '24px')
+                };
+            }
+        }
+
+        closingTargetRef.current = destRect || originRectRef.current;
+
         setShowColorPicker(false);
-        setIsReadOnly(false);
-        setSelectedNote(null);
+        setAnimPhase('exiting');
 
         if (window.location.pathname.startsWith('/notes/')) {
             window.history.replaceState(null, '', '/notes');
         }
-    }, [notes, isReadOnly, setSearchQuery, addToast]);
+
+        if (closingTimerRef.current) {
+            clearTimeout(closingTimerRef.current);
+        }
+
+        closingTimerRef.current = setTimeout(() => {
+            setIsReadOnly(false);
+            setSelectedNote(null);
+            setAnimPhase('idle');
+            isClosingRef.current = false;
+            originRectRef.current = null;
+            closingTargetRef.current = null;
+        }, 340);
+    }, [notes, isReadOnly, setSearchQuery, addToast, portalTarget]);
 
     // Handle initial direct page load (/notes/:id)
     useEffect(() => {
@@ -1104,6 +1236,105 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
         };
     }, [setNotesHeaderState]);
 
+    const getContainerStyle = (): React.CSSProperties => {
+        const origin = originRectRef.current;
+        const closing = closingTargetRef.current;
+        const containerW = portalTarget?.clientWidth || window.innerWidth;
+        const containerH = portalTarget?.clientHeight || window.innerHeight;
+
+        const baseStyle: React.CSSProperties = {
+            height: '100%',
+            paddingBottom: 'var(--dev-console-padding, 0px)',
+            transformOrigin: '0 0',
+        };
+
+        if (animPhase === 'entering-start') {
+            if (origin) {
+                const scaleX = Math.max(0.01, origin.width / containerW);
+                const scaleY = Math.max(0.01, origin.height / containerH);
+                return {
+                    ...baseStyle,
+                    transform: `translate3d(${origin.left}px, ${origin.top}px, 0) scale(${scaleX}, ${scaleY})`,
+                    borderRadius: origin.borderRadius || '16px',
+                    opacity: 0.85,
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    transition: 'none',
+                    willChange: 'transform, opacity, border-radius, box-shadow',
+                };
+            }
+            return {
+                ...baseStyle,
+                transform: 'scale(0.92)',
+                transformOrigin: 'center center',
+                borderRadius: '16px',
+                opacity: 0,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                transition: 'none',
+                willChange: 'transform, opacity, border-radius',
+            };
+        }
+
+        if (animPhase === 'entering-active') {
+            return {
+                ...baseStyle,
+                transform: 'translate3d(0px, 0px, 0px) scale(1, 1)',
+                transformOrigin: origin ? '0 0' : 'center center',
+                borderRadius: '0px',
+                opacity: 1,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                transition: 'transform 380ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 380ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out, box-shadow 380ms cubic-bezier(0.16, 1, 0.3, 1)',
+                willChange: 'transform, opacity, border-radius, box-shadow',
+            };
+        }
+
+        if (animPhase === 'exiting') {
+            const target = closing || origin;
+            if (target) {
+                const scaleX = Math.max(0.01, target.width / containerW);
+                const scaleY = Math.max(0.01, target.height / containerH);
+                return {
+                    ...baseStyle,
+                    transform: `translate3d(${target.left}px, ${target.top}px, 0) scale(${scaleX}, ${scaleY})`,
+                    borderRadius: target.borderRadius || '16px',
+                    opacity: 0,
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                    transition: 'transform 330ms cubic-bezier(0.2, 0.9, 0.28, 1), border-radius 330ms cubic-bezier(0.2, 0.9, 0.28, 1), opacity 310ms cubic-bezier(0.33, 1, 0.68, 1), box-shadow 330ms cubic-bezier(0.2, 0.9, 0.28, 1)',
+                    pointerEvents: 'none',
+                    willChange: 'transform, opacity, border-radius, box-shadow',
+                };
+            }
+            return {
+                ...baseStyle,
+                transform: 'scale(0.92)',
+                transformOrigin: 'center center',
+                borderRadius: '16px',
+                opacity: 0,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                transition: 'transform 300ms cubic-bezier(0.2, 0.9, 0.28, 1), opacity 260ms ease-in-out',
+                pointerEvents: 'none',
+                willChange: 'transform, opacity',
+            };
+        }
+
+        // 'idle'
+        return {
+            ...baseStyle,
+            transform: 'none',
+            borderRadius: '0px',
+            opacity: 1,
+            boxShadow: 'none',
+        };
+    };
+
+    const isInnerAnimating = animPhase === 'entering-start' || animPhase === 'exiting';
+    const innerContentStyle: React.CSSProperties = {
+        opacity: isInnerAnimating ? 0 : 1,
+        transform: animPhase === 'entering-start' ? 'translateY(8px)' : 'translateY(0)',
+        transition: animPhase === 'exiting' 
+            ? 'opacity 120ms ease-out' 
+            : 'opacity 260ms cubic-bezier(0.16, 1, 0.3, 1) 50ms, transform 280ms cubic-bezier(0.16, 1, 0.3, 1) 50ms',
+    };
+
     return (
         <main className="relative z-10 h-full overflow-y-auto bg-[#F2F4F7] dark:bg-black transition-colors scrollbar-hide pt-20 md:pt-16 dev-console-spacing-pb flex flex-col">
             
@@ -1115,10 +1346,11 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                     </div>
                 ) : (
                     <>
-                        <div className={searchQuery ? "flex flex-col gap-3 md:gap-2 pb-2" : "grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-2 pb-2"}>
+                        <div className={`notes-grid-container ${searchQuery ? "flex flex-col gap-3 md:gap-2 pb-2" : "grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-2 pb-2"}`}>
                             {!searchQuery && notes.length === 0 && (
                                 <button 
-                                    onClick={() => handleOpenNote()}
+                                    data-note-new-card
+                                    onClick={(e) => handleOpenNote(undefined, e)}
                                     className="w-full rounded-3xl p-1 bg-gradient-to-br from-amber-400 via-orange-400 to-pink-500 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group text-left h-[18vh] min-h-[140px] md:min-h-[120px] md:h-32"
                                 >
                                     <div className="bg-white dark:bg-[#050505] h-full w-full rounded-[1.3rem] p-4 flex flex-col gap-2 items-center justify-center">
@@ -1134,7 +1366,7 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                                 <NoteCard 
                                     key={note.id} 
                                     note={note} 
-                                    onClick={handleOpenNote}
+                                    onClick={(noteToOpen, e) => handleOpenNote(noteToOpen, e)}
                                     onDelete={handleDeleteNote}
                                     onPin={handlePinNote}
                                     onShare={(noteToShare, e) => { e.stopPropagation(); setShareModalNote(noteToShare); }}
@@ -1157,7 +1389,7 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
             {notes.length > 0 && (
                 <button 
                     data-note-fab
-                    onClick={() => handleOpenNote()}
+                    onClick={(e) => handleOpenNote(undefined, e)}
                     className="fixed right-6 z-40 w-14 h-14 bg-amber-500 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:bg-amber-600 transition-all active:scale-95"
                     style={{ bottom: 'calc(var(--dev-console-padding, 0px) + 1.5rem)' }}
                     title="Create New Note"
@@ -1168,17 +1400,23 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
 
             {/* FULL PAGE Editor via Portal */}
             {portalTarget && selectedNote && createPortal(
-                <div 
-                    key={selectedNote.id || 'new-note'}
-                    ref={editorContainerRef}
-                    className="absolute inset-0 z-[25] bg-white dark:bg-black flex flex-col overflow-hidden"
-                    style={{ 
-                        height: '100%',
-                        paddingBottom: 'var(--dev-console-padding, 0px)',
-                    }}
-                >
-                    {/* Editor Content Area */}
-                    <div className={`flex-1 overflow-y-auto ${getEditorBgClass()} dark:bg-transparent transition-colors pt-16 md:pt-14 flex flex-col`}>
+                <>
+                    {/* Backdrop dim overlay */}
+                    <div 
+                        className="absolute inset-0 z-[24] bg-black/15 dark:bg-black/40 pointer-events-none transition-opacity duration-300"
+                        style={{ opacity: animPhase === 'idle' || animPhase === 'entering-active' ? 1 : 0 }}
+                    />
+                    <div 
+                        key={selectedNote.id || 'new-note'}
+                        ref={editorContainerRef}
+                        className="absolute inset-0 z-[25] bg-white dark:bg-black flex flex-col overflow-hidden shadow-2xl"
+                        style={getContainerStyle()}
+                    >
+                        {/* Editor Content Area */}
+                        <div 
+                            style={innerContentStyle}
+                            className={`flex-1 overflow-y-auto ${getEditorBgClass()} dark:bg-transparent transition-colors pt-16 md:pt-14 flex flex-col`}
+                        >
                         {isNoteLoading && !selectedNote.title && !selectedNote.content ? (
                             <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[55vh] text-center w-full px-4" style={{ color: 'var(--notes-loader-text)' }}>
                                 <Loader className="w-8 h-8 animate-spin mb-3" style={{ color: 'var(--notes-loader-spinner)' }} />
@@ -1244,22 +1482,24 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
 
                     {/* Editor Toolbar - Hide when Read Only or Loading */}
                     {!isNoteLoading && (
-                        <EditorToolbar
-                            isReadOnly={isReadOnly}
-                            showColorPicker={showColorPicker}
-                            setShowColorPicker={setShowColorPicker}
-                            colorOptions={colorOptions}
-                            selectedNote={selectedNote}
-                            setSelectedNote={setSelectedNote}
-                            notes={notes}
-                            handleSaveNote={handleSaveNote}
-                            getEditorContent={getEditorContent}
-                            setShareModalNote={setShareModalNote}
-                            handleFormat={handleFormat}
-                            activeFormats={activeFormats}
-                            getButtonStyle={getButtonStyle}
-                            handleInsertTable={handleInsertTable}
-                        />
+                        <div style={innerContentStyle}>
+                            <EditorToolbar
+                                isReadOnly={isReadOnly}
+                                showColorPicker={showColorPicker}
+                                setShowColorPicker={setShowColorPicker}
+                                colorOptions={colorOptions}
+                                selectedNote={selectedNote}
+                                setSelectedNote={setSelectedNote}
+                                notes={notes}
+                                handleSaveNote={handleSaveNote}
+                                getEditorContent={getEditorContent}
+                                setShareModalNote={setShareModalNote}
+                                handleFormat={handleFormat}
+                                activeFormats={activeFormats}
+                                getButtonStyle={getButtonStyle}
+                                handleInsertTable={handleInsertTable}
+                            />
+                        </div>
                     )}
 
                     {/* Search Navigation Overlay */}
@@ -1287,7 +1527,8 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                             </div>
                         </div>
                     )}
-                </div>,
+                </div>
+                </>,
                 portalTarget
             )}
 

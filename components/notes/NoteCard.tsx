@@ -100,6 +100,7 @@ const NoteCard: React.FC<NoteCardProps> = React.memo(({ note, onClick, onDelete,
     return (
         <div 
             id={`note-${note.id}`}
+            data-note-card={note.id}
             onClick={(e) => onClick(note, e)}
             className={`
                 relative group rounded-2xl p-3 md:p-2.5 border shadow-none 
