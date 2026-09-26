@@ -121,10 +121,10 @@ const MOLECULE_PREPROCESSOR_PROMPT = `You are an expert Chemistry AI. Your task 
 // --- Agent Implementations ---
 
 const getPreprocessorModel = (requestedModel?: string): string => {
-    if (requestedModel === 'gemini-2.5-pro') {
-        return 'gemini-2.5-flash';
+    if (requestedModel === 'gemini-2.5-pro' || requestedModel === 'gemini-2.5-flash') {
+        return 'gemini-3.8-flash';
     }
-    return requestedModel || 'gemini-2.5-flash';
+    return requestedModel || 'gemini-3.8-flash';
 };
 
 export interface RouterResult {

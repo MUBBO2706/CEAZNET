@@ -360,7 +360,7 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
             ].filter(Boolean).join('\n\n');
 
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-3.1-flash-live-preview',
+                model: 'gemini-3.8-live',
                 callbacks: {
                     onopen: async () => {
                         console.log(`[LiveConversation] EVENT: CONNECTION_OPEN | environment: ${process.env.NODE_ENV}`);
@@ -598,7 +598,7 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                 },
                 config: {
                     responseModalities: [Modality.AUDIO],
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceRef.current } } },
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceRef.current || 'Zephyr' } } },
                     systemInstruction: fullSystemInstruction,
                     outputAudioTranscription: {},
                     inputAudioTranscription: {},

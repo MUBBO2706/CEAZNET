@@ -1,5 +1,23 @@
 # Version Control Updates & Fixes Log
 
+**Timestamp:** 26 September 2026, 10:09 AM
+
+---
+
+### 1. User Problem Reported (Aapne Kya Bataya)
+- **Voice Live Transcription Failure in Production:**
+  - Production me Voice Live conversation and real-time audio transcription connect nahi ho raha tha (closed/error state de raha tha).
+
+---
+
+### 2. Resolution Implemented (Humne Kya Kiya)
+- **Upgraded to Official Gemini Live API Model:**
+  - `hooks/useLiveConversation.ts` me outdated preview model `gemini-3.1-flash-live-preview` ko Google ke current official real-time multimodal Live API model **`gemini-3.8-live`** se replace kiya gaya.
+  - Live API WebSocket connection me `inputAudioTranscription`, `outputAudioTranscription`, Google Search grounding tool, aur safe prebuilt voice configuration (`Zephyr` fallback) ko properly synchronize kiya gaya.
+  - `services/geminiService.ts` ke preprocessor fallback model ko `gemini-3.8-flash` par upgrade kiya gaya.
+
+---
+
 **Timestamp:** 26 September 2026, 09:53 AM
 
 ---
