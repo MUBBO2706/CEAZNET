@@ -57,31 +57,27 @@ export const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void 
     const config = {
         success: {
             icon: <AppIcon name="solar:check-circle-linear" className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />,
-            border: 'border-emerald-500/20',
-            glow: 'shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] dark:shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)]',
-            bg: 'bg-white dark:bg-neutral-900/95',
-            text: 'text-neutral-800 dark:text-emerald-50'
+            border: 'border-emerald-500/25 dark:border-emerald-500/35',
+            glow: 'shadow-[0_4px_20px_-4px_rgba(16,185,129,0.25)] dark:shadow-[0_4px_24px_-4px_rgba(16,185,129,0.3)]',
+            text: 'text-neutral-800 dark:text-emerald-100'
         },
         error: {
-            icon: <AppIcon name="solar:danger-circle-linear" className="w-5 h-5 text-rose-500" />,
-            border: 'border-rose-500/20',
-            glow: 'shadow-[0_0_20px_-5px_rgba(244,63,94,0.2)] dark:shadow-[0_0_20px_-5px_rgba(244,63,94,0.3)]',
-            bg: 'bg-white dark:bg-neutral-900/95',
-            text: 'text-neutral-800 dark:text-rose-50'
+            icon: <AppIcon name="solar:danger-circle-linear" className="w-5 h-5 text-rose-500 dark:text-rose-400" />,
+            border: 'border-rose-500/25 dark:border-rose-500/35',
+            glow: 'shadow-[0_4px_20px_-4px_rgba(244,63,94,0.25)] dark:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.3)]',
+            text: 'text-neutral-800 dark:text-rose-100'
         },
         info: {
             icon: <AppIcon name="solar:info-circle-linear" className="w-5 h-5 text-blue-500 dark:text-blue-400" />,
-            border: 'border-blue-500/20',
-            glow: 'shadow-[0_0_20px_-5px_rgba(59,130,246,0.2)] dark:shadow-[0_0_20px_-5px_rgba(59,130,246,0.3)]',
-            bg: 'bg-white dark:bg-neutral-900/95',
-            text: 'text-neutral-800 dark:text-blue-50'
+            border: 'border-blue-500/25 dark:border-blue-500/35',
+            glow: 'shadow-[0_4px_20px_-4px_rgba(59,130,246,0.25)] dark:shadow-[0_4px_24px_-4px_rgba(59,130,246,0.3)]',
+            text: 'text-neutral-800 dark:text-blue-100'
         },
         warning: {
             icon: <AppIcon name="solar:danger-triangle-linear" className="w-5 h-5 text-amber-500 dark:text-amber-400" />,
-            border: 'border-amber-500/20',
-            glow: 'shadow-[0_0_20px_-5px_rgba(245,158,11,0.2)] dark:shadow-[0_0_20px_-5px_rgba(245,158,11,0.3)]',
-            bg: 'bg-white dark:bg-neutral-900/95',
-            text: 'text-neutral-800 dark:text-amber-50'
+            border: 'border-amber-500/25 dark:border-amber-500/35',
+            glow: 'shadow-[0_4px_20px_-4px_rgba(245,158,11,0.25)] dark:shadow-[0_4px_24px_-4px_rgba(245,158,11,0.3)]',
+            text: 'text-neutral-800 dark:text-amber-100'
         },
     };
 
@@ -90,9 +86,10 @@ export const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void 
     return (
         <div
             className={`
-                relative group flex items-center gap-3 pl-4 pr-3 py-3 rounded-2xl border backdrop-blur-2xl transition-colors cursor-pointer shadow-lg
-                ${style.bg} ${style.border} ${style.glow}
+                relative group flex items-center gap-3 pl-4 pr-3 py-3 rounded-2xl border backdrop-blur-2xl transition-all cursor-pointer shadow-lg
+                ${style.border} ${style.glow}
             `}
+            style={{ backgroundColor: 'var(--toast-bg)' }}
             role="alert"
             onClick={() => onRemove(toast.id)}
         >
@@ -118,13 +115,14 @@ export const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void 
                 )}
             </div>
 
-            {/* Close Button (Subtle) */}
+            {/* Close Button (Subtle & Linear Icon, No Background Hover Box) */}
             <div className="pl-2 border-l border-neutral-200 dark:border-white/10 flex items-center">
                 <button 
                     onClick={(e) => { e.stopPropagation(); onRemove(toast.id); }}
-                    className="p-1 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+                    className="p-1 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-white transition-colors"
+                    title="Dismiss"
                 >
-                    <AppIcon name="heroicons:x-mark" className="w-4 h-4" />
+                    <AppIcon name="solar:close-circle-linear" className="w-4 h-4" />
                 </button>
             </div>
         </div>

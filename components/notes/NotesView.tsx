@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { Note } from '../../types';
 import { getNotes, saveNote, deleteNote, getNoteById, invalidateNoteCache } from '../../services/dbService';
 import { syncAllTransactionsToNote, getProfileName } from '../../services/financeSyncService';
@@ -442,36 +441,21 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
     
     // Editor/Detail View State
     const [selectedNote, setSelectedNote] = useState<Partial<Note> | null>(null);
-    const [isVisible, setIsVisible] = useState(false);
     const [isNoteLoading, setIsNoteLoading] = useState(false);
     const [isEditorFocused, setIsEditorFocused] = useState(false);
-    const [transformOrigin, setTransformOrigin] = useState<string>('center');
     const [showColorPicker, setShowColorPicker] = useState(false);
+    const selectedNoteRef = useRef<Partial<Note> | null>(null);
+
+    useEffect(() => {
+        selectedNoteRef.current = selectedNote;
+    }, [selectedNote]);
 
     const [shareModalNote, setShareModalNote] = useState<Note | null>(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false); // Sync state
     const [isSaving, setIsSaving] = useState(false); // Saving state
     const fetchingUserIdRef = useRef<string | null | undefined>(undefined);
-    const isClosingRef = useRef(false);
-    const activeClosingNoteIdRef = useRef<string | null>(null);
-    const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    
-    const urlNoteId = React.useMemo(() => {
-        const parts = location.pathname.split('/');
-        if (parts.length >= 3 && parts[1] === 'notes' && parts[2]) {
-            return parts[2];
-        }
-        return null;
-    }, [location.pathname]);
-
-    useEffect(() => {
-        return () => {
-            if (closeTimeoutRef.current) {
-                clearTimeout(closeTimeoutRef.current);
-            }
-        };
-    }, []);
+    const initialLoadDoneRef = useRef(false);
 
     // Performance optimization: limit initial rendering
     const [displayLimit, setDisplayLimit] = useState(24);
@@ -519,13 +503,10 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
         };
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', adjustHeight);
-            window.visualViewport.addEventListener('scroll', adjustHeight);
         }
-        adjustHeight();
         return () => {
             if (window.visualViewport) {
                 window.visualViewport.removeEventListener('resize', adjustHeight);
-                window.visualViewport.removeEventListener('scroll', adjustHeight);
             }
         };
     }, [selectedNote]);
@@ -549,47 +530,21 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
         }
     };
 
-    const handleOpenNote = useCallback(async (note?: Note, e?: React.MouseEvent) => {
+    const handleOpenNote = useCallback((note?: Note) => {
         if (!note && isSuspended) {
             addToast("Create note blocked: Account suspended.", "error");
             return;
         }
 
-        isClosingRef.current = false;
-        if (closeTimeoutRef.current) {
-            clearTimeout(closeTimeoutRef.current);
-            closeTimeoutRef.current = null;
-        }
-
-        if (e) {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const originX = rect.left + rect.width / 2;
-            const originY = rect.top + rect.height / 2;
-            setTransformOrigin(`${originX}px ${originY}px`);
-        } else if (note) {
-            const cardEl = document.getElementById(`note-${note.id}`);
-            if (cardEl) {
-                const rect = cardEl.getBoundingClientRect();
-                const originX = rect.left + rect.width / 2;
-                const originY = rect.top + rect.height / 2;
-                setTransformOrigin(`${originX}px ${originY}px`);
-            } else {
-                setTransformOrigin('center');
-            }
-        } else {
-            setTransformOrigin('center');
-        }
-
         if (note) {
             setSelectedNote(note);
             setIsReadOnly(true);
-            setIsNoteLoading(true);
-            setIsVisible(true);
+            setIsNoteLoading(false);
             setShowColorPicker(false);
             setActiveFormats({ bold: false, italic: false, strikeThrough: false, blockType: 'p', isOrderedList: false, isUnorderedList: false });
 
-            if (location.pathname !== `/notes/${note.id}`) {
-                navigate(`/notes/${note.id}`);
+            if (window.location.pathname !== `/notes/${note.id}`) {
+                window.history.pushState({ noteId: note.id }, '', `/notes/${note.id}`);
             }
 
             getNoteById(note.id, user || null).then((fullNote) => {
@@ -598,8 +553,6 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                 }
             }).catch((err) => {
                 console.error("Failed to fetch full note details", err);
-            }).finally(() => {
-                setIsNoteLoading(false);
             });
         } else {
             const newId = crypto.randomUUID();
@@ -613,15 +566,14 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
             });
             setIsReadOnly(false);
             setIsNoteLoading(false);
-            setIsVisible(true);
             setShowColorPicker(false);
             setActiveFormats({ bold: false, italic: false, strikeThrough: false, blockType: 'p', isOrderedList: false, isUnorderedList: false });
 
-            if (location.pathname !== `/notes/${newId}`) {
-                navigate(`/notes/${newId}`);
+            if (window.location.pathname !== `/notes/${newId}`) {
+                window.history.pushState({ noteId: newId }, '', `/notes/${newId}`);
             }
         }
-    }, [navigate, isSuspended, addToast, location.pathname, user]);
+    }, [isSuspended, addToast, user]);
 
     const getEditorContent = () => {
         if (editorRef.current) {
@@ -630,16 +582,9 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
         return selectedNote?.content || '';
     };
 
-    const handleCloseNote = useCallback(async (fromUrl?: boolean | React.MouseEvent | React.KeyboardEvent) => {
-        if (!selectedNote || isClosingRef.current) return;
-        isClosingRef.current = true;
-        const noteToClose = selectedNote;
-        activeClosingNoteIdRef.current = noteToClose.id;
-
-        if (closeTimeoutRef.current) {
-            clearTimeout(closeTimeoutRef.current);
-            closeTimeoutRef.current = null;
-        }
+    const handleCloseNote = useCallback((fromUrl?: boolean | React.MouseEvent | React.KeyboardEvent) => {
+        if (!selectedNoteRef.current) return;
+        const noteToClose = selectedNoteRef.current;
 
         const isNewNote = !notes.some(n => n.id === noteToClose.id);
         const currentContent = getEditorContent();
@@ -648,141 +593,97 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
             setSearchQuery('');
         }
 
-        const cardEl = document.getElementById(`note-${noteToClose.id}`);
-        if (cardEl) {
-            const rect = cardEl.getBoundingClientRect();
-            const originX = rect.left + rect.width / 2;
-            const originY = rect.top + rect.height / 2;
-            setTransformOrigin(`${originX}px ${originY}px`);
-        }
-
         const isPopState = fromUrl === true;
 
-        // Handle saving synchronously if not closing via URL navigation (popstate)
         if (!isPopState) {
-            if (isNewNote && (noteToClose.title || currentContent)) {
+            if (isNewNote && (noteToClose.title?.trim() || currentContent?.trim())) {
                 const noteToSave: Partial<Note> = {
                     ...noteToClose,
                     content: currentContent
                 };
-                try {
-                    setIsSaving(true);
-                    await handleSaveNote(noteToSave);
+                setIsSaving(true);
+                handleSaveNote(noteToSave).then(() => {
                     addToast('Note created.', 'success');
-                } catch (err) {
+                }).catch((err) => {
                     console.error("Failed to save note on close", err);
-                } finally {
+                }).finally(() => {
                     setIsSaving(false);
-                }
+                });
             } else if (!isNewNote) {
                 const original = notes.find(n => n.id === noteToClose.id);
                 if (!isReadOnly && original && (original.content !== currentContent || original.title !== noteToClose.title || original.colorTheme !== noteToClose.colorTheme)) {
-                    try {
-                        setIsSaving(true);
-                        await handleSaveNote({ ...noteToClose, content: currentContent });
+                    setIsSaving(true);
+                    handleSaveNote({ ...noteToClose, content: currentContent }).then(() => {
                         addToast('Note saved.', 'success');
-                    } catch (err) {
+                    }).catch((err) => {
                         console.error("Failed to save note on close", err);
-                    } finally {
+                    }).finally(() => {
                         setIsSaving(false);
-                    }
+                    });
                 }
             }
         }
 
-        // Close editor UI after saving is complete
         setShowColorPicker(false);
         setIsReadOnly(false);
-        setIsVisible(false);
         setSelectedNote(null);
-        isClosingRef.current = false;
-        activeClosingNoteIdRef.current = null;
 
-        if (!isPopState && location.pathname.startsWith('/notes/')) {
-            navigate('/notes');
+        if (window.location.pathname.startsWith('/notes/')) {
+            window.history.replaceState(null, '', '/notes');
         }
-    }, [selectedNote, notes, isReadOnly, setSearchQuery, addToast, navigate, location.pathname]);
+    }, [notes, isReadOnly, setSearchQuery, addToast]);
 
+    // Handle initial direct page load (/notes/:id)
     useEffect(() => {
-        if (isLoading) return;
+        if (isLoading || initialLoadDoneRef.current) return;
+        initialLoadDoneRef.current = true;
 
-        if (!urlNoteId) {
-            isClosingRef.current = false;
-            activeClosingNoteIdRef.current = null;
-            setSelectedNote(null);
-        }
-
-        if (urlNoteId && activeClosingNoteIdRef.current === urlNoteId) {
-            return;
-        }
-
-        if (isClosingRef.current) {
-            return;
-        }
-
-        if (urlNoteId) {
-            if (selectedNote?.id === urlNoteId) {
-                return;
-            }
-            if (closeTimeoutRef.current) {
-                clearTimeout(closeTimeoutRef.current);
-                closeTimeoutRef.current = null;
-            }
-
-            const note = notes.find(n => n.id === urlNoteId);
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        if (parts.length >= 3 && parts[1] === 'notes' && parts[2]) {
+            const id = parts[2];
+            const note = notes.find(n => n.id === id);
             if (note) {
-                // Determine transform origin from DOM if not set
-                const cardEl = document.getElementById(`note-${urlNoteId}`);
-                if (cardEl) {
-                    const rect = cardEl.getBoundingClientRect();
-                    const originX = rect.left + rect.width / 2;
-                    const originY = rect.top + rect.height / 2;
-                    setTransformOrigin(`${originX}px ${originY}px`);
-                }
-
                 setSelectedNote(note);
                 setIsReadOnly(true);
-                setIsNoteLoading(true);
-                setIsVisible(true);
-                setShowColorPicker(false);
-                setActiveFormats({ bold: false, italic: false, strikeThrough: false, blockType: 'p', isOrderedList: false, isUnorderedList: false });
-
-                // Fetch any updated details in background
-                getNoteById(note.id, user || null).then((fullNote) => {
-                    if (fullNote) {
-                        setSelectedNote(prev => prev?.id === fullNote.id ? { ...prev, ...fullNote } : prev);
-                    }
-                }).catch((err) => {
-                    console.error("Failed to fetch full note details", err);
-                }).finally(() => {
-                    setIsNoteLoading(false);
+                setIsNoteLoading(false);
+            } else if (id.length === 36) {
+                setSelectedNote({
+                    id,
+                    title: '',
+                    content: '',
+                    colorTheme: 'default',
+                    tags: [],
+                    isPinned: false
                 });
-            } else {
-                // If ID is valid draft (UUID is 36 chars), initialize the draft
-                if (urlNoteId.length === 36) {
-                    setSelectedNote({
-                        id: urlNoteId,
-                        title: '',
-                        content: '',
-                        colorTheme: 'default',
-                        tags: [],
-                        isPinned: false
-                    });
-                    setIsReadOnly(false);
-                    setIsNoteLoading(false);
-                    setIsVisible(true);
-                    setShowColorPicker(false);
-                    setActiveFormats({ bold: false, italic: false, strikeThrough: false, blockType: 'p', isOrderedList: false, isUnorderedList: false });
-                } else {
-                    navigate('/notes', { replace: true });
-                }
-            }
-        } else {
-            if (selectedNote) {
-                handleCloseNote(true);
+                setIsReadOnly(false);
+                setIsNoteLoading(false);
             }
         }
-    }, [urlNoteId, isLoading, notes, user, navigate, selectedNote, handleCloseNote]);
+    }, [isLoading, notes]);
+
+    // Handle browser back/forward buttons
+    useEffect(() => {
+        const handlePopState = () => {
+            const path = window.location.pathname;
+            const parts = path.split('/');
+            const id = (parts.length >= 3 && parts[1] === 'notes' && parts[2]) ? parts[2] : null;
+
+            if (!id && selectedNoteRef.current) {
+                handleCloseNote(true);
+            } else if (id && (!selectedNoteRef.current || selectedNoteRef.current.id !== id)) {
+                const note = notes.find(n => n.id === id);
+                if (note) {
+                    setSelectedNote(note);
+                    setIsReadOnly(true);
+                    setIsNoteLoading(false);
+                }
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [handleCloseNote, notes]);
 
 
     const handleSaveNote = async (noteData: Partial<Note>) => {
@@ -872,7 +773,6 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
             await deleteNote(id, user);
             addToast('Note deleted.', 'success');
             if (selectedNote?.id === id) {
-                setIsVisible(false);
                 setSelectedNote(null);
             }
         } catch (error) {
@@ -1218,7 +1118,7 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                         <div className={searchQuery ? "flex flex-col gap-3 md:gap-2 pb-2" : "grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-2 pb-2"}>
                             {!searchQuery && notes.length === 0 && (
                                 <button 
-                                    onClick={(e) => handleOpenNote(undefined, e)}
+                                    onClick={() => handleOpenNote()}
                                     className="w-full rounded-3xl p-1 bg-gradient-to-br from-amber-400 via-orange-400 to-pink-500 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group text-left h-[18vh] min-h-[140px] md:min-h-[120px] md:h-32"
                                 >
                                     <div className="bg-white dark:bg-[#050505] h-full w-full rounded-[1.3rem] p-4 flex flex-col gap-2 items-center justify-center">
@@ -1256,7 +1156,8 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
 
             {notes.length > 0 && (
                 <button 
-                    onClick={(e) => handleOpenNote(undefined, e)}
+                    data-note-fab
+                    onClick={() => handleOpenNote()}
                     className="fixed right-6 z-40 w-14 h-14 bg-amber-500 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:bg-amber-600 transition-all active:scale-95"
                     style={{ bottom: 'calc(var(--dev-console-padding, 0px) + 1.5rem)' }}
                     title="Create New Note"
@@ -1265,108 +1166,101 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                 </button>
             )}
 
-            {/* FULL PAGE Editor via Portal with Smooth Zoom Effect */}
-            {portalTarget && createPortal(
-                <AnimatePresence onExitComplete={() => {
-                    setSelectedNote(null);
-                }}>
-                    {isVisible && selectedNote && (
-                        <motion.div 
-                            key={selectedNote.id || 'new-note'}
-                            ref={editorContainerRef}
-                            initial={{ opacity: 0, scale: 0.05, borderRadius: '2rem' }}
-                            animate={{ opacity: 1, scale: 1, borderRadius: '0rem' }}
-                            exit={{ opacity: 0, scale: 0.05, borderRadius: '2rem' }}
-                            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                            className="absolute inset-0 z-[25] bg-white dark:bg-black flex flex-col overflow-hidden"
-                            style={{ 
-                                height: '100%',
-                                transformOrigin: transformOrigin,
-                                paddingBottom: 'var(--dev-console-padding, 0px)'
-                            }}
-                        >
+            {/* FULL PAGE Editor via Portal */}
+            {portalTarget && selectedNote && createPortal(
+                <div 
+                    key={selectedNote.id || 'new-note'}
+                    ref={editorContainerRef}
+                    className="absolute inset-0 z-[25] bg-white dark:bg-black flex flex-col overflow-hidden"
+                    style={{ 
+                        height: '100%',
+                        paddingBottom: 'var(--dev-console-padding, 0px)',
+                    }}
+                >
                     {/* Editor Content Area */}
-                    <div className={`flex-1 overflow-y-auto ${getEditorBgClass()} dark:bg-transparent transition-colors pt-16 md:pt-14`}>
-                        {/* Under editing mode (toolbar open), the padding-bottom remains pb-2. */}
-                        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 py-3 md:py-4 pb-2 flex flex-col">
-                            {/* Title */}
-                            <input 
-                                type="text" 
-                                placeholder="Title" 
-                                value={selectedNote.title || ''}
-                                onChange={e => setSelectedNote(prev => ({ ...prev!, title: e.target.value }))}
-                                onFocus={() => setIsEditorFocused(true)}
-                                disabled={isReadOnly}
-                                className="text-3xl md:text-4xl font-bold bg-transparent border-none focus:outline-none text-neutral-900 dark:text-white w-full placeholder-neutral-400/50 mb-3 mt-1 disabled:cursor-default"
-                            />
-                            
-                            <style>
-                                {`
-                                    .editor-content { min-height: 100px; outline: none; }
-                                    .editor-content:empty:before { content: attr(data-placeholder); color: #9ca3af; pointer-events: none; display: block; }
-                                    .editor-content p { margin-bottom: 0.5em; line-height: 1.6; }
-                                    .editor-content h1 { font-size: 1.5em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
-                                    .editor-content h2 { font-size: 1.25em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
-                                    .editor-content h3 { font-size: 1.1em; font-weight: bold; margin-top: 0.8em; margin-bottom: 0.4em; }
-                                    .editor-content ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.5em; }
-                                    .editor-content ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.5em; }
-                                    .editor-content li { margin-bottom: 0.25em; }
-                                    .editor-content blockquote { border-left: 3px solid #ccc; padding-left: 1em; font-style: italic; color: #666; margin-top: 0.2em; margin-bottom: 0.2em; }
-                                    .dark .editor-content blockquote { border-left-color: #555; color: #aaa; }
-                                    .editor-content pre { background: #f4f4f4; padding: 0.75em; border-radius: 6px; font-family: monospace; font-size: 0.9em; margin-bottom: 0.5em; overflow-x: auto; }
-                                    .dark .editor-content pre { background: #1e1e1e; border: 1px solid #333; }
-                                    .editor-content code { background: #f4f4f4; padding: 0.1em 0.3em; border-radius: 3px; font-family: monospace; font-size: 0.9em; color: #d63384; }
-                                    .dark .editor-content code { background: #333; color: #e0e0e0; }
-                                    .editor-content a { color: #3b82f6; text-decoration: underline; cursor: pointer; }
-                                    .dark .editor-content a { color: #60a5fa; }
-                                    .editor-content hr { border: 0; border-top: 0.5px solid rgba(156, 163, 175, 0.3); margin: 0.75em 0; }
-                                    .dark .editor-content hr { border-top-color: rgba(255, 255, 255, 0.12); }
-                                    
-                                    /* Table Styles */
-                                    .editor-content table { width: 100%; border-collapse: collapse; margin-bottom: 1em; table-layout: fixed; content-visibility: auto; contain-intrinsic-size: 1000px; }
-                                    .editor-content th, .editor-content td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; word-wrap: break-word; }
-                                    .dark .editor-content th, .dark .editor-content td { border-color: #444; }
-                                    .editor-content th { background-color: #f8f9fa; font-weight: bold; }
-                                    .dark .editor-content th { background-color: #1f2937; }
-                                `}
-                            </style>
-                            {isNoteLoading && (
-                                <div className="flex flex-col items-center justify-center py-20 md:py-28 w-full text-center" style={{ color: 'var(--notes-loader-text)' }}>
-                                    <Loader className="w-8 h-8 animate-spin mb-3" style={{ color: 'var(--notes-loader-spinner)' }} />
-                                    <p className="text-sm font-medium tracking-tight">Loading notes...</p>
-                                </div>
-                            )}
-                            <div 
-                                ref={editorRef}
-                                contentEditable={!isReadOnly}
-                                suppressContentEditableWarning
-                                data-placeholder="Start typing..." 
-                                className={`flex-1 w-full bg-transparent border-none focus:outline-none text-lg text-neutral-800 dark:text-gray-200 pb-0 editor-content ${isNoteLoading ? 'hidden' : ''}`}
-                                onKeyUp={checkFormats}
-                                onMouseUp={checkFormats}
-                                onClick={handleEditorClick}
-                                onFocus={() => setIsEditorFocused(true)}
-                            />
-                        </div>
+                    <div className={`flex-1 overflow-y-auto ${getEditorBgClass()} dark:bg-transparent transition-colors pt-16 md:pt-14 flex flex-col`}>
+                        {isNoteLoading && !selectedNote.title && !selectedNote.content ? (
+                            <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[55vh] text-center w-full px-4" style={{ color: 'var(--notes-loader-text)' }}>
+                                <Loader className="w-8 h-8 animate-spin mb-3" style={{ color: 'var(--notes-loader-spinner)' }} />
+                                <p className="text-sm font-medium tracking-tight">Loading note...</p>
+                            </div>
+                        ) : (
+                            <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 py-3 md:py-4 pb-2 flex flex-col flex-1">
+                                {/* Title */}
+                                <input 
+                                    type="text" 
+                                    placeholder="Title" 
+                                    value={selectedNote.title || ''}
+                                    onChange={e => setSelectedNote(prev => ({ ...prev!, title: e.target.value }))}
+                                    onFocus={() => setIsEditorFocused(true)}
+                                    disabled={isReadOnly}
+                                    className="text-3xl md:text-4xl font-bold bg-transparent border-none focus:outline-none text-neutral-900 dark:text-white w-full placeholder-neutral-400/50 mb-3 mt-1 disabled:cursor-default"
+                                />
+                                
+                                <style>
+                                    {`
+                                        .editor-content { min-height: 100px; outline: none; }
+                                        .editor-content:empty:before { content: attr(data-placeholder); color: #9ca3af; pointer-events: none; display: block; }
+                                        .editor-content p { margin-bottom: 0.5em; line-height: 1.6; }
+                                        .editor-content h1 { font-size: 1.5em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
+                                        .editor-content h2 { font-size: 1.25em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
+                                        .editor-content h3 { font-size: 1.1em; font-weight: bold; margin-top: 0.8em; margin-bottom: 0.4em; }
+                                        .editor-content ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.5em; }
+                                        .editor-content ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.5em; }
+                                        .editor-content li { margin-bottom: 0.25em; }
+                                        .editor-content blockquote { border-left: 3px solid #ccc; padding-left: 1em; font-style: italic; color: #666; margin-top: 0.2em; margin-bottom: 0.2em; }
+                                        .dark .editor-content blockquote { border-left-color: #555; color: #aaa; }
+                                        .editor-content pre { background: #f4f4f4; padding: 0.75em; border-radius: 6px; font-family: monospace; font-size: 0.9em; margin-bottom: 0.5em; overflow-x: auto; }
+                                        .dark .editor-content pre { background: #1e1e1e; border: 1px solid #333; }
+                                        .editor-content code { background: #f4f4f4; padding: 0.1em 0.3em; border-radius: 3px; font-family: monospace; font-size: 0.9em; color: #d63384; }
+                                        .dark .editor-content code { background: #333; color: #e0e0e0; }
+                                        .editor-content a { color: #3b82f6; text-decoration: underline; cursor: pointer; }
+                                        .dark .editor-content a { color: #60a5fa; }
+                                        .editor-content hr { border: 0; border-top: 0.5px solid rgba(156, 163, 175, 0.3); margin: 0.75em 0; }
+                                        .dark .editor-content hr { border-top-color: rgba(255, 255, 255, 0.12); }
+                                        
+                                        /* Table Styles */
+                                        .editor-content table { width: 100%; border-collapse: collapse; margin-bottom: 1em; table-layout: fixed; content-visibility: auto; contain-intrinsic-size: 1000px; }
+                                        .editor-content th, .editor-content td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; word-wrap: break-word; }
+                                        .dark .editor-content th, .dark .editor-content td { border-color: #444; }
+                                        .editor-content th { background-color: #f8f9fa; font-weight: bold; }
+                                        .dark .editor-content th { background-color: #1f2937; }
+                                    `}
+                                </style>
+                                <div 
+                                    ref={editorRef}
+                                    contentEditable={!isReadOnly}
+                                    suppressContentEditableWarning
+                                    data-placeholder="Start typing..." 
+                                    className="flex-1 w-full bg-transparent border-none focus:outline-none text-lg text-neutral-800 dark:text-gray-200 pb-0 editor-content"
+                                    onKeyUp={checkFormats}
+                                    onMouseUp={checkFormats}
+                                    onClick={handleEditorClick}
+                                    onFocus={() => setIsEditorFocused(true)}
+                                />
+                            </div>
+                        )}
                     </div>
 
-                    {/* Editor Toolbar - Hide when Read Only */}
-                    <EditorToolbar
-                        isReadOnly={isReadOnly}
-                        showColorPicker={showColorPicker}
-                        setShowColorPicker={setShowColorPicker}
-                        colorOptions={colorOptions}
-                        selectedNote={selectedNote}
-                        setSelectedNote={setSelectedNote}
-                        notes={notes}
-                        handleSaveNote={handleSaveNote}
-                        getEditorContent={getEditorContent}
-                        setShareModalNote={setShareModalNote}
-                        handleFormat={handleFormat}
-                        activeFormats={activeFormats}
-                        getButtonStyle={getButtonStyle}
-                        handleInsertTable={handleInsertTable}
-                    />
+                    {/* Editor Toolbar - Hide when Read Only or Loading */}
+                    {!isNoteLoading && (
+                        <EditorToolbar
+                            isReadOnly={isReadOnly}
+                            showColorPicker={showColorPicker}
+                            setShowColorPicker={setShowColorPicker}
+                            colorOptions={colorOptions}
+                            selectedNote={selectedNote}
+                            setSelectedNote={setSelectedNote}
+                            notes={notes}
+                            handleSaveNote={handleSaveNote}
+                            getEditorContent={getEditorContent}
+                            setShareModalNote={setShareModalNote}
+                            handleFormat={handleFormat}
+                            activeFormats={activeFormats}
+                            getButtonStyle={getButtonStyle}
+                            handleInsertTable={handleInsertTable}
+                        />
+                    )}
 
                     {/* Search Navigation Overlay */}
                     {searchQuery && searchMatches.length > 0 && (
@@ -1393,11 +1287,9 @@ const NotesView: React.FC<NotesViewProps> = ({ user, onBack, searchQuery, setSea
                             </div>
                         </div>
                     )}
-                </motion.div>
+                </div>,
+                portalTarget
             )}
-        </AnimatePresence>,
-        portalTarget
-    )}
 
 
 
