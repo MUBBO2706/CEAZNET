@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GroundingChunk, VoicePersona } from '../types';
 import { useLiveConversation, Status } from '../hooks/useLiveConversation';
 import { VoiceName, EmailPreviewData, TranscriptMessage } from '../types';
-import { Mic, MicOff, Square, Settings, Sparkles, Heart, BookOpen, ToyBrick, Trophy, Leaf, Stethoscope, Flame, Rocket, Eye, Drama, Swords, Play, Volume2, VolumeX, ArrowLeft, Video, Keyboard, ArrowUp, Loader, History } from 'lucide-react';
+import { Mic, MicOff, Square, Settings, Sparkles, Heart, BookOpen, ToyBrick, Trophy, Leaf, Stethoscope, Flame, Rocket, Eye, Drama, Swords, Play, Volume2, VolumeX, ArrowLeft, Video, Keyboard, ArrowUp, Loader, History, Key } from 'lucide-react';
 import BarVisualizer from './BarVisualizer';
 
 export const IconMap: Record<string, React.ElementType> = {
@@ -533,7 +533,20 @@ const LiveConversationView: React.FC<LiveConversationViewProps> = ({
                 </div>
 
                 <div className="relative z-20 flex-shrink-0 pt-4 flex flex-col items-center justify-center gap-2">
-                    {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
+                    {error && (
+                        <div className="flex flex-col items-center gap-1.5 px-4 text-center">
+                            <p className="text-red-400 text-sm font-medium max-w-md">{error}</p>
+                            {(error.includes('Quota') || error.includes('API Key') || error.includes('billing')) && (
+                                <button
+                                    onClick={() => window.dispatchEvent(new CustomEvent('request-api-key'))}
+                                    className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-full text-xs font-semibold transition-all mt-1 flex items-center gap-1"
+                                >
+                                    <Key className="w-3.5 h-3.5" />
+                                    Connect Your Gemini API Key
+                                </button>
+                            )}
+                        </div>
+                    )}
                     <BarVisualizer audioLevel={audioLevel} status={status} />
                     
                     <div className="h-8 flex items-center justify-center">

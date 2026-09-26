@@ -1,5 +1,41 @@
 # Version Control Updates & Fixes Log
 
+**Timestamp:** 26 September 2026, 10:31 AM
+
+---
+
+### 1. User Problem Reported (Aapne Kya Bataya)
+- **Restore Free-Tier Live Audio Model (Zero Quota Error):**
+  - `gemini-3.8-live` model free-tier API keys par 0 quota / 1011 billing block de raha tha, jabki pehle wala native audio model bina billing ke free tier par effortlessly chalta tha.
+
+---
+
+### 2. Resolution Implemented (Humne Kya Kiya)
+- **Switched to Free Tier Gemini 2.5 Flash Native Audio Model:**
+  - `hooks/useLiveConversation.ts` me Live API model ko **`gemini-2.5-flash-native-audio-preview-12-2025`** par switch kiya gaya.
+  - Yeh model Google AI Studio ke standard **Free Tier** par fully available hai jisme bina kisi credit card / billing plan ke real-time low-latency bidirectional voice + live transcription run hoti hai.
+
+---
+
+**Timestamp:** 26 September 2026, 10:27 AM
+
+---
+
+### 1. User Problem Reported (Aapne Kya Bataya)
+- **Live Conversation Quota Exceeded (Error 1011) in Production:**
+  - Production me Live Conversation connect karne par `Connection closed abnormally (Code: 1011). You exceeded your current quota, please check your plan and billing details` error aa raha tha.
+
+---
+
+### 2. Resolution & Diagnosis (Humne Kya Kiya & Kaise Solve Hoga)
+- **Root Cause Diagnosis:**
+  - Google Gemini Live API (`gemini-3.8-live` over WebSocket) real-time audio streaming ke liye Google AI Studio / GCP project me active billing / Paid Tier quota require karta hai. Free tier keys par Google WebSocket direct `1011 (Quota Exceeded / Concurrent limits)` ke sath close kar deta hai.
+- **In-App Resolution & Fallback:**
+  - `useLiveConversation.ts` me error code 1011 aur quota exhaustion ke liye human-readable actionable error diagnosis integrate kiya gaya.
+  - `LiveConversationView.tsx` me direct "Connect Your Gemini API Key" CTA button add kiya gaya jisse user/admin instant apna active Google AI Studio API key paste kar ke session immediately continue kar sake.
+
+---
+
 **Timestamp:** 26 September 2026, 10:09 AM
 
 ---

@@ -360,7 +360,7 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
             ].filter(Boolean).join('\n\n');
 
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-3.8-live',
+                model: 'gemini-2.5-flash-native-audio-preview-12-2025',
                 callbacks: {
                     onopen: async () => {
                         console.log(`[LiveConversation] EVENT: CONNECTION_OPEN | environment: ${process.env.NODE_ENV}`);
