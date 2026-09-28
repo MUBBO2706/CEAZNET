@@ -1,5 +1,6 @@
 import { fetchApi } from "../utils/fetchApi";
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Loader } from 'lucide-react';
 import { AppIcon } from './core/AppIcon';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -86,6 +87,7 @@ export const VersionUpdateModal: React.FC = () => {
 
     const [hasUpdate, setHasUpdate] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const [isReloading, setIsReloading] = useState(false);
     const initialVersionRef = useRef<string | null>(null);
     const latestDetectedVersionRef = useRef<string | null>(null);
     const isFirstCheckRef = useRef<boolean>(true);
@@ -313,6 +315,8 @@ export const VersionUpdateModal: React.FC = () => {
     }, [checkForUpdates, isDev]);
 
     const handleUpdate = async () => {
+        if (isReloading) return;
+        setIsReloading(true);
         try {
             const targetVersion = latestDetectedVersionRef.current;
             if (targetVersion) {
@@ -391,6 +395,7 @@ export const VersionUpdateModal: React.FC = () => {
                     <div className="flex items-center gap-1.5 justify-end">
                         <button
                             id="version-update-later-btn"
+                            disabled={isReloading}
                             onClick={() => {
                                 setIsVisible(false);
                                 if (latestDetectedVersionRef.current) {
@@ -399,22 +404,32 @@ export const VersionUpdateModal: React.FC = () => {
                                     } catch {}
                                 }
                             }}
-                            className="px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-neutral-500/5 transition-colors focus:outline-none cursor-pointer"
+                            className="px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-neutral-500/5 transition-colors focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ color: 'var(--update-popup-text-muted)' }}
                         >
                             Later
                         </button>
                         <button
                             id="version-update-reload-btn"
+                            disabled={isReloading}
                             onClick={handleUpdate}
-                            className="px-2.5 py-1 rounded-md font-bold text-[11px] shadow-sm hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-1 focus:outline-none cursor-pointer"
+                            className="px-2.5 py-1 rounded-md font-bold text-[11px] shadow-sm hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-1.5 focus:outline-none cursor-pointer disabled:opacity-75 disabled:cursor-wait"
                             style={{ 
                                 backgroundColor: 'var(--update-popup-btn-bg)', 
                                 color: 'var(--update-popup-btn-text)' 
                             }}
                         >
-                            <span>Reload</span>
-                            <AppIcon name="solar:arrow-right-linear" className="w-3 h-3" />
+                            {isReloading ? (
+                                <>
+                                    <Loader size={11} className="animate-spin shrink-0" />
+                                    <span>Reloading...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Reload</span>
+                                    <AppIcon name="solar:restart-linear" className="w-3.5 h-3.5 shrink-0" />
+                                </>
+                            )}
                         </button>
                     </div>
                 </motion.div>

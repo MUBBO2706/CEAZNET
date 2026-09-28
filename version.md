@@ -13,3 +13,7 @@
 ### 2026-09-28 09:37:00 -07:00
 - **User Problem Reported:** Inconsistent, bold, or non-linear icons and legacy lucide icons across all DevTools tabs (Console, Network, Storage, Devices, Image Cache) and sub-views.
 - **Resolution Implemented:** Replaced old and inconsistent icons across all DevTools tabs, modals, tables, action toolbars, drawer panels, and context menus with clean, unified linear outline icons (`solar:*-linear`) and standardized `Loader` spinner indicators with icon-only hover interactions.
+
+### 2026-09-28 10:02:00 -07:00
+- **User Problem Reported:** AI requests and icon suggestions were being aborted prematurely with an artificial 15-second timeout, and the Version Update modal reload button lacked a loading spinner on reload click and used a generic right-arrow icon.
+- **Resolution Implemented:** Removed the artificial 15-second timeout abort from the Gemini fallback pipeline (`geminiFallback.ts`) to let requests run naturally without timeout aborts. In `VersionUpdateModal.tsx`, added `isReloading` state with a standard `Loader` spinner (`animate-spin`) on reload click, and replaced the arrow icon with a sleek linear rotate icon (`solar:restart-linear`).

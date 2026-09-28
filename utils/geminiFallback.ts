@@ -15,39 +15,13 @@ export const FALLBACK_MODELS = [
   'gemini-2.5-flash-lite'
 ];
 
-// Timeout duration in milliseconds
-const FLASH_TIMEOUT_MS = 15000;
-const PRO_TIMEOUT_MS = 35000;
-
-function getTimeoutForModel(modelName: string): number {
-  return modelName.toLowerCase().includes('pro') ? PRO_TIMEOUT_MS : FLASH_TIMEOUT_MS;
-}
-
-const dispatchStatus = (model: string, stage: 'start' | 'success' | 'fail', index: number, total: number, isPro: boolean, timeout: number) => {
+const dispatchStatus = (model: string, stage: 'start' | 'success' | 'fail', index: number, total: number, isPro: boolean) => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('gemini-status', {
-      detail: { model, stage, index, total, isPro, timeout }
+      detail: { model, stage, index, total, isPro }
     }));
   }
 };
-
-function executeWithTimeout<T>(promise: Promise<T>, ms: number, modelName: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(`Timeout of ${ms}ms exceeded while waiting for model "${modelName}"`));
-    }, ms);
-
-    promise
-      .then((res) => {
-        clearTimeout(timer);
-        resolve(res);
-      })
-      .catch((err) => {
-        clearTimeout(timer);
-        reject(err);
-      });
-  });
-}
 
 let isPatched = false;
 
@@ -56,7 +30,7 @@ export function initGeminiFallback() {
   isPatched = true;
 
   try {
-    console.log('[Gemini Fallback] Initializing global fallback and rotation patch...');
+    console.log('[Gemini Fallback] Initializing global fallback and rotation patch (natural execution without artificial timeout aborts)...');
 
     // Safe guard for browser environment to avoid throwing if GoogleGenAI is not constructible client-side
     let dummyInstance: any;
@@ -103,42 +77,27 @@ export function initGeminiFallback() {
         for (let i = 0; i < modelsToTry.length; i++) {
           const currentModel = modelsToTry[i];
           const isProModel = currentModel.toLowerCase().includes('pro');
-          const activeTimeout = getTimeoutForModel(currentModel);
-          console.log(`[Gemini Fallback] [generateContent] Attempt ${i + 1}/${modelsToTry.length} using model "${currentModel}" (Initial: "${initialModel}") with timeout ${activeTimeout}ms`);
+          console.log(`[Gemini Fallback] [generateContent] Attempt ${i + 1}/${modelsToTry.length} using model "${currentModel}" (Initial: "${initialModel}")`);
           
-          dispatchStatus(currentModel, 'start', i, modelsToTry.length, isProModel, activeTimeout);
+          dispatchStatus(currentModel, 'start', i, modelsToTry.length, isProModel);
 
-          const controller = new AbortController();
           try {
             const clonedParams = { 
               ...params, 
-              model: currentModel,
-              config: {
-                ...params?.config,
-                abortSignal: controller.signal
-              }
+              model: currentModel
             };
-            // Wrap the network request with our custom timeout
-            const result = await executeWithTimeout(
-              originalGenerateContentInternal.call(this, clonedParams, ...args),
-              activeTimeout,
-              currentModel
-            );
+            // Let the request execute naturally without artificial timeout aborts
+            const result = await originalGenerateContentInternal.call(this, clonedParams, ...args);
             if (i > 0) {
               console.log(`[Gemini Fallback] [generateContent] Success with fallback model "${currentModel}" after ${i} failure(s).`);
             }
-            dispatchStatus(currentModel, 'success', i, modelsToTry.length, isProModel, activeTimeout);
+            dispatchStatus(currentModel, 'success', i, modelsToTry.length, isProModel);
             return result;
           } catch (err: any) {
-            try {
-              controller.abort();
-            } catch (e) {
-              // Ignore abort failure
-            }
             console.error(`[Gemini Fallback] [generateContent] Failed with model "${currentModel}":`, err?.message || err);
-            dispatchStatus(currentModel, 'fail', i, modelsToTry.length, isProModel, activeTimeout);
+            dispatchStatus(currentModel, 'fail', i, modelsToTry.length, isProModel);
             lastError = err;
-            // Continue to next model
+            // Continue to next model on true API error
           }
         }
         throw lastError;
@@ -169,42 +128,27 @@ export function initGeminiFallback() {
         for (let i = 0; i < modelsToTry.length; i++) {
           const currentModel = modelsToTry[i];
           const isProModel = currentModel.toLowerCase().includes('pro');
-          const activeTimeout = getTimeoutForModel(currentModel);
-          console.log(`[Gemini Fallback] [generateContentStream] Attempt ${i + 1}/${modelsToTry.length} using model "${currentModel}" (Initial: "${initialModel}") with timeout ${activeTimeout}ms`);
+          console.log(`[Gemini Fallback] [generateContentStream] Attempt ${i + 1}/${modelsToTry.length} using model "${currentModel}" (Initial: "${initialModel}")`);
           
-          dispatchStatus(currentModel, 'start', i, modelsToTry.length, isProModel, activeTimeout);
+          dispatchStatus(currentModel, 'start', i, modelsToTry.length, isProModel);
 
-          const controller = new AbortController();
           try {
             const clonedParams = { 
               ...params, 
-              model: currentModel,
-              config: {
-                ...params?.config,
-                abortSignal: controller.signal
-              }
+              model: currentModel
             };
-            // Wrap the stream initialization connection with our custom timeout
-            const result = await executeWithTimeout(
-              originalGenerateContentStreamInternal.call(this, clonedParams, ...args),
-              activeTimeout,
-              currentModel
-            );
+            // Let the stream initialize naturally without artificial timeout aborts
+            const result = await originalGenerateContentStreamInternal.call(this, clonedParams, ...args);
             if (i > 0) {
               console.log(`[Gemini Fallback] [generateContentStream] Success with fallback model "${currentModel}" after ${i} failure(s).`);
             }
-            dispatchStatus(currentModel, 'success', i, modelsToTry.length, isProModel, activeTimeout);
+            dispatchStatus(currentModel, 'success', i, modelsToTry.length, isProModel);
             return result;
           } catch (err: any) {
-            try {
-              controller.abort();
-            } catch (e) {
-              // Ignore abort failure
-            }
             console.error(`[Gemini Fallback] [generateContentStream] Failed with model "${currentModel}":`, err?.message || err);
-            dispatchStatus(currentModel, 'fail', i, modelsToTry.length, isProModel, activeTimeout);
+            dispatchStatus(currentModel, 'fail', i, modelsToTry.length, isProModel);
             lastError = err;
-            // Continue to next model
+            // Continue to next model on true API error
           }
         }
         throw lastError;
