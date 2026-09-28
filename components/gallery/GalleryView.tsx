@@ -6,7 +6,8 @@ import { getGalleryItems, saveGalleryItem, deleteGalleryItem } from '../../servi
 import { uploadFileToTelegram, getFileUrlFromTelegram, invalidateTelegramUrlCache, TELEGRAM_CHAT_ID, UploadMetadata } from '../../services/telegramStorage';
 import { supabaseUrl } from '../../services/supabaseClient';
 import type { User } from '@supabase/supabase-js';
-import { Upload, X, Trash2, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Image as ImageIcon, Loader, ChevronLeft, ChevronRight, ArrowLeft, Share2, Download, CheckCircle2, Circle, Info, Check, FileText, Music, File, Grid, List, FileSpreadsheet, FileArchive, FileCode, FileAudio, FileVideo, FileImage, RotateCcw, RotateCw, ZoomIn, ZoomOut, HardDrive, FileType, Calendar, Copy, Sun, Moon } from 'lucide-react';
+import { Loader } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { v4 as uuidv4 } from 'uuid';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useToast } from '../ToastSystem';
@@ -58,16 +59,16 @@ const formatBytes = (bytes: number, decimals = 2) => {
 
 const getDocumentConfig = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase() || '';
-    if (['pdf'].includes(ext)) return { icon: FileText, color: 'text-red-500', bg: 'bg-red-500/10' };
-    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return { icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10' };
-    if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) return { icon: FileSpreadsheet, color: 'text-green-500', bg: 'bg-green-500/10' };
-    if (['ppt', 'pptx', 'odp'].includes(ext)) return { icon: FileText, color: 'text-orange-500', bg: 'bg-orange-500/10' };
-    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { icon: FileArchive, color: 'text-yellow-500', bg: 'bg-yellow-500/10' };
-    if (['json', 'js', 'ts', 'jsx', 'tsx', 'html', 'css', 'md', 'txt'].includes(ext)) return { icon: FileCode, color: 'text-purple-500', bg: 'bg-purple-500/10' };
-    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return { icon: FileAudio, color: 'text-pink-500', bg: 'bg-pink-500/10' };
-    if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return { icon: FileVideo, color: 'text-indigo-500', bg: 'bg-indigo-500/10' };
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return { icon: FileImage, color: 'text-teal-500', bg: 'bg-teal-500/10' };
-    return { icon: File, color: 'text-gray-500', bg: 'bg-gray-500/10' };
+    if (['pdf'].includes(ext)) return { icon: 'solar:document-text-linear', color: 'text-red-500', bg: 'bg-red-500/10' };
+    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return { icon: 'solar:document-text-linear', color: 'text-blue-500', bg: 'bg-blue-500/10' };
+    if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) return { icon: 'solar:bill-list-linear', color: 'text-green-500', bg: 'bg-green-500/10' };
+    if (['ppt', 'pptx', 'odp'].includes(ext)) return { icon: 'solar:document-text-linear', color: 'text-orange-500', bg: 'bg-orange-500/10' };
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { icon: 'solar:archive-linear', color: 'text-yellow-500', bg: 'bg-yellow-500/10' };
+    if (['json', 'js', 'ts', 'jsx', 'tsx', 'html', 'css', 'md', 'txt'].includes(ext)) return { icon: 'solar:code-linear', color: 'text-purple-500', bg: 'bg-purple-500/10' };
+    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return { icon: 'solar:music-notes-linear', color: 'text-pink-500', bg: 'bg-pink-500/10' };
+    if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return { icon: 'solar:videocamera-record-linear', color: 'text-indigo-500', bg: 'bg-indigo-500/10' };
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return { icon: 'solar:gallery-linear', color: 'text-teal-500', bg: 'bg-teal-500/10' };
+    return { icon: 'solar:file-linear', color: 'text-gray-500', bg: 'bg-gray-500/10' };
 };
 
 const SwipeZoomContainer: React.FC<{ 
@@ -342,10 +343,10 @@ const CustomVideoPlayer: React.FC<{ src: string, autoPlay?: boolean }> = ({ src,
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <button onClick={togglePlay} className="text-white hover:scale-110 transition-transform">
-                                {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+                                <Icon icon={isPlaying ? "solar:pause-linear" : "solar:play-linear"} className="w-6 h-6" />
                             </button>
                             <button onClick={toggleMute} className="text-white hover:scale-110 transition-transform">
-                                {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                                <Icon icon={isMuted ? "solar:volume-cross-linear" : "solar:volume-loud-linear"} className="w-6 h-6" />
                             </button>
                         </div>
                         
@@ -356,7 +357,7 @@ const CustomVideoPlayer: React.FC<{ src: string, autoPlay?: boolean }> = ({ src,
                             }}
                             className="text-white hover:scale-110 transition-transform"
                         >
-                            <Maximize className="w-5 h-5" />
+                            <Icon icon="solar:maximize-linear" className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -366,7 +367,7 @@ const CustomVideoPlayer: React.FC<{ src: string, autoPlay?: boolean }> = ({ src,
             {!isPlaying && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center border border-white/20 animate-in zoom-in-50 duration-300">
-                        <Play className="w-8 h-8 text-white fill-current ml-1" />
+                        <Icon icon="solar:play-linear" className="w-8 h-8 text-white ml-1" />
                     </div>
                 </div>
             )}
@@ -510,15 +511,15 @@ const TelegramMedia: React.FC<{
                 onPointerUp={onPointerUp}
                 onPointerLeave={onPointerLeave}
             >
-                <ImageIcon className="w-6 h-6 text-neutral-300 dark:text-neutral-700 mb-1" />
+                <Icon icon="solar:gallery-linear" className="w-6 h-6 text-neutral-300 dark:text-neutral-700 mb-1" />
                 <span className="text-[10px] text-neutral-400 dark:text-neutral-600 font-medium">Missing</span>
             </div>
         );
     }
 
     if (viewMode === 'list') {
-        const { icon: DocIcon, color, bg } = getDocumentConfig(item.filename);
-        const Icon = item.type === 'audio' ? Music : item.type === 'video' ? Play : item.type === 'image' ? ImageIcon : DocIcon;
+        const { icon: docIconName, color, bg } = getDocumentConfig(item.filename);
+        const iconName = item.type === 'audio' ? 'solar:music-notes-linear' : item.type === 'video' ? 'solar:play-linear' : item.type === 'image' ? 'solar:gallery-linear' : docIconName;
         const iconColor = item.type === 'document' || item.type === 'other' ? color : 'text-neutral-500';
         const iconBg = item.type === 'document' || item.type === 'other' ? bg : 'bg-neutral-200 dark:bg-neutral-700';
 
@@ -543,13 +544,13 @@ const TelegramMedia: React.FC<{
                             {item.type === 'video' && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                     <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-full">
-                                        <Play className="w-3 h-3 text-white fill-current" />
+                                        <Icon icon="solar:play-linear" className="w-3 h-3 text-white" />
                                     </div>
                                 </div>
                             )}
                         </>
                     ) : (
-                        <Icon className={`w-7 h-7 ${!showThumb && (item.type === 'document' || item.type === 'other') ? iconColor : 'text-neutral-500'}`} />
+                        <Icon icon={iconName} className={`w-7 h-7 ${!showThumb && (item.type === 'document' || item.type === 'other') ? iconColor : 'text-neutral-500'}`} />
                     )}
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -592,8 +593,8 @@ const TelegramMedia: React.FC<{
             );
         }
 
-        const { icon: DocIcon, color, bg } = getDocumentConfig(item.filename);
-        const Icon = item.type === 'audio' ? Music : DocIcon;
+        const { icon: docIconName, color, bg } = getDocumentConfig(item.filename);
+        const iconName = item.type === 'audio' ? 'solar:music-notes-linear' : docIconName;
         const iconColor = item.type === 'audio' ? 'text-neutral-400 dark:text-neutral-500' : color;
         const containerBg = item.type === 'audio' ? 'bg-neutral-100 dark:bg-neutral-800' : bg;
 
@@ -605,7 +606,7 @@ const TelegramMedia: React.FC<{
                 onPointerUp={onPointerUp}
                 onPointerLeave={onPointerLeave}
             >
-                <Icon className={`w-8 h-8 mb-2 ${iconColor}`} />
+                <Icon icon={iconName} className={`w-8 h-8 mb-2 ${iconColor}`} />
                 <span className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium truncate w-full px-2 text-center">
                     {item.filename}
                 </span>
@@ -662,7 +663,7 @@ const TelegramMedia: React.FC<{
                 
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors pointer-events-none">
                     <div className="p-2 bg-white/20 backdrop-blur-md rounded-full border border-white/30 transform transition-transform duration-500">
-                        {isTooLarge ? <Info className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white fill-current" />}
+                        {isTooLarge ? <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-white" /> : <Icon icon="solar:play-linear" className="w-5 h-5 text-white" />}
                     </div>
                 </div>
                 
@@ -704,42 +705,41 @@ let galleryCache: GalleryItem[] | null = null;
 let lastUserId: string | null = null;
 
 const UnsupportedViewer: React.FC<{ url: string, filename: string }> = ({ url, filename }) => {
-    const isDarkMode = useAppTheme();
     const ext = filename.split('.').pop()?.toLowerCase() || '';
 
     return (
         <div className="w-full h-full bg-black flex flex-col animate-in zoom-in-95 duration-500 overflow-hidden relative">
-            <div className={`flex-1 w-full h-full p-6 sm:p-12 flex flex-col items-center justify-center transition-colors duration-300 ${isDarkMode ? 'bg-neutral-900' : 'bg-neutral-100'}`}>
-                <div className={`flex flex-col items-center justify-center p-8 rounded-2xl max-w-sm w-full text-center ${isDarkMode ? 'bg-neutral-800 border border-white/10' : 'bg-white border border-neutral-200'} shadow-xl`}>
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 bg-indigo-500/10 text-indigo-500">
-                        <FileText className="w-8 h-8" />
+            <div className="flex-1 w-full h-full p-4 sm:p-8 flex flex-col items-center justify-center">
+                <div className="flex flex-col items-center justify-center p-6 max-w-sm w-full text-center">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-indigo-500/10 text-indigo-400">
+                        <Icon icon="solar:document-text-linear" className="w-7 h-7" />
                     </div>
-                    <h3 className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-neutral-900'}`}>
+                    <h3 className="text-base font-bold mb-1 text-white">
                         Preview not available
                     </h3>
-                    <p className={`text-sm mb-8 ${isDarkMode ? 'text-white/60' : 'text-neutral-500'}`}>
-                        Files of type <strong>.{ext}</strong> cannot be previewed in the browser. Please download the file to view its contents.
+                    <p className="text-xs mb-6 text-white/60">
+                        Files of type <strong className="text-white/80">.{ext}</strong> cannot be previewed in the browser. Please download the file to view its contents.
                     </p>
                     <a 
                         href={url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-xl font-medium transition-all hover:scale-[1.02] active:scale-95"
+                        className="inline-flex items-center justify-center gap-2 bg-[var(--gallery-modal-accent)] hover:bg-[var(--gallery-modal-accent-hover)] text-white py-2.5 px-5 rounded-xl text-xs font-semibold transition-all hover:scale-[1.02] active:scale-95 shadow-md"
                     >
-                        <Download className="w-5 h-5" />
+                        <Icon icon="solar:download-linear" className="w-4 h-4" />
                         Download File
                     </a>
                 </div>
             </div>
 
             {/* Fixed Footer Toolbar */}
-            <div className="w-full h-14 bg-neutral-900 border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
+            <div className="w-full h-14 bg-neutral-900/90 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
                 <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs sm:text-sm font-medium truncate max-w-[150px] sm:max-w-[300px]">{filename}</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Download">
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:scale-110 transition-transform" title="Download">
+                        <Icon icon="solar:download-linear" className="w-5 h-5" />
                     </a>
                 </div>
             </div>
@@ -793,13 +793,13 @@ const OfficeViewer: React.FC<{ url: string, filename: string }> = ({ url, filena
             </div>
             
             {/* Fixed Footer Toolbar */}
-            <div className="w-full h-14 bg-neutral-900 border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
+            <div className="w-full h-14 bg-neutral-900/90 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
                 <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs sm:text-sm font-medium truncate max-w-[150px] sm:max-w-[300px]">{filename}</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Download">
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:scale-110 transition-transform" title="Download">
+                        <Icon icon="solar:download-linear" className="w-5 h-5" />
                     </a>
                 </div>
             </div>
@@ -857,7 +857,7 @@ const TextViewer: React.FC<{ url: string, filename: string }> = ({ url, filename
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-red-500">
-                        <Info className="w-8 h-8" />
+                        <Icon icon="solar:info-circle-linear" className="w-8 h-8" />
                         <span className="text-sm">Failed to load text: {error}</span>
                     </div>
                 ) : (
@@ -868,13 +868,13 @@ const TextViewer: React.FC<{ url: string, filename: string }> = ({ url, filename
             </div>
 
             {/* Fixed Footer Toolbar */}
-            <div className="w-full h-14 bg-neutral-900 border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
+            <div className="w-full h-14 bg-neutral-900/90 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
                 <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs sm:text-sm font-medium truncate max-w-[150px] sm:max-w-[300px]">{filename}</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Download">
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:scale-110 transition-transform" title="Download">
+                        <Icon icon="solar:download-linear" className="w-5 h-5" />
                     </a>
                 </div>
             </div>
@@ -945,7 +945,7 @@ const PdfViewer: React.FC<{ url: string, filename: string }> = ({ url, filename 
                 <div className="min-h-full min-w-full w-fit flex flex-col items-center px-[2px] pb-4">
                     {fetchError ? (
                         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-red-400 w-full min-h-[50vh]">
-                            <Info className="w-8 h-8" />
+                            <Icon icon="solar:info-circle-linear" className="w-8 h-8" />
                             <span className="text-sm">Failed to load PDF: {fetchError}</span>
                         </div>
                     ) : !pdfData ? (
@@ -966,7 +966,7 @@ const PdfViewer: React.FC<{ url: string, filename: string }> = ({ url, filename 
                                 }
                                 error={
                                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-red-400 w-full h-full">
-                                        <Info className="w-8 h-8" />
+                                        <Icon icon="solar:info-circle-linear" className="w-8 h-8" />
                                         <span className="text-sm">Failed to render PDF. It might be corrupted.</span>
                                     </div>
                                 }
@@ -995,25 +995,25 @@ const PdfViewer: React.FC<{ url: string, filename: string }> = ({ url, filename 
             </div>
 
             {/* Fixed Footer Toolbar */}
-            <div className="w-full h-14 bg-neutral-900 border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
+            <div className="w-full h-14 bg-neutral-900/90 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10">
                 <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs sm:text-sm font-medium truncate max-w-[150px] sm:max-w-[300px]">{filename}</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
-                    <button onClick={() => setScale(1.0)} className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-xs sm:text-sm font-medium hidden sm:block" title="Actual Size">
+                    <button onClick={() => setScale(1.0)} className="p-2 text-white/60 hover:text-white hover:scale-105 transition-transform text-xs sm:text-sm font-medium hidden sm:block" title="Actual Size">
                         100%
                     </button>
                     <div className="w-px h-4 bg-white/10 mx-1 hidden sm:block"></div>
-                    <button onClick={zoomOut} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Zoom Out">
-                        <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <button onClick={zoomOut} className="p-2 text-white/80 hover:text-white hover:scale-110 transition-transform" title="Zoom Out">
+                        <Icon icon="solar:magnifer-zoom-out-linear" className="w-5 h-5" />
                     </button>
                     <span className="text-white/80 text-xs sm:text-sm font-medium w-10 sm:w-12 text-center">{Math.round(scale * 100)}%</span>
-                    <button onClick={zoomIn} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Zoom In">
-                        <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <button onClick={zoomIn} className="p-2 text-white/80 hover:text-white hover:scale-110 transition-transform" title="Zoom In">
+                        <Icon icon="solar:magnifer-zoom-in-linear" className="w-5 h-5" />
                     </button>
                     <div className="w-px h-4 bg-white/10 mx-1"></div>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Download">
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-2 text-white/80 hover:text-white hover:scale-110 transition-transform" title="Download">
+                        <Icon icon="solar:download-linear" className="w-5 h-5" />
                     </a>
                 </div>
             </div>
@@ -1106,7 +1106,7 @@ const CustomAudioPlayer: React.FC<{ src: string, autoPlay?: boolean, filename?: 
                 <div className="w-48 h-48 sm:w-64 sm:h-64 bg-indigo-500/10 rounded-full flex items-center justify-center relative shadow-[0_0_100px_rgba(99,102,241,0.1)]">
                     <div className={`absolute inset-0 border border-indigo-500/30 rounded-full ${isPlaying ? 'animate-ping opacity-50 duration-1000' : 'opacity-0'}`}></div>
                     <div className={`absolute inset-4 border-2 border-indigo-500/20 rounded-full ${isPlaying ? 'animate-ping opacity-30 duration-1000 delay-150' : 'opacity-0'}`}></div>
-                    <Music className="w-20 h-20 sm:w-24 sm:h-24 text-indigo-400 drop-shadow-lg" />
+                    <Icon icon="solar:music-notes-linear" className="w-20 h-20 sm:w-24 sm:h-24 text-indigo-400 drop-shadow-lg" />
                 </div>
             </div>
             
@@ -1154,19 +1154,19 @@ const CustomAudioPlayer: React.FC<{ src: string, autoPlay?: boolean, filename?: 
 
                 {/* Controls */}
                 <div className="flex items-center justify-center gap-8 sm:gap-12">
-                    <button onClick={skipBackward} className="p-3 text-neutral-400 hover:text-white transition-colors hover:scale-110 active:scale-95">
-                        <RotateCcw className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <button onClick={skipBackward} className="p-3 text-neutral-400 hover:text-white transition-all hover:scale-110 active:scale-95">
+                        <Icon icon="solar:restart-linear" className="w-6 h-6 sm:w-8 sm:h-8" />
                     </button>
 
                     <button 
                         onClick={togglePlay}
                         className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white rounded-full transition-all shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:shadow-[0_0_60px_rgba(99,102,241,0.6)] hover:scale-105 active:scale-95"
                     >
-                        {isPlaying ? <Pause className="w-10 h-10 sm:w-12 sm:h-12 fill-current" /> : <Play className="w-10 h-10 sm:w-12 sm:h-12 fill-current ml-2" />}
+                        <Icon icon={isPlaying ? "solar:pause-linear" : "solar:play-linear"} className="w-10 h-10 sm:w-12 sm:h-12 ml-0.5" />
                     </button>
 
-                    <button onClick={skipForward} className="p-3 text-neutral-400 hover:text-white transition-colors hover:scale-110 active:scale-95">
-                        <RotateCw className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <button onClick={skipForward} className="p-3 text-neutral-400 hover:text-white transition-all hover:scale-110 active:scale-95">
+                        <Icon icon="solar:refresh-linear" className="w-6 h-6 sm:w-8 sm:h-8" />
                     </button>
                 </div>
             </div>
@@ -1678,14 +1678,16 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-neutral-800 text-indigo-600 shadow-sm' : 'text-neutral-500 hover:text-neutral-900'}`}
+                            title="Grid View"
                         >
-                            <Grid className="w-4 h-4" />
+                            <Icon icon="solar:widget-linear" className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-neutral-800 text-indigo-600 shadow-sm' : 'text-neutral-500 hover:text-neutral-900'}`}
+                            title="List View"
                         >
-                            <List className="w-4 h-4" />
+                            <Icon icon="solar:list-linear" className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -1705,7 +1707,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                     </div>
                 ) : items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-                        <ImageIcon className="w-16 h-16 mb-4 opacity-50" />
+                        <Icon icon="solar:gallery-linear" className="w-16 h-16 mb-4 opacity-50" />
                         <p className="text-lg">No photos or videos yet</p>
                         <p className="text-sm">Upload some memories to get started</p>
                     </div>
@@ -1737,11 +1739,11 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                                 <div className="absolute inset-0 bg-black/10 pointer-events-none transition-all duration-300">
                                                     <div className="absolute top-2 right-2 z-30">
                                                         {selectedIds.has(item.id) ? (
-                                                            <div className="bg-indigo-500 rounded-full shadow-sm">
-                                                                <CheckCircle2 className="w-6 h-6 text-white" fill="#6366f1" />
+                                                            <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md">
+                                                                <Icon icon="solar:check-read-linear" className="w-4 h-4 text-white" />
                                                             </div>
                                                         ) : (
-                                                            <div className="w-6 h-6 rounded-full border-2 border-white/80 bg-black/20 backdrop-blur-sm" />
+                                                            <div className="w-6 h-6 rounded-lg border border-white/80 bg-black/20 backdrop-blur-sm" />
                                                         )}
                                                     </div>
                                                 </div>
@@ -1755,16 +1757,20 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                 )}
             </div>
 
-            {/* Full Screen Viewer */}
+            {/* Full Screen Viewer - DevTools shifted up dynamically */}
             {selectedItem && (
-                <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-200">
+                <div 
+                    className="fixed top-0 left-0 right-0 z-[100] bg-black flex flex-col animate-in fade-in duration-200 transition-[bottom] duration-150"
+                    style={{ bottom: 'var(--dev-console-padding, 0px)' }}
+                >
                     {/* Top Bar */}
                     <div className="flex-none p-4 flex items-center justify-between z-20 bg-black/80 backdrop-blur-md border-b border-white/10 cursor-pointer" onClick={(e) => { e.stopPropagation(); setShowControls(prev => !prev); }}>
                         <button 
                             onClick={(e) => { e.stopPropagation(); navigate('/gallery'); }}
-                            className="p-2 text-white hover:bg-white/10 rounded-full transition-colors drop-shadow-lg"
+                            className="p-2 text-white hover:text-white/80 hover:scale-110 transition-transform drop-shadow-lg"
+                            title="Back"
                         >
-                            <ArrowLeft className="w-6 h-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
+                            <Icon icon="solar:arrow-left-linear" className="w-6 h-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
                         </button>
                         
                         <div className="flex-1 px-4 truncate text-center">
@@ -1781,10 +1787,10 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                             e.stopPropagation();
                                             setShowInfoModal(true);
                                         }}
-                                        className="p-2 text-white hover:bg-white/10 rounded-full transition-colors drop-shadow-lg"
+                                        className="p-2 text-white hover:text-indigo-400 hover:scale-110 transition-transform drop-shadow-lg"
                                         title="Info"
                                     >
-                                        <Info className="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
+                                        <Icon icon="solar:info-circle-linear" className="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
                                     </button>
                                     <button 
                                         onClick={(e) => {
@@ -1799,10 +1805,10 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                                 globalAlert("Link copied to clipboard!", { type: 'info' });
                                             }
                                         }}
-                                        className="p-2 text-white hover:bg-white/10 rounded-full transition-colors drop-shadow-lg"
+                                        className="p-2 text-white hover:text-indigo-400 hover:scale-110 transition-transform drop-shadow-lg"
                                         title="Share"
                                     >
-                                        <Share2 className="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
+                                        <Icon icon="solar:share-linear" className="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
                                     </button>
                                     <a 
                                         href={fullScreenUrl}
@@ -1810,10 +1816,10 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="p-2 text-white hover:bg-white/10 rounded-full transition-colors drop-shadow-lg"
+                                        className="p-2 text-white hover:text-indigo-400 hover:scale-110 transition-transform drop-shadow-lg"
                                         title="Download"
                                     >
-                                        <Download className="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
+                                        <Icon icon="solar:download-linear" className="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
                                     </a>
                                 </>
                             )}
@@ -1822,7 +1828,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                     await handleDelete(selectedItem.id);
                                 }}
                                 iconOnly
-                                className="p-2 text-white hover:bg-red-500/20 hover:text-red-400 rounded-full drop-shadow-lg"
+                                className="p-2 text-white hover:text-red-400 hover:scale-110 transition-transform drop-shadow-lg"
                                 iconClassName="w-5 h-5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
                             />
                         </div>
@@ -1834,9 +1840,10 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                         {filteredItems.findIndex(i => i.id === selectedItem.id) > 0 && (
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                                className={`absolute left-2 sm:left-4 z-30 p-2 sm:p-3 text-white transition-all active:scale-90 drop-shadow-lg ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                className={`absolute left-2 sm:left-4 z-30 p-2 sm:p-3 text-white transition-all hover:scale-110 active:scale-90 drop-shadow-lg ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                title="Previous"
                             >
-                                <ChevronLeft className="w-8 h-8 sm:w-10 h-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
+                                <Icon icon="solar:alt-arrow-left-linear" className="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
                             </button>
                         )}
 
@@ -1850,7 +1857,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                             ) : fullScreenUrl === 'error' || fullScreenUrl === '__TOO_LARGE__' ? (
                                 <div className="flex flex-col items-center justify-center text-gray-400 animate-in zoom-in-95 duration-300 px-6">
                                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
-                                        {fullScreenUrl === '__TOO_LARGE__' ? <Maximize className="w-10 h-10 opacity-30" /> : <ImageIcon className="w-10 h-10 opacity-30" />}
+                                        {fullScreenUrl === '__TOO_LARGE__' ? <Icon icon="solar:maximize-linear" className="w-10 h-10 opacity-30" /> : <Icon icon="solar:gallery-linear" className="w-10 h-10 opacity-30" />}
                                     </div>
                                     <p className="text-xl font-bold text-white">
                                         {fullScreenUrl === '__TOO_LARGE__' ? 'File too large' : 'Media not found'}
@@ -1865,7 +1872,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                             href={`https://t.me/c/${TELEGRAM_CHAT_ID.replace('-100', '')}`} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="mt-6 px-6 py-2 bg-indigo-500 text-white rounded-full font-bold text-sm"
+                                            className="mt-6 px-6 py-2 bg-indigo-500 text-white rounded-full font-bold text-sm hover:bg-indigo-600 transition-colors"
                                         >
                                             View in Telegram
                                         </a>
@@ -1896,7 +1903,6 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                             } else if (unsupportedExts.includes(ext)) {
                                                 return <UnsupportedViewer url={fullScreenUrl} filename={selectedItem.filename} />;
                                             } else {
-                                                // Fallback to text viewer instead of just download card
                                                 return <TextViewer url={fullScreenUrl} filename={selectedItem.filename} />;
                                             }
                                         })()
@@ -1915,14 +1921,13 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                         {filteredItems.findIndex(i => i.id === selectedItem.id) < filteredItems.length - 1 && (
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                                className={`absolute right-2 sm:right-4 z-30 p-2 sm:p-3 text-white transition-all active:scale-90 drop-shadow-lg ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                className={`absolute right-2 sm:right-4 z-30 p-2 sm:p-3 text-white transition-all hover:scale-110 active:scale-90 drop-shadow-lg ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                title="Next"
                             >
-                                <ChevronRight className="w-8 h-8 sm:w-10 h-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
+                                <Icon icon="solar:alt-arrow-right-linear" className="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" />
                             </button>
                         )}
                     </div>
-                    
-                    {/* Bottom Bar for Mobile Controls - Removed as buttons moved to sides */}
                 </div>
             )}
 
@@ -1932,11 +1937,12 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setSelectedIds(new Set())}
-                            className="p-2 -ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="p-1.5 -ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:scale-110 transition-transform"
+                            title="Cancel selection"
                         >
-                            <X className="w-5 h-5" />
+                            <Icon icon="solar:close-circle-linear" className="w-5 h-5" />
                         </button>
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        <span className="text-base font-bold text-gray-900 dark:text-white">
                             {selectedIds.size} selected
                         </span>
                     </div>
@@ -1949,19 +1955,20 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                     setSelectedIds(new Set(filteredItems.map(i => i.id)));
                                 }
                             }}
-                            className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
                         >
                             {selectedIds.size === filteredItems.length ? 'Deselect All' : 'Select All'}
                         </button>
                         <button 
                             onClick={() => setShowMultiDeleteConfirm(true)}
                             disabled={isDeletingMultiple}
-                            className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
+                            className="p-1.5 text-red-500 hover:text-red-600 hover:scale-110 transition-all disabled:opacity-50"
+                            title="Delete Selected"
                         >
                             {isDeletingMultiple ? (
                                 <Loader className="w-5 h-5 animate-spin" />
                             ) : (
-                                <Trash2 className="w-5 h-5" />
+                                <Icon icon="solar:trash-bin-trash-linear" className="w-5 h-5" />
                             )}
                         </button>
                     </div>
@@ -1980,60 +1987,74 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                 isLoading={isDeletingMultiple}
             />
 
-
-
-            {/* Info Modal */}
+            {/* Info Modal - Compact, Containerless, Theme Aware */}
             {showInfoModal && selectedItem && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowInfoModal(false)}>
-                    <div className="bg-white dark:bg-neutral-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 border border-neutral-200/50 dark:border-neutral-800/50" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                                    <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <h3 className="text-xl font-bold text-neutral-900 dark:text-white">File Details</h3>
+                <div 
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" 
+                    onClick={() => setShowInfoModal(false)}
+                    style={{ paddingBottom: 'calc(var(--dev-console-padding, 0px) + 1rem)' }}
+                >
+                    <div 
+                        className="bg-[var(--gallery-modal-bg)] rounded-2xl p-5 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 border border-[var(--gallery-modal-border)] text-[var(--gallery-modal-text)]" 
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--gallery-modal-border)]">
+                            <div className="flex items-center gap-2.5">
+                                <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-[var(--gallery-modal-accent)] shrink-0" />
+                                <h3 className="text-base font-bold text-[var(--gallery-modal-text)]">File Details</h3>
                             </div>
-                            <button onClick={() => setShowInfoModal(false)} className="p-2 rounded-full hover:bg-neutral-100 dark:bg-neutral-800 text-neutral-500 transition-colors">
-                                <X className="w-5 h-5" />
+                            <button 
+                                onClick={() => setShowInfoModal(false)} 
+                                className="text-[var(--gallery-modal-text-muted)] hover:text-[var(--gallery-modal-text)] hover:scale-110 transition-all p-1"
+                                title="Close"
+                            >
+                                <Icon icon="solar:close-circle-linear" className="w-5 h-5" />
                             </button>
                         </div>
                         
-                        <div className="space-y-4">
-                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
-                                <div className="flex items-start gap-3">
-                                    <FileText className="w-5 h-5 text-neutral-400 mt-0.5" />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Filename</p>
-                                        <p className="text-sm font-medium text-neutral-900 dark:text-white break-all">{selectedItem.filename}</p>
+                        {/* Containerless clean rows with subtle dividers */}
+                        <div className="divide-y divide-[var(--gallery-modal-border)] text-xs">
+                            {/* Filename */}
+                            <div className="py-2.5 flex items-start gap-2.5">
+                                <Icon icon="solar:document-text-linear" className="w-4 h-4 text-[var(--gallery-modal-text-muted)] mt-0.5 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--gallery-modal-text-muted)] block mb-0.5">Filename</span>
+                                    <p className="font-medium text-[var(--gallery-modal-text)] break-all select-all leading-snug">{selectedItem.filename}</p>
+                                </div>
+                            </div>
+
+                            {/* Size & Type */}
+                            <div className="py-2.5 grid grid-cols-2 gap-3">
+                                <div className="flex items-start gap-2">
+                                    <Icon icon="solar:hard-drive-linear" className="w-4 h-4 text-[var(--gallery-modal-text-muted)] mt-0.5 shrink-0" />
+                                    <div className="min-w-0">
+                                        <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--gallery-modal-text-muted)] block mb-0.5">Size</span>
+                                        <p className="font-medium text-[var(--gallery-modal-text)]">{formatBytes(selectedItem.size)}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <Icon icon="solar:file-linear" className="w-4 h-4 text-[var(--gallery-modal-text-muted)] mt-0.5 shrink-0" />
+                                    <div className="min-w-0">
+                                        <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--gallery-modal-text-muted)] block mb-0.5">Type</span>
+                                        <p className="font-medium text-[var(--gallery-modal-text)] truncate" title={selectedItem.mimeType || selectedItem.type}>
+                                            {selectedItem.mimeType || selectedItem.type}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
-                                    <HardDrive className="w-5 h-5 text-neutral-400 mb-2" />
-                                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Size</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{formatBytes(selectedItem.size)}</p>
-                                </div>
-                                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
-                                    <FileType className="w-5 h-5 text-neutral-400 mb-2" />
-                                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Type</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white truncate" title={selectedItem.mimeType || selectedItem.type}>{selectedItem.mimeType || selectedItem.type}</p>
-                                </div>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
-                                <div className="flex items-start gap-3">
-                                    <Calendar className="w-5 h-5 text-neutral-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Date Added</p>
-                                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{format(new Date(selectedItem.createdAt), 'PPpp')}</p>
-                                    </div>
+                            {/* Date Added */}
+                            <div className="py-2.5 flex items-start gap-2.5">
+                                <Icon icon="solar:calendar-linear" className="w-4 h-4 text-[var(--gallery-modal-text-muted)] mt-0.5 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--gallery-modal-text-muted)] block mb-0.5">Date Added</span>
+                                    <p className="font-medium text-[var(--gallery-modal-text)]">{format(new Date(selectedItem.createdAt), 'PPpp')}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-6 flex gap-3">
+                        {/* Actions */}
+                        <div className="mt-4 pt-3 border-t border-[var(--gallery-modal-border)] flex gap-2">
                             <button 
                                 onClick={() => {
                                     if (fullScreenUrl && fullScreenUrl !== 'error' && fullScreenUrl !== '__TOO_LARGE__') {
@@ -2047,9 +2068,9 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                         document.body.removeChild(a);
                                     }
                                 }}
-                                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                                className="flex-1 py-2 px-3 rounded-lg bg-[var(--gallery-modal-accent)] hover:bg-[var(--gallery-modal-accent-hover)] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95 shadow-sm"
                             >
-                                <Download className="w-4 h-4" />
+                                <Icon icon="solar:download-linear" className="w-4 h-4" />
                                 Download
                             </button>
                             <button 
@@ -2057,10 +2078,11 @@ const GalleryView: React.FC<GalleryViewProps> = ({ user, userProfile, setGallery
                                     navigator.clipboard.writeText(selectedItem.filename);
                                     globalAlert('Filename copied to clipboard', { type: 'info' });
                                 }}
-                                className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium flex items-center justify-center transition-colors"
+                                className="py-2 px-3 rounded-lg bg-[var(--gallery-modal-btn-bg)] hover:bg-[var(--gallery-modal-btn-hover)] text-[var(--gallery-modal-btn-text)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
                                 title="Copy filename"
                             >
-                                <Copy className="w-4 h-4" />
+                                <Icon icon="solar:copy-linear" className="w-4 h-4" />
+                                Copy
                             </button>
                         </div>
                     </div>
