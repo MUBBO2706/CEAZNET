@@ -451,7 +451,7 @@ ${snippet}
                                     className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors shrink-0"
                                     title="Copy Hash ID"
                                 >
-                                    {copiedId === 'hash-id' ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
+                                    {copiedId === 'hash-id' ? <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
                         </div>
@@ -1217,7 +1217,7 @@ ${snippet}
                                         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 rounded p-2.5 flex flex-col gap-1.5 shrink-0 animate-fade-in">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1.5">
-                                                    <Icon icon="solar:check-circle-linear" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                    <Icon icon="solar:check-read-linear" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                                     <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 font-sans">API Key Created Successfully!</span>
                                                 </div>
                                                 <button 
@@ -1237,7 +1237,7 @@ ${snippet}
                                                     className="p-1.5 bg-emerald-600 dark:bg-emerald-500 text-white dark:text-black font-bold rounded hover:bg-emerald-700 dark:hover:bg-emerald-400 flex items-center justify-center shrink-0 cursor-pointer"
                                                     title={copiedId === `key-${newlyCreatedKey.id}` ? 'Copied!' : 'Copy Key'}
                                                 >
-                                                    {copiedId === `key-${newlyCreatedKey.id}` ? <Icon icon="solar:check-circle-linear" className="w-3 h-3" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
+                                                    {copiedId === `key-${newlyCreatedKey.id}` ? <Icon icon="solar:check-read-linear" className="w-3 h-3" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                                 </button>
                                             </div>
                                         </div>
@@ -1308,7 +1308,7 @@ ${snippet}
                                                                 className="p-1 hover:bg-[var(--dev-console-bg-active)] rounded text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors cursor-pointer"
                                                                 title="Copy API Key"
                                                             >
-                                                                {copiedId === `keylist-${k.id}` ? <Icon icon="solar:check-circle-linear" className="w-3 h-3 text-emerald-400" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
+                                                                {copiedId === `keylist-${k.id}` ? <Icon icon="solar:check-read-linear" className="w-3 h-3 text-emerald-400" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                                             </button>
 
                                                             {deletingKeyId === k.id ? (
@@ -1431,7 +1431,7 @@ ${snippet}
                                         className="px-2.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-[10px] sm:text-[11px] transition-colors flex items-center gap-1 cursor-pointer shadow-sm shrink-0 h-6"
                                         title="Copy entire documentation as structured Markdown"
                                     >
-                                        {copiedId === 'full-md-docs' ? <Icon icon="solar:check-circle-linear" className="w-3 h-3" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
+                                        {copiedId === 'full-md-docs' ? <Icon icon="solar:check-read-linear" className="w-3 h-3" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                         <span>
                                             {copiedId === 'full-md-docs' ? (
                                                 <>
@@ -1563,7 +1563,7 @@ ${snippet}
                                                 className="p-1.5 bg-[var(--dev-console-bg-active)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] rounded text-[var(--dev-console-text)] flex items-center justify-center cursor-pointer font-sans h-6 w-6 shadow-sm transition-colors shrink-0"
                                                 title={copiedId === `snippet-${activeSnippet}` ? "Copied!" : "Copy Sample Code"}
                                             >
-                                                {copiedId === `snippet-${activeSnippet}` ? <Icon icon="solar:check-circle-linear" className="w-3 h-3 text-emerald-400" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
+                                                {copiedId === `snippet-${activeSnippet}` ? <Icon icon="solar:check-read-linear" className="w-3 h-3 text-emerald-400" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                             </button>
                                         </div>
                                     </div>

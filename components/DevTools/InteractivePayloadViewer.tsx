@@ -373,7 +373,7 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                         >
                             {isCopied ? (
                                 <>
-                                    <AppIcon name="solar:check-circle-linear" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
+                                    <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
                                     <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
                                 </>
                             ) : (
@@ -394,7 +394,7 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                                 >
                                     {isCopied ? (
                                         <>
-                                            <AppIcon name="solar:check-circle-linear" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
+                                            <AppIcon name="solar:check-read-linear" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
                                             <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
                                         </>
                                     ) : (

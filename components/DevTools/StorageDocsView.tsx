@@ -193,7 +193,7 @@ console.log('Read back:', safeGetLocalStorage('devtools_demo'));`;
                         onClick={() => handleCopy(getSnippet(activeLang), `snippet-${activeLang}`)}
                         className="px-2.5 py-1 rounded text-xs bg-[var(--dev-console-bg)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] flex items-center gap-1.5 cursor-pointer text-[var(--dev-console-text)] font-semibold transition-colors"
                     >
-                        {copiedId === `snippet-${activeLang}` ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
+                        {copiedId === `snippet-${activeLang}` ? <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                         <span>Copy Code</span>
                     </button>
                 </div>

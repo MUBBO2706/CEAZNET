@@ -237,7 +237,7 @@ export const StorageDetailModal: React.FC<StorageDetailModalProps> = ({
                             className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded text-xs font-semibold flex items-center gap-1 bg-[var(--dev-console-bg)] hover:bg-[var(--dev-console-bg-hover)] text-[var(--dev-console-text)] border border-[var(--dev-console-border)] cursor-pointer transition-colors"
                             title="Copy Value"
                         >
-                            {copiedId === `modal-val-${itemKey}` ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
+                            {copiedId === `modal-val-${itemKey}` ? <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                             <span className="hidden sm:inline">Copy Value</span>
                         </button>
 
@@ -369,7 +369,7 @@ export const StorageDetailModal: React.FC<StorageDetailModalProps> = ({
                                     onClick={() => handleCopy(itemValue, `raw-full-${itemKey}`)}
                                     className="flex items-center gap-1 text-[#007fd4] hover:underline bg-transparent border-0 cursor-pointer font-semibold"
                                 >
-                                    {copiedId === `raw-full-${itemKey}` ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
+                                    {copiedId === `raw-full-${itemKey}` ? <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                                     <span>Copy Full String</span>
                                 </button>
                             </div>
@@ -396,7 +396,7 @@ export const StorageDetailModal: React.FC<StorageDetailModalProps> = ({
                                             onClick={() => handleCopy(typeof insight.decoded === 'object' ? JSON.stringify(insight.decoded, null, 2) : String(insight.decoded), `dec-${idx}`)}
                                             className="px-2 py-1 rounded text-xs bg-[var(--dev-console-bg)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] flex items-center gap-1 text-[var(--dev-console-text)] cursor-pointer"
                                         >
-                                            {copiedId === `dec-${idx}` ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
+                                            {copiedId === `dec-${idx}` ? <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                                             <span>Copy</span>
                                         </button>
                                     </div>
@@ -479,7 +479,7 @@ export const StorageDetailModal: React.FC<StorageDetailModalProps> = ({
                                     onClick={handleSave}
                                     className="px-3.5 py-1.5 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border-0 cursor-pointer shadow-2xs flex items-center gap-1.5"
                                 >
-                                    <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5" />
+                                    <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5" />
                                     <span>Save to Storage</span>
                                 </button>
                             </div>

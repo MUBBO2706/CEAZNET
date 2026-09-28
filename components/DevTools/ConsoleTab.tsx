@@ -225,7 +225,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
                                         title="Copy log text"
                                     >
                                         {copiedId === log.id ? (
-                                            <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400" />
+                                            <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-400" />
                                         ) : (
                                             <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 transition-transform hover:scale-110" />
                                         )}

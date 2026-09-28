@@ -17,3 +17,7 @@
 ### 2026-09-28 10:02:00 -07:00
 - **User Problem Reported:** AI requests and icon suggestions were being aborted prematurely with an artificial 15-second timeout, and the Version Update modal reload button lacked a loading spinner on reload click and used a generic right-arrow icon.
 - **Resolution Implemented:** Removed the artificial 15-second timeout abort from the Gemini fallback pipeline (`geminiFallback.ts`) to let requests run naturally without timeout aborts. In `VersionUpdateModal.tsx`, added `isReloading` state with a standard `Loader` spinner (`animate-spin`) on reload click, and replaced the arrow icon with a sleek linear rotate icon (`solar:restart-linear`).
+
+### 2026-09-28 10:08:00 -07:00
+- **User Problem Reported:** DevTools tab count badges were inconsistent with the Image tab badge theme, and circle checkmark icons (`solar:check-circle-linear`) were used for copy/action feedback across DevTools instead of standard/normal outline checkmarks.
+- **Resolution Implemented:** Aligned all DevTools tab count badges (Console, Network, Storage, Devices, Image) to use matching accent-tinted background pills with translucent borders (`bg-*-500/20 text-* border-*`). Replaced all circle checkmark feedback icons across DevTools with standard linear checkmarks (`solar:check-read-linear`), and recorded the strict directive in `AGENTS.md`.

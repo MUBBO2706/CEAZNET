@@ -634,7 +634,7 @@ export const StorageTab: React.FC<StorageTabProps> = ({
 
                                 {addSuccessMessage && (
                                     <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-1.5 font-sans">
-                                        <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 shrink-0" />
+                                        <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 shrink-0" />
                                         <span>{addSuccessMessage}</span>
                                     </div>
                                 )}
@@ -778,7 +778,7 @@ export const StorageTab: React.FC<StorageTabProps> = ({
                                                             title="Copy Value"
                                                         >
                                                             {copiedId === `list-copy-${item.key}` ? (
-                                                                <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" />
+                                                                <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-500" />
                                                             ) : (
                                                                 <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 group-hover/copy:scale-110 transition-transform" />
                                                             )}

@@ -533,22 +533,22 @@ export const DevTools = () => {
                         <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Console Logs">
                             <Icon icon="solar:programming-linear" className="w-3.5 h-3.5 text-[#8be9fd] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Console</span>
-                            {logs.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{logs.length}</span>}
+                            {logs.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[#8be9fd]/20 text-[#8be9fd] border border-[#8be9fd]/30 rounded-full text-[9px] font-medium font-mono">{logs.length}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Network Requests">
                             <Icon icon="solar:transfer-horizontal-linear" className="w-3.5 h-3.5 text-[#569cd6] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Network</span>
-                            {visibleNets.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{visibleNets.length}</span>}
+                            {visibleNets.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[#569cd6]/20 text-[#569cd6] border border-[#569cd6]/30 rounded-full text-[9px] font-medium font-mono">{visibleNets.length}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Storage Manager">
                             <Icon icon="solar:database-linear" className="w-3.5 h-3.5 text-[#007fd4] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Storage</span>
-                            {storageCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{storageCount}</span>}
+                            {storageCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[#007fd4]/20 text-[#007fd4] border border-[#007fd4]/30 rounded-full text-[9px] font-medium font-mono">{storageCount}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Device Models Mapping">
                             <Icon icon="solar:devices-linear" className="w-3.5 h-3.5 text-purple-400 group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Devices</span>
-                            {deviceMappingsCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{deviceMappingsCount}</span>}
+                            {deviceMappingsCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full text-[9px] font-medium font-mono">{deviceMappingsCount}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Image Cache Dashboard">
                             <Icon icon="solar:gallery-linear" className="w-3.5 h-3.5 text-[#10b981] group-hover/tab:scale-110 transition-transform" /> 
@@ -580,7 +580,7 @@ export const DevTools = () => {
                         <div className="flex items-center gap-2">
                             <button onClick={handleCopyAll} className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all flex items-center justify-center bg-transparent border-0 outline-none focus:outline-none cursor-pointer group/btn" title={copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? "Copied All!" : "Copy All"}>
                                 {copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? (
-                                    <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400" />
+                                    <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-400" />
                                 ) : (
                                     <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
                                 )}
@@ -648,7 +648,7 @@ export const DevTools = () => {
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'console' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Console
                                 </span>
-                                {logs.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{logs.length}</span>}
+                                {logs.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-1 bg-[#8be9fd]/20 text-[#8be9fd] border border-[#8be9fd]/30 rounded-full text-[8px] font-mono font-bold shrink-0">{logs.length}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('network'); setExpandedNetId(null); }}
@@ -658,7 +658,7 @@ export const DevTools = () => {
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'network' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Network
                                 </span>
-                                {visibleNets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{visibleNets.length}</span>}
+                                {visibleNets.length > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-1 bg-[#569cd6]/20 text-[#569cd6] border border-[#569cd6]/30 rounded-full text-[8px] font-mono font-bold shrink-0">{visibleNets.length}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('storage'); }}
@@ -668,7 +668,7 @@ export const DevTools = () => {
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'storage' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Storage
                                 </span>
-                                {storageCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{storageCount}</span>}
+                                {storageCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-1 bg-[#007fd4]/20 text-[#007fd4] border border-[#007fd4]/30 rounded-full text-[8px] font-mono font-bold shrink-0">{storageCount}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('cache'); }}
@@ -678,7 +678,7 @@ export const DevTools = () => {
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'cache' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Devices
                                 </span>
-                                {deviceMappingsCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[8px] font-mono font-bold shrink-0">{deviceMappingsCount}</span>}
+                                {deviceMappingsCount > 0 && <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full text-[8px] font-mono font-bold shrink-0">{deviceMappingsCount}</span>}
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('image-cache'); }}
@@ -689,7 +689,7 @@ export const DevTools = () => {
                                     Image
                                 </span>
                                 {serverImageCacheSummary.count > 0 && (
-                                    <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-[2px] bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 rounded-full text-[8px] font-mono font-bold shrink-0">
+                                    <span className="ml-0.5 flex items-center justify-center min-w-[12px] h-[12px] px-1 bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 rounded-full text-[8px] font-mono font-bold shrink-0">
                                         {serverImageCacheSummary.count}
                                     </span>
                                 )}

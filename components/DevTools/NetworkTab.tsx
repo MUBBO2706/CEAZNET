@@ -1141,7 +1141,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 className="p-1 mr-2 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 border-0 bg-transparent cursor-pointer"
                                 title="Copy Request URL"
                             >
-                                {copiedId === 'url-copy' ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
+                                {copiedId === 'url-copy' ? <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-400" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                             </button>
                         </div>
                         
@@ -1272,7 +1272,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 className="p-1.5 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-0 bg-transparent cursor-pointer rounded"
                                 title="Copy Request URL"
                             >
-                                {copiedId === 'url-copy-mobile' ? <Icon icon="solar:check-circle-linear" className="w-4 h-4 text-green-400" /> : <Icon icon="solar:copy-linear" className="w-4 h-4" />}
+                                {copiedId === 'url-copy-mobile' ? <Icon icon="solar:check-read-linear" className="w-4 h-4 text-green-400" /> : <Icon icon="solar:copy-linear" className="w-4 h-4" />}
                             </button>
                         </div>
 

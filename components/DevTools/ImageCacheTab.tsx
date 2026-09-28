@@ -317,7 +317,7 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                                                                     className="w-full text-left px-3 py-1.5 text-xs text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] transition-colors flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-sans"
                                                                 >
                                                                     {copiedId === `srv-copy-${idx}` ? (
-                                                                        <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                                                                        <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-green-400 shrink-0" />
                                                                     ) : (
                                                                         <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 shrink-0 text-[var(--dev-console-text-muted)]" />
                                                                     )}
