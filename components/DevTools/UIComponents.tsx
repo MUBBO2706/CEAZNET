@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, EyeOff, Check, Copy } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { 
     highlightSearchMatchText, 
     getRelativeDateAnd24hTime, 
@@ -203,7 +203,7 @@ export const DevSelect = ({ value, options, onChange, icon, align = 'left' }: an
                     {icon && <span className="text-[var(--dev-console-text-muted)] shrink-0 scale-90">{icon}</span>}
                     <span className="truncate pr-0.5">{selectedLabel}</span>
                 </div>
-                <ChevronDown size={10} className={`text-[var(--dev-console-text-muted)] transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                <Icon icon="solar:alt-arrow-down-linear" className={`w-3 h-3 text-[var(--dev-console-text-muted)] transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
                 <div className={`absolute top-full ${align === 'right' ? 'right-0' : 'left-0'} mt-1 min-w-[110px] md:w-full bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] rounded shadow-lg z-50 py-1 overflow-hidden`}>

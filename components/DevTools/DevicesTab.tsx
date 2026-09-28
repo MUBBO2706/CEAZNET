@@ -1,6 +1,7 @@
 import { fetchApi } from "../../utils/fetchApi";
 import React, { useState, useEffect, useRef } from 'react';
-import { Smartphone, Cpu, Loader, Search, X, Database, ChevronRight, Trash2, Copy, Check, Globe, ShieldAlert, FileText, Filter, Terminal, ExternalLink, Clock, RotateCw, ChevronDown, Key, BookOpen, Plus, Code, Lock, Server } from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { Loader } from 'lucide-react';
 import { getPersistentDeviceId } from '../../utils/deviceUtils';
 import { DevSelect } from './UIComponents';
 import ConfirmationModal from '../ConfirmationModal';
@@ -432,7 +433,7 @@ ${snippet}
                 {/* Left Side: Operations / Add-Edit */}
                 <div className="w-full md:w-[40%] shrink-0 border-b md:border-b-0 md:border-r border-[var(--dev-console-border)] p-4 flex flex-col gap-4 overflow-visible md:overflow-y-auto md:h-full md:min-h-0">
                     <h3 className="text-sm font-semibold text-[var(--dev-console-text)] tracking-wider flex items-center gap-2 border-b border-[var(--dev-console-border)] pb-2 shrink-0">
-                        <Smartphone size={16} className="text-[#007fd4]" />
+                        <Icon icon="solar:smartphone-linear" className="w-4 h-4 text-[#007fd4]" />
                         Device Model Mapping
                     </h3>
                     
@@ -450,7 +451,7 @@ ${snippet}
                                     className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors shrink-0"
                                     title="Copy Hash ID"
                                 >
-                                    {copiedId === 'hash-id' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                                    {copiedId === 'hash-id' ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
                         </div>
@@ -529,7 +530,7 @@ ${snippet}
 
                     <div className="border-t border-[var(--dev-console-border)] my-2 pt-4 flex flex-col gap-3">
                         <h4 className="text-xs font-semibold text-[var(--dev-console-text)] tracking-wider flex items-center gap-2 uppercase font-mono">
-                            <Cpu size={14} className="text-amber-500" />
+                            <Icon icon="solar:cpu-linear" className="w-4 h-4 text-amber-500" />
                             Live Resolver
                         </h4>
                         
@@ -677,7 +678,7 @@ ${snippet}
                                 }`}
                                 title="Device Cache"
                             >
-                                <Database size={13} className="shrink-0" />
+                                <Icon icon="solar:database-linear" className="w-3.5 h-3.5 shrink-0" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${
                                     subTab === 'cache' ? 'max-w-[140px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'
                                 }`}>
@@ -699,7 +700,7 @@ ${snippet}
                                 }`}
                                 title="External Audit Logs"
                             >
-                                <ShieldAlert size={13} className={`shrink-0 ${auditLogs.some(l => l.is_external) ? "text-purple-600 dark:text-purple-400" : ""}`} />
+                                <Icon icon="solar:shield-warning-linear" className={`w-3.5 h-3.5 shrink-0 ${auditLogs.some(l => l.is_external) ? "text-purple-600 dark:text-purple-400" : ""}`} />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${
                                     subTab === 'audit' ? 'max-w-[160px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'
                                 }`}>
@@ -721,7 +722,7 @@ ${snippet}
                                 }`}
                                 title="API Keys Management"
                             >
-                                <Key size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                                <Icon icon="solar:key-linear" className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${
                                     subTab === 'apikeys' ? 'max-w-[140px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'
                                 }`}>
@@ -743,7 +744,7 @@ ${snippet}
                                 }`}
                                 title="API Integration Documentation"
                             >
-                                <BookOpen size={13} className="shrink-0 text-emerald-400" />
+                                <Icon icon="solar:book-linear" className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${
                                     subTab === 'docs' ? 'max-w-[140px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'
                                 }`}>
@@ -761,20 +762,20 @@ ${snippet}
                         <>
                             <div className="flex-none p-2 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center bg-transparent border border-[var(--dev-console-border)] px-3 py-1.5 focus-within:border-[#007fd4] transition-colors font-sans flex-1">
-                                    <Search size={13} className="text-[var(--dev-console-text-muted)] mr-2 shrink-0" />
+                                    <Icon icon="solar:magnifer-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] mr-2 shrink-0" />
                                     <input 
                                         className="bg-transparent text-xs text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
                                         placeholder="Search cached models..." 
                                         value={cacheSearch} 
                                         onChange={e => setCacheSearch(e.target.value)} 
                                     />
-                                    {cacheSearch && <button onClick={() => setCacheSearch('')}><X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" /></button>}
+                                    {cacheSearch && <button onClick={() => setCacheSearch('')}><Icon icon="tabler:x" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" /></button>}
                                 </div>
                                 <button 
                                     onClick={() => fetchCacheData(true)}
                                     className="px-2.5 py-1 rounded bg-[var(--dev-console-bg-active)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] text-xs text-[var(--dev-console-text-muted)] transition-colors font-sans cursor-pointer flex items-center gap-1.5"
                                 >
-                                    {isDeviceCacheLoading ? <Loader size={12} className="animate-spin" /> : <RotateCw size={12} />}
+                                    {isDeviceCacheLoading ? <Loader size={12} className="animate-spin" /> : <Icon icon="solar:restart-linear" className="w-3.5 h-3.5" />}
                                     Refresh List
                                 </button>
                             </div>
@@ -782,7 +783,7 @@ ${snippet}
                             <div className="flex-1 overflow-y-visible md:overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
                                 {Object.entries(cacheData).length === 0 ? (
                                     <div className="text-[var(--dev-console-text-muted)] italic p-12 text-center text-xs flex flex-col items-center gap-2 justify-center h-full">
-                                        <Database size={32} className="opacity-20 mb-2" />
+                                        <Icon icon="solar:database-linear" className="w-8 h-8 opacity-20 mb-2" />
                                         Cache is currently empty or loading.
                                     </div>
                                 ) : (() => {
@@ -819,10 +820,10 @@ ${snippet}
                                                                 setNewModel(model);
                                                                 setNewName(name || '');
                                                             }}
-                                                            className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-[var(--dev-console-border)] rounded text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-opacity cursor-pointer"
+                                                            className="p-1 opacity-0 group-hover:opacity-100 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-all cursor-pointer"
                                                             title="Edit Entry"
                                                         >
-                                                            <ChevronRight size={14} />
+                                                            <Icon icon="solar:alt-arrow-right-linear" className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                                                         </button>
                                                         <InlineConfirmDelete
                                                             onDelete={async () => {
@@ -840,7 +841,7 @@ ${snippet}
                                                                 }
                                                             }}
                                                             iconOnly
-                                                            className="p-1.5 hover:bg-[var(--dev-console-border)] rounded text-[var(--dev-console-text-muted)] hover:text-red-500 transition-colors cursor-pointer"
+                                                            className="p-1 text-[var(--dev-console-text-muted)] hover:text-red-500 transition-colors cursor-pointer"
                                                             iconClassName="w-3.5 h-3.5"
                                                         />
                                                     </div>
@@ -858,7 +859,7 @@ ${snippet}
                         <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden w-full">
                             <div className="flex-none p-2 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] flex flex-wrap items-center justify-between gap-2.5">
                                 <div className="flex items-center bg-transparent border border-[var(--dev-console-border)] px-3 py-1.5 focus-within:border-[#007fd4] transition-colors font-sans flex-1">
-                                    <Search size={13} className="text-[var(--dev-console-text-muted)] mr-2 shrink-0" />
+                                    <Icon icon="solar:magnifer-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] mr-2 shrink-0" />
                                     <input 
                                         className="bg-transparent text-xs text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
                                         placeholder="Search domain, IP, model code..." 
@@ -867,7 +868,7 @@ ${snippet}
                                     />
                                     {auditSearch && (
                                         <button onClick={() => setAuditSearch('')} className="p-0.5 hover:text-[var(--dev-console-text)]">
-                                            <X size={12} className="text-[var(--dev-console-text-muted)]" />
+                                            <Icon icon="tabler:x" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
                                         </button>
                                     )}
                                 </div>
@@ -878,7 +879,7 @@ ${snippet}
                                         disabled={isAuditLogsLoading}
                                         className="px-2.5 py-1 rounded bg-[var(--dev-console-bg-active)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] text-xs text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors font-sans cursor-pointer flex items-center gap-1.5"
                                     >
-                                        {isAuditLogsLoading ? <Loader size={12} className="animate-spin" /> : <RotateCw size={12} />}
+                                        {isAuditLogsLoading ? <Loader size={12} className="animate-spin" /> : <Icon icon="solar:restart-linear" className="w-3.5 h-3.5" />}
                                         <span>Refresh</span>
                                     </button>
 
@@ -886,7 +887,7 @@ ${snippet}
                                         onClick={handleClearAuditLogs}
                                         className="px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 text-xs font-semibold transition-colors font-sans cursor-pointer flex items-center gap-1"
                                     >
-                                        <Trash2 size={12} />
+                                        <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5" />
                                         <span>Clear</span>
                                     </button>
                                 </div>
@@ -910,7 +911,7 @@ ${snippet}
                                     </div>
                                 ) : auditLogs.length === 0 ? (
                                     <div className="text-[var(--dev-console-text-muted)] italic p-12 text-center text-xs flex flex-col items-center gap-2 justify-center h-full">
-                                        <Globe size={32} className="opacity-20 mb-2 text-[#007fd4]" />
+                                        <Icon icon="solar:global-linear" className="w-8 h-8 opacity-20 mb-2 text-[#007fd4]" />
                                         <span>No external device mapper requests logged yet.</span>
                                         <p className="text-[10px] text-neutral-500 max-w-sm leading-relaxed mt-1 font-sans">
                                             Any external website, API client, or domain calling <code className="font-mono text-[#007fd4]">/api/device-mapper</code> will automatically record origin domain, IP, headers, requested model, and execution latency here.
@@ -1101,7 +1102,7 @@ ${snippet}
                         <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden w-full">
                             <div className="flex-none p-2 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center bg-transparent border border-[var(--dev-console-border)] px-3 py-1.5 focus-within:border-[#007fd4] transition-colors font-sans flex-1">
-                                    <Search size={12} className="text-[var(--dev-console-text-muted)] mr-1.5 shrink-0" />
+                                    <Icon icon="solar:magnifer-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] mr-1.5 shrink-0" />
                                     <input 
                                         className="bg-transparent text-xs text-[var(--dev-console-text)] outline-none w-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
                                         placeholder="Search API keys..." 
@@ -1110,7 +1111,7 @@ ${snippet}
                                     />
                                     {apiKeySearch && (
                                         <button onClick={() => setApiKeySearch('')} className="p-0.5 hover:text-[var(--dev-console-text)]">
-                                            <X size={11} className="text-[var(--dev-console-text-muted)]" />
+                                            <Icon icon="tabler:x" className="w-3 h-3 text-[var(--dev-console-text-muted)]" />
                                         </button>
                                     )}
                                 </div>
@@ -1121,7 +1122,7 @@ ${snippet}
                                         disabled={isApiKeysLoading}
                                         className="px-2 py-0.5 rounded bg-[var(--dev-console-bg-active)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] text-xs text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors font-sans cursor-pointer flex items-center gap-1"
                                     >
-                                        {isApiKeysLoading ? <Loader size={11} className="animate-spin" /> : <RotateCw size={11} />}
+                                        {isApiKeysLoading ? <Loader size={11} className="animate-spin" /> : <Icon icon="solar:restart-linear" className="w-3 h-3" />}
                                         <span>Refresh</span>
                                     </button>
 
@@ -1132,7 +1133,7 @@ ${snippet}
                                         }}
                                         className="px-2.5 py-0.5 rounded bg-[#007fd4] hover:bg-[#007fd4]/90 text-white text-xs font-semibold transition-colors font-sans cursor-pointer flex items-center gap-1 shadow-sm"
                                     >
-                                        <Plus size={12} />
+                                        <Icon icon="tabler:plus" className="w-3.5 h-3.5" />
                                         <span>Create API Key</span>
                                     </button>
                                 </div>
@@ -1145,7 +1146,7 @@ ${snippet}
                                         <form onSubmit={handleCreateApiKey} className="bg-[var(--dev-console-bg)] border border-[#007fd4]/40 rounded p-3 flex flex-col gap-2.5 shadow-md shrink-0">
                                             <div className="flex items-center justify-between border-b border-[var(--dev-console-border)] pb-1.5">
                                                 <div className="flex items-center gap-1.5">
-                                                    <Key size={13} className="text-amber-400" />
+                                                    <Icon icon="solar:key-linear" className="w-3.5 h-3.5 text-amber-400" />
                                                     <span className="text-xs font-bold text-[var(--dev-console-text)] font-sans">Generate New API Key</span>
                                                 </div>
                                                 <button 
@@ -1153,7 +1154,7 @@ ${snippet}
                                                     onClick={() => setShowCreateForm(false)} 
                                                     className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]"
                                                 >
-                                                    <X size={13} />
+                                                    <Icon icon="tabler:x" className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
 
@@ -1201,7 +1202,7 @@ ${snippet}
                                                         disabled={isCreatingKey || !newKeyName.trim()} 
                                                         className="px-3 py-1 rounded bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs font-sans cursor-pointer disabled:opacity-50 flex items-center gap-1 h-7 whitespace-nowrap"
                                                     >
-                                                        {isCreatingKey ? <Loader size={11} className="animate-spin" /> : <Key size={11} />}
+                                                        {isCreatingKey ? <Loader size={11} className="animate-spin" /> : <Icon icon="solar:key-linear" className="w-3 h-3" />}
                                                         <span>Generate Key</span>
                                                     </button>
                                                 </div>
@@ -1216,14 +1217,14 @@ ${snippet}
                                         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 rounded p-2.5 flex flex-col gap-1.5 shrink-0 animate-fade-in">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1.5">
-                                                    <Check size={14} className="text-emerald-600 dark:text-emerald-400" />
+                                                    <Icon icon="solar:check-circle-linear" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                                     <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 font-sans">API Key Created Successfully!</span>
                                                 </div>
                                                 <button 
                                                     onClick={() => setNewlyCreatedKey(null)} 
                                                     className="text-emerald-600/70 dark:text-neutral-400 hover:text-emerald-900 dark:hover:text-white"
                                                 >
-                                                    <X size={13} />
+                                                    <Icon icon="tabler:x" className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-200/70 font-sans leading-normal">
@@ -1236,7 +1237,7 @@ ${snippet}
                                                     className="p-1.5 bg-emerald-600 dark:bg-emerald-500 text-white dark:text-black font-bold rounded hover:bg-emerald-700 dark:hover:bg-emerald-400 flex items-center justify-center shrink-0 cursor-pointer"
                                                     title={copiedId === `key-${newlyCreatedKey.id}` ? 'Copied!' : 'Copy Key'}
                                                 >
-                                                    {copiedId === `key-${newlyCreatedKey.id}` ? <Check size={12} /> : <Copy size={12} />}
+                                                    {copiedId === `key-${newlyCreatedKey.id}` ? <Icon icon="solar:check-circle-linear" className="w-3 h-3" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                                 </button>
                                             </div>
                                         </div>
@@ -1262,7 +1263,7 @@ ${snippet}
                                         </div>
                                     ) : apiKeys.length === 0 ? (
                                         <div className="text-[var(--dev-console-text-muted)] italic p-8 text-center text-xs flex flex-col items-center gap-2 justify-center">
-                                            <Key size={24} className="opacity-20 text-amber-400 mb-1" />
+                                            <Icon icon="solar:key-linear" className="w-6 h-6 opacity-20 text-amber-400 mb-1" />
                                             <span>No API keys created yet.</span>
                                             <p className="text-[10px] text-neutral-500 max-w-sm font-sans leading-relaxed">
                                                 Generate an API key to let external clients make calls to <code className="font-mono text-[#007fd4]">/api/device-mapper</code>.
@@ -1283,7 +1284,7 @@ ${snippet}
                                                         className="px-4 py-1.5 flex items-center text-[10px] sm:text-[11px] font-mono border-b last:border-b-0 border-[var(--dev-console-border-light)] border-l-[3px] border-l-amber-500 hover:bg-[var(--dev-console-bg-hover)] transition-colors select-none"
                                                     >
                                                         <div className="w-[120px] sm:w-[160px] shrink-0 flex items-center gap-1.5 min-w-0 pr-2">
-                                                            <Key size={10} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                                                            <Icon icon="solar:key-linear" className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
                                                             <span className="font-bold text-[var(--dev-console-text)] truncate" title={k.name}>
                                                                 {k.name}
                                                             </span>
@@ -1307,13 +1308,13 @@ ${snippet}
                                                                 className="p-1 hover:bg-[var(--dev-console-bg-active)] rounded text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] transition-colors cursor-pointer"
                                                                 title="Copy API Key"
                                                             >
-                                                                {copiedId === `keylist-${k.id}` ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                                                                {copiedId === `keylist-${k.id}` ? <Icon icon="solar:check-circle-linear" className="w-3 h-3 text-emerald-400" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                                             </button>
 
                                                             {deletingKeyId === k.id ? (
                                                                 <div className="flex items-center gap-1 shrink-0 font-sans">
                                                                     <button 
-                                                                        type="button"
+                                                                        type="button" 
                                                                         disabled={isRevokingKey}
                                                                         onClick={() => setDeletingKeyId(null)} 
                                                                         className="px-1.5 py-0.5 text-[9px] bg-[var(--dev-console-tab-bg)] text-[var(--dev-console-text)] border border-[var(--dev-console-border)] rounded hover:bg-[var(--dev-console-bg-hover)] cursor-pointer font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1321,7 +1322,7 @@ ${snippet}
                                                                         No
                                                                     </button>
                                                                     <button 
-                                                                        type="button"
+                                                                        type="button" 
                                                                         disabled={isRevokingKey}
                                                                         onClick={() => handleDeleteApiKey(k.id)} 
                                                                         className={`px-2 py-0.5 text-[9px] rounded font-bold font-sans flex items-center gap-1 transition-all border ${
@@ -1342,7 +1343,7 @@ ${snippet}
                                                                 </div>
                                                             ) : (
                                                                 <button 
-                                                                    type="button"
+                                                                    type="button" 
                                                                     onClick={() => setDeletingKeyId(k.id)}
                                                                     className="text-red-400 hover:text-red-300 hover:underline font-sans font-medium text-[10px] cursor-pointer px-1 py-0.5"
                                                                     title="Revoke API Key"
@@ -1385,7 +1386,7 @@ ${snippet}
                                                  docCopyLang === 'curl' ? 'cURL' : 
                                                  docCopyLang === 'fetch' ? 'Fetch' : 'Python'}
                                             </span>
-                                            <ChevronDown size={11} className={`transition-transform text-[var(--dev-console-text-muted)] ${isDocLangDropdownOpen ? 'rotate-180' : ''}`} />
+                                            <Icon icon="solar:alt-arrow-down-linear" className={`w-3 h-3 transition-transform text-[var(--dev-console-text-muted)] ${isDocLangDropdownOpen ? 'rotate-180' : ''}`} />
                                         </button>
                                         
                                         {isDocLangDropdownOpen && (
@@ -1430,7 +1431,7 @@ ${snippet}
                                         className="px-2.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-[10px] sm:text-[11px] transition-colors flex items-center gap-1 cursor-pointer shadow-sm shrink-0 h-6"
                                         title="Copy entire documentation as structured Markdown"
                                     >
-                                        {copiedId === 'full-md-docs' ? <Check size={11} /> : <Copy size={11} />}
+                                        {copiedId === 'full-md-docs' ? <Icon icon="solar:check-circle-linear" className="w-3 h-3" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                         <span>
                                             {copiedId === 'full-md-docs' ? (
                                                 <>
@@ -1562,7 +1563,7 @@ ${snippet}
                                                 className="p-1.5 bg-[var(--dev-console-bg-active)] hover:bg-[var(--dev-console-bg-hover)] border border-[var(--dev-console-border)] rounded text-[var(--dev-console-text)] flex items-center justify-center cursor-pointer font-sans h-6 w-6 shadow-sm transition-colors shrink-0"
                                                 title={copiedId === `snippet-${activeSnippet}` ? "Copied!" : "Copy Sample Code"}
                                             >
-                                                {copiedId === `snippet-${activeSnippet}` ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                                                {copiedId === `snippet-${activeSnippet}` ? <Icon icon="solar:check-circle-linear" className="w-3 h-3 text-emerald-400" /> : <Icon icon="solar:copy-linear" className="w-3 h-3" />}
                                             </button>
                                         </div>
                                     </div>

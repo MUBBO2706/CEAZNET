@@ -43,6 +43,6 @@ The application is designed to be a versatile tool for both casual users and dev
 1.  **API Key**: To use the application, you need a Google Gemini API key. You can obtain one from [Google AI Studio](https://aistudio.google.com/app/apikey).
 2.  **Supabase Setup**:
     - Create a new project in [Supabase](https://supabase.com/).
-    - In the SQL Editor, run the commands provided in the `sql/` files to set up the database schema and policies. It is recommended to run them in order: `sql/01_user_management.md`, `sql/02_user_data_tables.md`, and so forth.
+    - Run the database schema and policy migrations managed in the centralized Ceaznet Task Manager (`https://task-manager-ceaznet.vercel.app`).
     - Obtain your project's URL and anon key.
 3.  **Launch the App**: When you first open the app, it will prompt you for your Gemini API key. Enter it to begin. User authentication via Supabase is optional and can be accessed from the header.

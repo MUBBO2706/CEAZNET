@@ -45,6 +45,10 @@ This document contains strict rules for myself to follow when updating or adding
    - **Only** fetch the Admin repo when an explicitly requested admin-panel update is needed.
    - **Only** fetch the SQL Task Manager database APIs or tasks when modifying database schemas, RLS policies, edge functions, or Supabase backend dependencies.
 
+3. **No Local SQL Files (Single Source of Truth):**
+   - **NEVER** store, create, or look for local `.sql` files or a local `/sql` directory in this repository.
+   - Rely **exclusively** on the centralized Ceaznet Task Manager (`https://task-manager-ceaznet.vercel.app`) where the entire database schema, RLS policies, RPCs, and Edge Functions are stored and managed.
+
 ### Guidelines for AI Agent (Database Iteration)
 Whenever the user requests changes related to the database, edge functions, or backend logic:
 

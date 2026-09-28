@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter, X, AlertTriangle, AlertCircle, ChevronRight, Terminal, Info as InfoIcon, Check, Copy } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { logs, listeners } from './store';
 import { renderLogMessageWithBadges } from './UIComponents';
 import { extractRealtimeFromLogArgs, RealtimeDiffViewer, getUnifiedRealtimeData } from './RealtimeDiffViewer';
@@ -149,7 +149,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
             {/* Console Toolbar */}
             <div className="flex-none h-8 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] flex items-center px-3 gap-3 w-full">
                 <div className="flex-1 max-w-xs sm:max-w-md flex items-center h-full pr-3 border-r border-[var(--dev-console-border)]">
-                    <Filter size={12} className="text-[var(--dev-console-text-muted)] mr-2 shrink-0" />
+                    <Icon icon="solar:filter-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] mr-2 shrink-0" />
                     <input 
                         className="bg-transparent text-[11px] text-[var(--dev-console-text)] outline-none w-full h-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
                         placeholder="Filter logs..." 
@@ -157,22 +157,23 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
                         onChange={e => setConsoleFilter(e.target.value)}
                     />
                     {consoleFilter && (
-                        <button onClick={() => setConsoleFilter('')} className="shrink-0 ml-1">
-                            <X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" />
+                        <button onClick={() => setConsoleFilter('')} className="shrink-0 ml-1 cursor-pointer bg-transparent border-0 p-0 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]">
+                            <Icon icon="solar:close-circle-linear" className="w-3.5 h-3.5" />
                         </button>
                     )}
                 </div>
-                <div className="h-4 w-px bg-neutral-600"></div>
+                <div className="h-4 w-px bg-[var(--dev-console-border)]"></div>
                 <div className="flex gap-1">
                     {(['all', 'info', 'warn', 'error'] as const).map(level => (
                         <button
                             key={level}
                             onClick={() => setConsoleLevel(level)}
-                            className={`px-2 py-0.5 rounded text-[11px] flex items-center gap-1.5 transition-colors ${consoleLevel === level ? 'bg-[#007fd4]/20 text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'}`}
+                            className={`px-2 py-0.5 rounded text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer border-0 ${consoleLevel === level ? 'bg-[#007fd4]/20 text-white font-semibold' : 'text-neutral-400 hover:text-neutral-200 bg-transparent'}`}
                         >
-                            {level === 'info' && <InfoIcon size={12} className="text-[#8be9fd]" />}
-                            {level === 'warn' && <AlertTriangle size={12} className="text-[#ffb86c]" />}
-                            {level === 'error' && <AlertCircle size={12} className="text-[#ff8080]" />}
+                            {level === 'all' && <Icon icon="solar:layers-minimalistic-linear" className="w-3.5 h-3.5 text-[#007fd4]" />}
+                            {level === 'info' && <Icon icon="solar:info-circle-linear" className="w-3.5 h-3.5 text-[#8be9fd]" />}
+                            {level === 'warn' && <Icon icon="solar:danger-triangle-linear" className="w-3.5 h-3.5 text-[#ffb86c]" />}
+                            {level === 'error' && <Icon icon="solar:danger-circle-linear" className="w-3.5 h-3.5 text-[#ff8080]" />}
                             <span className="capitalize">{level}</span>
                         </button>
                     ))}
@@ -183,7 +184,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
             <div className="flex-1 overflow-auto hide-horizontal-scrollbar scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent flex flex-col">
                 {filteredLogs.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-xs text-[var(--dev-console-text-muted)] italic gap-2 min-h-full">
-                        <Terminal size={32} className="opacity-20 mb-2" />
+                        <Icon icon="solar:programming-linear" className="w-8 h-8 opacity-20 mb-2" />
                         <span>{logs.length > 0 ? 'No logs match your filter.' : 'Console is clear.'}</span>
                     </div>
                 ) : (
@@ -202,9 +203,9 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
                                 } hover:bg-[var(--dev-console-bg-hover)]`}>
                                     {(log.type === 'info' || log.type === 'warn' || log.type === 'error') && (
                                         <div className="flex-none mt-0.5">
-                                            {log.type === 'info' && <InfoIcon size={14} className="text-[#8be9fd]" />}
-                                            {log.type === 'warn' && <AlertTriangle size={14} className="text-[#ffb86c]" />}
-                                            {log.type === 'error' && <AlertCircle size={14} className="text-[#ff8080]" />}
+                                            {log.type === 'info' && <Icon icon="solar:info-circle-linear" className="w-3.5 h-3.5 text-[#8be9fd]" />}
+                                            {log.type === 'warn' && <Icon icon="solar:danger-triangle-linear" className="w-3.5 h-3.5 text-[#ffb86c]" />}
+                                            {log.type === 'error' && <Icon icon="solar:danger-circle-linear" className="w-3.5 h-3.5 text-[#ff8080]" />}
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0 font-mono">
@@ -220,10 +221,14 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
                                     </div>
                                     <button 
                                         onClick={() => handleCopy(copyText, log.id)}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-neutral-700/80 rounded flex-none self-start transition-opacity cursor-pointer"
+                                        className="opacity-0 group-hover:opacity-100 p-1 flex-none self-start transition-all cursor-pointer text-neutral-400 hover:text-neutral-100 bg-transparent border-0 outline-none"
                                         title="Copy log text"
                                     >
-                                        {copiedId === log.id ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-neutral-400" />}
+                                        {copiedId === log.id ? (
+                                            <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400" />
+                                        ) : (
+                                            <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 transition-transform hover:scale-110" />
+                                        )}
                                     </button>
                                 </div>
                             );
@@ -235,7 +240,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({ isOpen, copiedId, handle
 
             {/* Evaluate Panel */}
             <form onSubmit={handleRunJS} className="flex-none min-h-8 py-1.5 border-t border-[var(--dev-console-border)] bg-[var(--dev-console-bg)] flex items-end px-3 gap-2 w-full">
-                <ChevronRight size={16} className="text-[#007fd4] mb-0.5" />
+                <Icon icon="solar:alt-arrow-right-linear" className="w-4 h-4 text-[#007fd4] mb-0.5 shrink-0" />
                 <textarea 
                     className="bg-transparent text-[12px] text-[var(--dev-console-text)] outline-none w-full font-mono placeholder:text-[var(--dev-console-text-muted)] resize-none max-h-[58px]" 
                     placeholder="evaluate JavaScript" 

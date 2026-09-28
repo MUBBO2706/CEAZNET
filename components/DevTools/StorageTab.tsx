@@ -774,13 +774,13 @@ export const StorageTab: React.FC<StorageTabProps> = ({
                                                                 e.stopPropagation();
                                                                 handleCopy(item.value, `list-copy-${item.key}`);
                                                             }}
-                                                            className="p-1 rounded text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-hover)] bg-transparent border-0 cursor-pointer transition-colors"
+                                                            className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] bg-transparent border-0 cursor-pointer transition-all group/copy"
                                                             title="Copy Value"
                                                         >
                                                             {copiedId === `list-copy-${item.key}` ? (
                                                                 <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-500" />
                                                             ) : (
-                                                                <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />
+                                                                <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 group-hover/copy:scale-110 transition-transform" />
                                                             )}
                                                         </button>
 
@@ -789,10 +789,10 @@ export const StorageTab: React.FC<StorageTabProps> = ({
                                                                 e.stopPropagation();
                                                                 handleDeleteItem(item.key);
                                                             }}
-                                                            className="p-1 rounded text-[var(--dev-console-text-muted)] hover:text-red-500 hover:bg-red-500/10 bg-transparent border-0 cursor-pointer transition-colors"
+                                                            className="p-1 text-[var(--dev-console-text-muted)] hover:text-red-500 bg-transparent border-0 cursor-pointer transition-all group/del"
                                                             title="Delete Key"
                                                         >
-                                                            <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5" />
+                                                            <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5 group-hover/del:scale-110 transition-transform" />
                                                         </button>
                                                     </div>
                                                 </div>

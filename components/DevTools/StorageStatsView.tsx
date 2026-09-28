@@ -401,10 +401,10 @@ export const StorageStatsView: React.FC<StorageStatsViewProps> = ({
                                                 {onSelectKey && (
                                                     <button
                                                         onClick={() => onSelectKey(item.storage, item.key)}
-                                                        className="p-1 text-[#007fd4] hover:bg-[#007fd4]/10 rounded cursor-pointer transition-colors bg-transparent border-0 inline-flex items-center justify-center whitespace-nowrap"
+                                                        className="p-1 text-[#007fd4] hover:text-[#0098ea] transition-all group/inspect cursor-pointer bg-transparent border-0 inline-flex items-center justify-center whitespace-nowrap"
                                                         title="Inspect Key"
                                                     >
-                                                        <Icon icon="tabler:arrow-up-right" className="w-3.5 h-3.5" />
+                                                        <Icon icon="tabler:arrow-up-right" className="w-3.5 h-3.5 transition-transform group-hover/inspect:scale-110" />
                                                     </button>
                                                 )}
                                             </td>

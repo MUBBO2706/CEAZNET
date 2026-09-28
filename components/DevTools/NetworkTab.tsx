@@ -1,11 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-    Filter, X, Download, AlertCircle, ChevronLeft, ChevronRight, 
-    ChevronUp, ChevronDown, Copy, Check, Activity, Globe, 
-    Database, Wifi, MoreHorizontal, EyeOff, Eye, Trash2,
-    CheckSquare, Square, ListChecks, ShieldAlert, Plus,
-    BarChart2, ArrowUpRight, ArrowDownLeft, Layers, Server
-} from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { Loader } from 'lucide-react';
 import { 
     formatSize, formatTimestamp, isAutoFireRequest, 
     safeStringifyWithTruncation, getEnhancedRequestName 
@@ -135,7 +130,7 @@ const DraggableMobileDrawer: React.FC<DraggableMobileDrawerProps> = ({
                         className="hidden md:flex p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] cursor-pointer transition-colors border-0 bg-transparent"
                         title="Close"
                     >
-                        <X size={15} />
+                        <Icon icon="tabler:x" className="w-4 h-4" />
                     </button>
                 </div>
 
@@ -555,7 +550,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
             {/* Toolbar */}
             <div className="flex-none h-8 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-bg-hover)] flex items-center justify-between px-2 sm:px-3 gap-1.5 sm:gap-3 w-full select-none">
                 <div className="flex-1 max-w-xs sm:max-w-md flex items-center h-full pr-2 sm:pr-3 border-r border-[var(--dev-console-border)]">
-                    <Filter size={12} className="text-[var(--dev-console-text-muted)] mr-1.5 sm:mr-2 shrink-0" />
+                    <Icon icon="solar:magnifer-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] mr-1.5 sm:mr-2 shrink-0" />
                     <input 
                         className="bg-transparent text-[11px] text-[var(--dev-console-text)] outline-none w-full h-full placeholder:text-[var(--dev-console-text-muted)] font-sans" 
                         placeholder="Filter by URL..." 
@@ -564,7 +559,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                     />
                     {networkFilter && (
                         <button onClick={() => setNetworkFilter('')} className="shrink-0 ml-1 border-0 bg-transparent cursor-pointer">
-                            <X size={12} className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" />
+                            <Icon icon="tabler:x" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]" />
                         </button>
                     )}
                 </div>
@@ -587,7 +582,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                         }`}
                         title="Toggle bulk selection mode"
                     >
-                        <ListChecks size={12} />
+                        <Icon icon="solar:checklist-minimalistic-linear" className="w-3.5 h-3.5" />
                         <span>{isSelectionMode ? 'Selecting' : 'Select'}</span>
                     </button>
 
@@ -598,7 +593,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             className="px-2 py-0.5 rounded text-[10px] flex items-center gap-1 transition-all bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/30 font-sans font-semibold cursor-pointer"
                             title="Manage hidden requests and persistent rules"
                         >
-                            <EyeOff size={11} />
+                            <Icon icon="solar:eye-closed-linear" className="w-3 h-3" />
                             <span>Hidden ({hiddenNetsCount})</span>
                         </button>
                     )}
@@ -610,7 +605,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             className="px-2 py-0.5 rounded text-[10px] flex items-center gap-1.5 transition-all bg-[#007fd4] hover:bg-[#0060a3] text-white font-bold uppercase cursor-pointer shadow-xs shadow-[#007fd4]/20 font-sans select-none border-0"
                             title="Export Network XHR/Fetch Logs (JSON)"
                         >
-                            <Download size={11} />
+                            <Icon icon="solar:download-minimalistic-linear" className="w-3.5 h-3.5" />
                             <span>Download</span>
                         </button>
                     )}
@@ -622,7 +617,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 <div className="flex-none px-3 py-1.5 bg-[#007fd4]/10 border-b border-[#007fd4]/30 flex flex-wrap items-center justify-between gap-2 text-xs font-sans select-none">
                     <div className="flex items-center gap-2">
                         <span className="font-bold text-[#007fd4] flex items-center gap-1.5">
-                            <CheckSquare size={13} />
+                            <Icon icon="solar:check-square-linear" className="w-3.5 h-3.5" />
                             <span>{selectedIds.size} Selected</span>
                         </span>
                         <span className="text-[var(--dev-console-border)]">|</span>
@@ -652,7 +647,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             className="px-2.5 py-1 rounded text-[11px] font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/30 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 transition-all"
                             title="Temporarily hide selected requests from view and exports"
                         >
-                            <EyeOff size={12} />
+                            <Icon icon="solar:eye-closed-linear" className="w-3.5 h-3.5" />
                             <span>Hide ({selectedIds.size})</span>
                         </button>
 
@@ -666,7 +661,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             className="px-2.5 py-1 rounded text-[11px] font-semibold bg-red-500/15 hover:bg-red-500/25 text-red-600 dark:text-red-400 border border-red-500/30 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 transition-all"
                             title="Permanently delete selected requests"
                         >
-                            <Trash2 size={12} />
+                            <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5" />
                             <span>Delete ({selectedIds.size})</span>
                         </button>
 
@@ -678,7 +673,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             className="p-1 rounded text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] bg-transparent border-0 cursor-pointer transition-all flex items-center justify-center ml-0.5"
                             title="Exit Selection Mode"
                         >
-                            <X size={15} />
+                            <Icon icon="tabler:x" className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -690,7 +685,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 <div className={`flex flex-col h-full bg-[var(--dev-console-bg)] border-r border-[var(--dev-console-border)] transition-all duration-300 ${selectedNet ? 'w-full md:w-1/2 shrink-0' : 'w-full'}`}>
                     {(filteredNets.length === 0 && !activeGroupNetId) ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-[var(--dev-console-text-muted)] italic p-6 text-center text-xs gap-2 min-h-[220px]">
-                            <Activity size={32} className="opacity-20 mb-2" />
+                            <Icon icon="solar:pulse-2-linear" className="w-8 h-8 opacity-20 mb-2" />
                             {hiddenNetsCount > 0 ? (
                                 <div className="flex flex-col items-center gap-2">
                                     <span>All requests are currently hidden ({hiddenNetsCount} hidden).</span>
@@ -719,7 +714,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                         className="group flex items-center gap-2 text-[var(--dev-console-text)] hover:text-[#007fd4] transition-colors border-0 bg-transparent p-0 outline-none cursor-pointer shrink-0 min-w-0"
                                         title="Back to all requests"
                                     >
-                                        <ChevronLeft size={20} className="text-[var(--dev-console-text-muted)] group-hover:text-[#007fd4] transition-colors shrink-0" />
+                                        <Icon icon="solar:alt-arrow-left-linear" className="w-4 h-4 text-[var(--dev-console-text-muted)] group-hover:text-[#007fd4] transition-colors shrink-0" />
                                         <span className="truncate text-[13.5px] sm:text-[14.5px] font-bold tracking-wide uppercase group-hover:text-[#007fd4] transition-colors">
                                             Group History
                                         </span>
@@ -876,7 +871,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                     </div>
                                                 )}
                                                 <div className={`flex-none flex items-center gap-1 sm:gap-1.5 ${selectedNet ? 'w-[40px] sm:w-[58px]' : 'w-[44px] sm:w-[68px]'}`}>
-                                                    {isError && <AlertCircle size={10} className="text-[#f48771] hidden sm:inline" />}
+                                                    {isError && <Icon icon="solar:danger-circle-linear" className="w-3 h-3 text-[#f48771] hidden sm:inline shrink-0" />}
                                                     <span className={`font-bold ${isSelected ? 'text-[var(--dev-console-text)]' : getMethodColor(groupParent?.method || 'GET')}`}>
                                                         {groupParent?.method}
                                                     </span>
@@ -1051,7 +1046,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                                     </div>
                                                 )}
                                                 <div className={`flex-none flex items-center gap-1 sm:gap-1.5 ${selectedNet ? 'w-[40px] sm:w-[58px]' : 'w-[44px] sm:w-[68px]'}`}>
-                                                    {isError && <AlertCircle size={10} className="text-[#f48771] hidden sm:inline" />}
+                                                    {isError && <Icon icon="solar:danger-circle-linear" className="w-3 h-3 text-[#f48771] hidden sm:inline shrink-0" />}
                                                     <span className={`font-bold ${isSelected ? 'text-[var(--dev-console-text)]' : getMethodColor(net.method)}`}>
                                                         {net.method}
                                                     </span>
@@ -1128,7 +1123,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                     <div className="flex-1 min-w-0 flex flex-col h-full bg-[var(--dev-console-bg)] overflow-hidden hidden md:flex">
                         <div className="flex-none h-8 border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] flex items-center px-1">
                             <button onClick={() => setExpandedNetId(null)} className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] mx-1 border-0 bg-transparent cursor-pointer" title="Close Panel">
-                                <X size={14} />
+                                <Icon icon="tabler:x" className="w-3.5 h-3.5" />
                             </button>
                             <div className="h-4 w-px bg-[var(--dev-console-border)] mx-1"></div>
                             {(['headers', 'payload', 'response'] as const).map(tab => (
@@ -1146,7 +1141,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 className="p-1 mr-2 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] flex items-center gap-1 border-0 bg-transparent cursor-pointer"
                                 title="Copy Request URL"
                             >
-                                {copiedId === 'url-copy' ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                                {copiedId === 'url-copy' ? <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400" /> : <Icon icon="solar:copy-linear" className="w-3.5 h-3.5" />}
                             </button>
                         </div>
                         
@@ -1268,7 +1263,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 onClick={() => setExpandedNetId(null)}
                                 className="flex items-center gap-1.5 text-[var(--dev-console-text)] hover:text-[var(--dev-console-text-muted)] font-medium text-xs border-0 bg-transparent cursor-pointer p-0"
                             >
-                                <ChevronLeft size={18} />
+                                <Icon icon="solar:alt-arrow-left-linear" className="w-4 h-4" />
                                 <span className="font-sans text-[13px] font-medium tracking-wide">Back to Network</span>
                             </button>
 
@@ -1277,7 +1272,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 className="p-1.5 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-0 bg-transparent cursor-pointer rounded"
                                 title="Copy Request URL"
                             >
-                                {copiedId === 'url-copy-mobile' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                                {copiedId === 'url-copy-mobile' ? <Icon icon="solar:check-circle-linear" className="w-4 h-4 text-green-400" /> : <Icon icon="solar:copy-linear" className="w-4 h-4" />}
                             </button>
                         </div>
 
@@ -1425,7 +1420,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                     className="ml-auto p-1 text-white/80 hover:text-white cursor-pointer transition-colors flex items-center justify-center shrink-0 border-0 bg-transparent"
                     title="Show detailed transfer information"
                 >
-                    <MoreHorizontal size={14} className="text-white" />
+                    <Icon icon="solar:chart-2-linear" className="w-3.5 h-3.5 text-white" />
                 </button>
 
                 {/* Network Traffic Analytics Drawer / Popover (Containerless Layout) */}
@@ -1436,7 +1431,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                     desktopTail={true}
                     title={
                         <span className="flex items-center gap-2">
-                            <Activity size={15} className="text-blue-500 animate-pulse" />
+                            <Icon icon="solar:chart-2-linear" className="w-4 h-4 text-blue-500 animate-pulse" />
                             <span>Network Traffic Analytics</span>
                         </span>
                     }
@@ -1475,14 +1470,14 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             {/* Sent vs Received Stats (Pure icon highlight, no background boxes) */}
                             <div className="grid grid-cols-2 gap-4 shrink-0 py-1">
                                 <div className="flex items-center gap-2.5">
-                                    <ChevronUp size={18} className="text-blue-500 stroke-[2.5] shrink-0" />
+                                    <Icon icon="solar:upload-minimalistic-linear" className="w-4 h-4 text-blue-500 shrink-0" />
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--dev-console-text-muted)]">Uploaded</span>
                                         <span className="text-sm font-mono font-bold text-[var(--dev-console-text)] truncate">{formatSize(totalSent)}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2.5">
-                                    <ChevronDown size={18} className="text-emerald-500 stroke-[2.5] shrink-0" />
+                                    <Icon icon="solar:download-minimalistic-linear" className="w-4 h-4 text-emerald-500 shrink-0" />
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--dev-console-text-muted)]">Downloaded</span>
                                         <span className="text-sm font-mono font-bold text-[var(--dev-console-text)] truncate">{formatSize(totalReceived)}</span>
@@ -1574,21 +1569,21 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 const origins = [
                                     {
                                         name: 'Local & App Routes',
-                                        icon: <Globe size={15} className="text-blue-500 shrink-0" />,
+                                        icon: <Icon icon="solar:global-linear" className="w-4 h-4 text-blue-500 shrink-0" />,
                                         sent: stats.local.sent,
                                         received: stats.local.received,
                                         count: analyticsData.localCount
                                     },
                                     {
                                         name: 'Supabase & Backend',
-                                        icon: <Database size={15} className="text-[#3ecf8e] shrink-0" />,
+                                        icon: <Icon icon="solar:database-linear" className="w-4 h-4 text-[#3ecf8e] shrink-0" />,
                                         sent: stats.supabase.sent,
                                         received: stats.supabase.received,
                                         count: analyticsData.supabaseCount
                                     },
                                     {
                                         name: 'External APIs & CDNs',
-                                        icon: <Wifi size={15} className="text-amber-500 shrink-0" />,
+                                        icon: <Icon icon="solar:wi-fi-router-minimalistic-linear" className="w-4 h-4 text-amber-500 shrink-0" />,
                                         sent: stats.external.sent,
                                         received: stats.external.received,
                                         count: analyticsData.externalCount
@@ -1767,7 +1762,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 desktopMode="modal"
                 title={
                     <span className="flex items-center gap-2">
-                        <EyeOff size={16} className="text-amber-500" />
+                        <Icon icon="solar:eye-closed-linear" className="w-4 h-4 text-amber-500" />
                         <span>Hidden Requests & Rules</span>
                     </span>
                 }
@@ -1802,7 +1797,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             }}
                             className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[#007fd4]/10 hover:bg-[#007fd4]/20 text-[#007fd4] border border-[#007fd4]/30 cursor-pointer flex items-center gap-1.5 shrink-0 transition-all shadow-xs"
                         >
-                            <Eye size={12} />
+                            <Icon icon="solar:eye-linear" className="w-3.5 h-3.5" />
                             <span>Unhide All</span>
                         </button>
                     )}
@@ -1812,7 +1807,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 <div className="flex flex-col gap-2.5">
                     <div className="flex items-center justify-between">
                         <span className="font-bold text-[var(--dev-console-text)] flex items-center gap-1.5">
-                            <ShieldAlert size={14} className="text-purple-400" />
+                            <Icon icon="solar:shield-warning-linear" className="w-4 h-4 text-purple-400" />
                             <span>Persistent Auto-Hide Patterns ({hiddenPatterns.length})</span>
                         </span>
                     </div>
@@ -1843,7 +1838,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                             disabled={!newPatternInput.trim()}
                             className="px-3 py-1.5 rounded-lg bg-[#007fd4] hover:bg-[#0060a3] disabled:opacity-40 text-white font-medium text-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0 border-0 shadow-xs"
                         >
-                            <Plus size={13} />
+                            <Icon icon="solar:add-circle-linear" className="w-3.5 h-3.5" />
                             <span>Add</span>
                         </button>
                     </form>
@@ -1868,7 +1863,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                         className="p-1 hover:bg-red-500/10 text-[var(--dev-console-text-muted)] hover:text-red-500 rounded transition-colors border-0 bg-transparent cursor-pointer shrink-0"
                                         title="Remove Rule"
                                     >
-                                        <Trash2 size={13} />
+                                        <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             ))
@@ -1901,7 +1896,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 setContextMenu(null);
                             }}
                         >
-                            <EyeOff size={13} className="text-amber-500 shrink-0" />
+                            <Icon icon="solar:eye-closed-linear" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                             <span>Hide Request</span>
                         </button>
                         
@@ -1921,7 +1916,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 setContextMenu(null);
                             }}
                         >
-                            <ShieldAlert size={13} className="text-purple-500 shrink-0" />
+                            <Icon icon="solar:shield-warning-linear" className="w-3.5 h-3.5 text-purple-500 shrink-0" />
                             <span className="truncate">Always Hide This URL / Query</span>
                         </button>
 
@@ -1932,7 +1927,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 setContextMenu(null);
                             }}
                         >
-                            <Trash2 size={13} className="shrink-0" />
+                            <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5 shrink-0" />
                             <span>Delete Request</span>
                         </button>
 
@@ -1944,7 +1939,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                                 setContextMenu(null);
                             }}
                         >
-                            <ListChecks size={13} className="text-[#007fd4] shrink-0" />
+                            <Icon icon="solar:checklist-minimalistic-linear" className="w-3.5 h-3.5 text-[#007fd4] shrink-0" />
                             <span>Select Multiple (Bulk Mode)</span>
                         </button>
 

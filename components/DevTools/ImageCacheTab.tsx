@@ -1,6 +1,7 @@
 import { fetchApi } from "../../utils/fetchApi";
 import React, { useState, useEffect } from 'react';
-import { Image, Trash2, Copy, Check, Loader, MoreVertical } from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { Loader } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import { 
     serverImageCacheSummary, 
@@ -62,8 +63,8 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
             <div className="w-full md:w-[40%] shrink-0 border-b md:border-b-0 md:border-r border-[var(--dev-console-border)] p-4 flex flex-col gap-4 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent">
                 <div className="flex items-center justify-between border-b border-[var(--dev-console-border)] pb-2 shrink-0 select-none">
                     <h3 className="text-sm font-semibold text-[var(--dev-console-text)] tracking-wider flex items-center gap-2">
-                        <Image size={16} className="text-[#10b981]" />
-                        Cache Analytics Dashboard
+                        <Icon icon="solar:gallery-linear" className="w-4 h-4 text-[#10b981]" />
+                        <span>Cache Analytics Dashboard</span>
                     </h3>
                 </div>
                 
@@ -217,8 +218,8 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--dev-console-border)] scrollbar-track-transparent font-sans">
                     {(serverImageCacheSummary.items || []).length === 0 ? (
                         <div className="text-neutral-500 italic p-12 text-center text-xs flex flex-col items-center justify-center h-full gap-2 font-sans">
-                            <Image size={24} className="opacity-15" />
-                            Server memory proxy cache is empty.
+                            <Icon icon="solar:gallery-linear" className="w-8 h-8 opacity-20" />
+                            <span>Server memory proxy cache is empty.</span>
                         </div>
                     ) : (() => {
                         const items = serverImageCacheSummary.items || [];
@@ -248,8 +249,8 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                                                     <button 
                                                         disabled={isDeletingImage !== null}
                                                         onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeletingImageUrl(null);
+                                                             e.stopPropagation();
+                                                             setDeletingImageUrl(null);
                                                         }}
                                                         className="px-2 py-0.5 bg-[var(--dev-console-bg)] text-[var(--dev-console-text)] border border-[var(--dev-console-border)] rounded-md font-sans text-[10px] cursor-pointer transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
@@ -295,10 +296,10 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                                                             e.stopPropagation();
                                                             setActiveImageMenu(activeImageMenu === item.url ? null : item.url);
                                                         }}
-                                                        className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] p-1 bg-transparent border-none outline-none hover:bg-neutral-500/10 rounded cursor-pointer flex items-center justify-center"
+                                                        className="text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] p-1 bg-transparent border-none outline-none rounded cursor-pointer flex items-center justify-center group/more"
                                                         title="Image Actions"
                                                     >
-                                                        <MoreVertical size={13} />
+                                                        <Icon icon="solar:menu-dots-vertical-linear" className="w-3.5 h-3.5 group-hover/more:scale-110 transition-transform" />
                                                     </button>
                                                     {activeImageMenu === item.url && (
                                                         <div 
@@ -315,7 +316,11 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                                                                     }}
                                                                     className="w-full text-left px-3 py-1.5 text-xs text-[var(--dev-console-text)] hover:bg-[var(--dev-console-bg-active)] transition-colors flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-sans"
                                                                 >
-                                                                    {copiedId === `srv-copy-${idx}` ? <Check size={12} className="text-green-400 shrink-0" /> : <Copy size={12} className="shrink-0" />}
+                                                                    {copiedId === `srv-copy-${idx}` ? (
+                                                                        <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                                                                    ) : (
+                                                                        <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 shrink-0 text-[var(--dev-console-text-muted)]" />
+                                                                    )}
                                                                     <span>Copy URL</span>
                                                                 </button>
                                                                 <button
@@ -325,7 +330,7 @@ export const ImageCacheTab: React.FC<ImageCacheTabProps> = ({ isOpen, copiedId, 
                                                                     }}
                                                                     className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-sans"
                                                                 >
-                                                                    <Trash2 size={12} className="shrink-0" />
+                                                                    <Icon icon="solar:trash-bin-trash-linear" className="w-3.5 h-3.5 shrink-0" />
                                                                     <span>Remove Entry</span>
                                                                 </button>
                                                             </div>

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { shouldTruncate, formatSize } from './utils';
-import { CategoryIcon } from '../finance/CategoryIcon';
+import { AppIcon } from '../core/AppIcon';
 
 interface InteractivePayloadViewerProps {
     data: any;
@@ -357,7 +356,7 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                             className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-mono font-medium text-[var(--dev-console-link)] hover:text-[var(--dev-console-link-hover)] bg-[var(--dev-console-link-bg)] hover:bg-[var(--dev-console-bg-hover)] px-2 py-1 rounded border border-[var(--dev-console-link-border)] transition-colors cursor-pointer shrink-0"
                             title="Collapse all expanded fields"
                         >
-                            <CategoryIcon name="solar:minimize-square-3-bold-duotone" className="w-3 h-3 text-[var(--dev-console-link)]" />
+                            <AppIcon name="solar:minimize-square-3-linear" className="w-3 h-3 text-[var(--dev-console-link)]" />
                             <span>
                                 {isMobile ? `Collapse (${expandedPaths.size})` : `Collapse ${expandedPaths.size === 1 ? '1 field' : `all (${expandedPaths.size})`}`}
                             </span>
@@ -374,12 +373,12 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                         >
                             {isCopied ? (
                                 <>
-                                    <CategoryIcon name="solar:check-circle-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
+                                    <AppIcon name="solar:check-circle-linear" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
                                     <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
                                 </>
                             ) : (
                                 <>
-                                    <CategoryIcon name="solar:copy-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
+                                    <AppIcon name="solar:copy-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
                                     <span>Copy</span>
                                 </>
                             )}
@@ -395,12 +394,12 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                                 >
                                     {isCopied ? (
                                         <>
-                                            <CategoryIcon name="solar:check-circle-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
+                                            <AppIcon name="solar:check-circle-linear" className="w-3.5 h-3.5 text-[var(--dev-console-syntax-status-ok)]" />
                                             <span className="text-[var(--dev-console-syntax-status-ok)] font-semibold">Copied</span>
                                         </>
                                     ) : (
                                         <>
-                                            <CategoryIcon name="solar:copy-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
+                                            <AppIcon name="solar:copy-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)]" />
                                             <span>
                                                 {expandedPaths.size > 0 ? `Copy View (${expandedPaths.size})` : 'Copy'}
                                             </span>
@@ -411,10 +410,10 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                                 <button
                                     type="button"
                                     onClick={() => setIsMenuOpen(prev => !prev)}
-                                    className="px-1.5 py-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-l border-[var(--dev-console-border)] transition-colors cursor-pointer bg-transparent"
+                                    className="px-1.5 py-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] border-l border-[var(--dev-console-border)] transition-colors cursor-pointer bg-transparent flex items-center justify-center"
                                     title="More copy options"
                                 >
-                                    <ChevronDown size={11} className={`transition-transform duration-150 ${isMenuOpen ? 'rotate-180' : ''}`} />
+                                    <AppIcon name="solar:alt-arrow-down-linear" className={`w-3 h-3 transition-transform duration-150 ${isMenuOpen ? 'rotate-180' : ''}`} />
                                 </button>
                             </div>
 
@@ -435,7 +434,7 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                                         className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
                                     >
                                         <div className="flex items-center gap-1.5">
-                                            <CategoryIcon name="solar:minimize-square-3-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
+                                            <AppIcon name="solar:minimize-square-3-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
                                             <span className="font-semibold text-[10.5px] text-[var(--dev-console-text)]">Copy Truncated</span>
                                         </div>
                                         <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">
@@ -454,7 +453,7 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                                             className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
                                         >
                                             <div className="flex items-center gap-1.5">
-                                                <CategoryIcon name="solar:magic-stick-3-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-link)] shrink-0" />
+                                                <AppIcon name="solar:magic-stick-3-linear" className="w-3.5 h-3.5 text-[var(--dev-console-link)] shrink-0" />
                                                 <span className="font-semibold text-[10.5px] text-[var(--dev-console-link)]">
                                                     Copy Current View ({expandedPaths.size} expanded)
                                                 </span>
@@ -475,7 +474,7 @@ export const InteractivePayloadViewer: React.FC<InteractivePayloadViewerProps> =
                                         className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[var(--dev-console-bg-hover)] transition-colors cursor-pointer border-0 bg-transparent flex flex-col gap-0.5"
                                     >
                                         <div className="flex items-center gap-1.5">
-                                            <CategoryIcon name="solar:code-file-bold-duotone" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
+                                            <AppIcon name="solar:document-code-linear" className="w-3.5 h-3.5 text-[var(--dev-console-text-muted)] shrink-0" />
                                             <span className="font-semibold text-[10.5px] text-[var(--dev-console-text)]">Copy Full Raw</span>
                                         </div>
                                         <div className="text-[9.5px] text-[var(--dev-console-text-muted)] leading-tight pl-0">

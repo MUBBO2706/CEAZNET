@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-    Terminal, Network, X, Maximize2, Minimize2, Trash2, Ban, Copy, Check, 
-    ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Filter, 
-    AlertTriangle, AlertCircle, Info as InfoIcon, Search, Database, 
-    Image, RotateCw, Cpu, Loader, MoreHorizontal, MoreVertical, 
-    EyeOff, User, MapPin, Activity, Wifi, Smartphone, Key, 
-    Globe, Monitor, Compass, Download, ArrowLeftRight, Upload 
-} from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { Loader } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import { 
     logs, 
@@ -536,33 +530,33 @@ export const DevTools = () => {
             {!isOpen ? (
                 <div className="h-full flex justify-between items-center px-4 gap-4 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] font-mono text-[11px] uppercase tracking-widest font-bold transition-colors w-full pointer-events-auto">
                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
-                        <div className="flex items-center gap-1.5 shrink-0" title="Console Logs">
-                            <Terminal size={14} /> 
+                        <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Console Logs">
+                            <Icon icon="solar:programming-linear" className="w-3.5 h-3.5 text-[#8be9fd] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Console</span>
                             {logs.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{logs.length}</span>}
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0" title="Network Requests">
-                            <Network size={14} /> 
+                        <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Network Requests">
+                            <Icon icon="solar:transfer-horizontal-linear" className="w-3.5 h-3.5 text-[#569cd6] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Network</span>
                             {visibleNets.length > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{visibleNets.length}</span>}
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0" title="Storage Manager">
-                            <Database size={14} /> 
+                        <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Storage Manager">
+                            <Icon icon="solar:database-linear" className="w-3.5 h-3.5 text-[#007fd4] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Storage</span>
                             {storageCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{storageCount}</span>}
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0" title="Device Models Mapping">
-                            <Smartphone size={14} /> 
+                        <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Device Models Mapping">
+                            <Icon icon="solar:devices-linear" className="w-3.5 h-3.5 text-purple-400 group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Devices</span>
                             {deviceMappingsCount > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[var(--dev-console-badge-bg)] text-[var(--dev-console-badge-text)] rounded-full text-[9px] font-medium font-mono">{deviceMappingsCount}</span>}
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0" title="Image Cache Dashboard">
-                            <Image size={14} /> 
+                        <div className="flex items-center gap-1.5 shrink-0 group/tab" title="Image Cache Dashboard">
+                            <Icon icon="solar:gallery-linear" className="w-3.5 h-3.5 text-[#10b981] group-hover/tab:scale-110 transition-transform" /> 
                             <span className="hidden sm:inline">Image</span>
                             {serverImageCacheSummary.count > 0 && <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 rounded-full text-[9px] font-medium font-mono">{serverImageCacheSummary.count}</span>}
                         </div>
                     </div>
-                    <ChevronUp size={16} className="shrink-0" />
+                    <Icon icon="solar:alt-arrow-up-linear" className="w-4 h-4 shrink-0 transition-transform hover:-translate-y-0.5" />
                 </div>
             ) : (
                 <>
@@ -574,37 +568,41 @@ export const DevTools = () => {
                                 onClick={() => {
                                     setShowHideConfirmation(true);
                                 }} 
-                                className="p-1 text-red-500 hover:text-red-600 rounded transition-colors flex items-center gap-1 cursor-pointer font-medium bg-transparent border-0 outline-none focus:outline-none" 
+                                className="p-1 text-red-500 hover:text-red-600 rounded transition-all flex items-center gap-1 cursor-pointer font-medium bg-transparent border-0 outline-none focus:outline-none group/hide" 
                                 title="Hide Developer Console"
                             >
-                                <EyeOff size={13} />
+                                <Icon icon="solar:eye-closed-linear" className="w-3.5 h-3.5 group-hover/hide:scale-110 transition-transform" />
                                 <span className="hidden sm:inline text-[10px]">Hide Console</span>
                             </button>
                         </div>
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-2">
-                            <button onClick={handleCopyAll} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors flex items-center justify-center bg-transparent border-0 outline-none focus:outline-none cursor-pointer" title={copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? "Copied All!" : "Copy All"}>
-                                {copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+                            <button onClick={handleCopyAll} className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all flex items-center justify-center bg-transparent border-0 outline-none focus:outline-none cursor-pointer group/btn" title={copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? "Copied All!" : "Copy All"}>
+                                {copiedId === (activeTab === 'console' ? 'all-console' : 'all-network') ? (
+                                    <Icon icon="solar:check-circle-linear" className="w-3.5 h-3.5 text-green-400" />
+                                ) : (
+                                    <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
+                                )}
                             </button>
                             <button 
                                 onClick={handleGlobalRefresh}
                                 disabled={isGlobalRefreshing || (activeTab === 'image-cache' && isImageCacheLoading)}
-                                className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-0 outline-none focus:outline-none flex items-center justify-center cursor-pointer" 
+                                className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-0 outline-none focus:outline-none flex items-center justify-center cursor-pointer group/btn" 
                                 title={`Refresh ${activeTab === 'storage' ? 'Storage Data' : activeTab === 'image-cache' ? 'Image Cache' : activeTab === 'cache' ? 'Devices Data' : activeTab === 'network' ? 'Network Logs' : 'Console Logs'}`}
                             >
                                 {isGlobalRefreshing || (activeTab === 'image-cache' && isImageCacheLoading) ? (
                                     <Loader size={13} className="animate-spin text-[#007fd4]" />
                                 ) : (
-                                    <RotateCw size={13} />
+                                    <Icon icon="solar:restart-linear" className="w-3.5 h-3.5 group-hover/btn:rotate-45 transition-transform" />
                                 )}
                             </button>
                             <button 
                                 onClick={handleClear} 
-                                className={`p-1 rounded transition-colors cursor-pointer bg-transparent border-0 outline-none focus:outline-none ${
+                                className={`p-1 rounded transition-all cursor-pointer bg-transparent border-0 outline-none focus:outline-none group/btn ${
                                     activeTab === 'image-cache' || activeTab === 'console' || activeTab === 'network' || activeTab === 'storage'
                                         ? 'text-red-500 hover:text-red-400' 
-                                        : 'hover:text-[var(--dev-console-text)]'
+                                        : 'text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)]'
                                   }`} 
                                 title={
                                     activeTab === 'image-cache' 
@@ -619,17 +617,21 @@ export const DevTools = () => {
                                 }
                             >
                                 {activeTab === 'console' || activeTab === 'network' ? (
-                                    <Ban size={13} className="text-red-500 hover:text-red-400" />
+                                    <Icon icon="solar:forbidden-circle-linear" className="w-3.5 h-3.5 text-red-500 hover:text-red-400 group-hover/btn:scale-110 transition-transform" />
                                 ) : (
-                                    <Trash2 size={13} className={activeTab === 'image-cache' || activeTab === 'storage' ? 'text-red-500' : ''} />
+                                    <Icon icon="solar:trash-bin-trash-linear" className={`w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform ${activeTab === 'image-cache' || activeTab === 'storage' ? 'text-red-500' : ''}`} />
                                 )}
                             </button>
                             <div className="w-px h-3 bg-[var(--dev-console-border)]"></div>
-                            <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors bg-transparent border-0 outline-none focus:outline-none" title={isMaximized ? 'Minimize' : 'Maximize'}>
-                                {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                            <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all bg-transparent border-0 outline-none focus:outline-none group/btn cursor-pointer" title={isMaximized ? 'Minimize' : 'Maximize'}>
+                                {isMaximized ? (
+                                    <Icon icon="solar:minimize-square-3-linear" className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
+                                ) : (
+                                    <Icon icon="solar:maximize-square-3-linear" className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
+                                )}
                             </button>
-                            <button onClick={() => setIsOpen(false)} className="p-1 hover:text-[var(--dev-console-text)] rounded transition-colors bg-transparent border-0 outline-none focus:outline-none" title="Close DevTools">
-                                <ChevronDown size={16} />
+                            <button onClick={() => setIsOpen(false)} className="p-1 text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] rounded transition-all bg-transparent border-0 outline-none focus:outline-none group/btn cursor-pointer" title="Close DevTools">
+                                <Icon icon="solar:alt-arrow-down-linear" className="w-4 h-4 group-hover/btn:translate-y-0.5 transition-transform" />
                             </button>
                         </div>
                     </div>
@@ -640,9 +642,9 @@ export const DevTools = () => {
                         <div className="flex h-9 w-full overflow-x-auto scrollbar-hide border-b border-[var(--dev-console-border)] bg-[var(--dev-console-tab-bg)] select-none">
                             <button 
                                 onClick={() => setActiveTab('console')}
-                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'console' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap cursor-pointer ${activeTab === 'console' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Terminal size={14} className="shrink-0" />
+                                <Icon icon="solar:programming-linear" className="w-4 h-4 shrink-0 text-[#8be9fd]" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'console' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Console
                                 </span>
@@ -650,9 +652,9 @@ export const DevTools = () => {
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('network'); setExpandedNetId(null); }}
-                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'network' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap cursor-pointer ${activeTab === 'network' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Network size={14} className="shrink-0" />
+                                <Icon icon="solar:transfer-horizontal-linear" className="w-4 h-4 shrink-0 text-[#569cd6]" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'network' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Network
                                 </span>
@@ -660,9 +662,9 @@ export const DevTools = () => {
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('storage'); }}
-                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'storage' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap cursor-pointer ${activeTab === 'storage' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Database size={14} className="shrink-0" />
+                                <Icon icon="solar:database-linear" className="w-4 h-4 shrink-0 text-[#007fd4]" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'storage' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Storage
                                 </span>
@@ -670,9 +672,9 @@ export const DevTools = () => {
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('cache'); }}
-                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap cursor-pointer ${activeTab === 'cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Smartphone size={14} className="shrink-0" />
+                                <Icon icon="solar:devices-linear" className="w-4 h-4 shrink-0 text-purple-400" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'cache' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Devices
                                 </span>
@@ -680,9 +682,9 @@ export const DevTools = () => {
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('image-cache'); }}
-                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap ${activeTab === 'image-cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
+                                className={`h-full flex shrink-0 items-center justify-center border-b-[2px] transition-all duration-300 text-[11px] sm:text-[13px] whitespace-nowrap cursor-pointer ${activeTab === 'image-cache' ? 'border-[#007fd4] text-[var(--dev-console-text)] bg-[var(--dev-console-bg)] font-medium px-4' : 'border-transparent text-[var(--dev-console-text-muted)] hover:text-[var(--dev-console-text)] hover:bg-neutral-500/10 px-3.5'}`}
                             >
-                                <Image size={14} className="shrink-0" />
+                                <Icon icon="solar:gallery-linear" className="w-4 h-4 shrink-0 text-[#10b981]" />
                                 <span className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center ${activeTab === 'image-cache' ? 'max-w-[100px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'}`}>
                                     Image
                                 </span>
@@ -875,7 +877,7 @@ export const DevTools = () => {
                     <div className="bg-[var(--dev-console-bg)] border border-[var(--dev-console-border)] text-[var(--dev-console-text)] max-w-sm w-full p-5 rounded-lg shadow-xl flex flex-col gap-4 font-sans">
                         <div className="flex items-start gap-3">
                             <div className="p-2 rounded-full bg-red-500/10 text-red-500 shrink-0">
-                                <AlertTriangle size={20} />
+                                <Icon icon="solar:danger-triangle-linear" className="w-5 h-5" />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <h3 className="font-bold text-sm text-[var(--dev-console-text)]">Hide Developer Tools?</h3>
