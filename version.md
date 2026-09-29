@@ -25,3 +25,8 @@
 ### 2026-09-28 12:55:00 -07:00
 - **User Problem Reported:** Gallery View and its sub-views contained legacy/inconsistent icons, the gallery item full-screen viewer did not shift up when DevTools opened (causing bottom overlap), and the file details modal & preview views had heavy nested card containers without proper theme variable support.
 - **Resolution Implemented:** Enhanced all icons across Gallery View, item viewers, toolbars, and players with sleek linear outline icons (`solar:*-linear`) and standardized `Loader` spinner indicators with icon-only hover styling. Configured the full-screen item viewer container to dynamically shift up with DevTools using `style={{ bottom: 'var(--dev-console-padding, 0px)' }}`. Redesigned the File Details modal and Unsupported/Text/Office/PDF file viewers into compact, containerless, theme-aware layouts backed by semantic CSS variables (`--gallery-modal-*`) in `:root` and `html.dark`.
+
+### 2026-09-28 13:10:00 -07:00
+- **User Problem Reported:** The Gallery Item View (full-screen media/document viewer, top bar, navigation controls, and video/audio/file preview sub-viewers) remained hardcoded dark (`bg-black`, `text-white`) even when the application was in light mode.
+- **Resolution Implemented:** Added semantic `--gallery-viewer-*` CSS variables to `:root` (light mode) and `html.dark` (dark mode) in `index.html`, and refactored the Full Screen Gallery Item View, Top Bar, side navigation controls, loading/error states, `CustomVideoPlayer`, `CustomAudioPlayer`, `PdfViewer`, `TextViewer`, `OfficeViewer`, and `UnsupportedViewer` in `GalleryView.tsx` to adapt cleanly to light mode (light background, dark crisp text/icons) and dark mode (dark background, light crisp text/icons).
+
