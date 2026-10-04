@@ -8,7 +8,6 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastSystem';
 import { SessionDetailsView, SessionItem, parseDeviceAndOS, getSessionActions } from './Profile/SessionDetailsView';
-import { BatteryUsageTrends } from './Profile/BatteryUsageTrends';
 import ConfirmationModal from './ConfirmationModal';
 import metadata from '../metadata.json';
 import { fetchUserSessions, fetchSessionStats, invalidateUserSessionsCache, SessionStats } from '../utils/sessionApi';
@@ -183,13 +182,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           lastFetchParams.current = { status: activeStatus, search: fetchSearch };
       }
 
-      const fetchLimit = options?.limit !== undefined 
+      const rawLimit = options?.limit !== undefined 
         ? options.limit 
         : (isCodex ? codexLimit : 10);
         
-      const fetchOffset = options?.offset !== undefined
+      const rawOffset = options?.offset !== undefined
         ? options.offset
-        : (isCodex ? (codexPage - 1) * codexLimit : 0);
+        : (isCodex ? (codexPage - 1) * (Number.isFinite(codexLimit) && codexLimit > 0 ? codexLimit : 10) : 0);
+
+      const fetchLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 10;
+      const fetchOffset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
 
       const requiredTotalItems = fetchOffset + fetchLimit;
       const currentSessionsLength = filtersChanged || forceRefresh ? 0 : sessions.length;
@@ -200,8 +202,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           return; 
       }
 
-      const actualLimit = requiredTotalItems - currentSessionsLength;
-      const actualOffset = currentSessionsLength;
+      const actualLimit = Math.max(1, requiredTotalItems - currentSessionsLength);
+      const actualOffset = Math.max(0, currentSessionsLength);
 
       const data = await fetchUserSessions(token, {
         status: activeStatus,
@@ -251,8 +253,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('Failed to fetch user sessions:', err);
-      addToast('Could not refresh session history.', 'error');
+      console.warn('Could not refresh session history from server, keeping active local state:', err);
     } finally {
       setIsLoadingSessions(false);
     }
@@ -1060,20 +1061,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {/* Clean Horizontal Divider */}
           <hr className="border-t border-gray-200 dark:border-white/10" />
 
-          {/* --- SECTION 3: BATTERY TELEMETRY & HISTORICAL TRENDS --- */}
-          <motion.div variants={itemVariants} className="w-full">
-            <BatteryUsageTrends
-              sessions={sessions}
-              userFullName={userProfile.full_name}
-              onRefreshSessions={() => fetchSessions(true)}
-              isLoading={isLoadingSessions}
-            />
-          </motion.div>
-
-          {/* Clean Horizontal Divider */}
-          <hr className="border-t border-gray-200 dark:border-white/10" />
-
-          {/* --- SECTION 4: ACTIVE SESSIONS & SECURITY --- */}
+          {/* --- SECTION 3: ACTIVE SESSIONS & SECURITY --- */}
           <motion.div variants={itemVariants} className="space-y-4 w-full">
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-2">
               <h2 className="text-xs font-bold text-gray-900 dark:text-white font-mono uppercase tracking-widest leading-none flex items-center gap-2">
@@ -1152,7 +1140,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">OS</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">IP Address</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Location</th>
-                          <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Battery</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap text-amber-600 dark:text-amber-400">Action By</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap text-blue-600 dark:text-blue-400">Action From</th>
                           <th className="py-2.5 px-3 font-semibold text-left whitespace-nowrap">Status</th>
@@ -1230,11 +1217,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                                 >
                                   <span className="truncate">{s.location || 'Unknown Location'}</span>
                                 </button>
-                              </td>
-                              <td className="py-2.5 px-3 text-left whitespace-nowrap font-mono text-[10px]">
-                                <span className="font-semibold text-gray-800 dark:text-neutral-300">
-                                  {s.battery_percentage !== undefined && s.battery_percentage !== null ? `${s.battery_percentage}%` : 'N/A'}
-                                </span>
                               </td>
                               {/* Action By */}
                               <td className="py-2.5 px-3 whitespace-nowrap text-left font-mono text-[10px]">
@@ -1478,14 +1460,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <span className="text-xs font-medium text-[var(--profile-text-primary)] flex items-center gap-1.5">
                   <AppIcon name="solar:map-point-linear" className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
                   <span>{detailModalSession.location || 'Unknown Location Coordinates'}</span>
-                </span>
-              </div>
-
-              {/* Battery */}
-              <div className="py-2.5 flex items-center justify-between gap-2">
-                <span className="text-[10px] uppercase font-bold text-[var(--profile-text-muted)] tracking-wider">Battery Status</span>
-                <span className="font-mono text-xs font-semibold text-[var(--profile-text-primary)]">
-                  {detailModalSession.battery_percentage !== undefined && detailModalSession.battery_percentage !== null ? `${detailModalSession.battery_percentage}%` : 'N/A'}
                 </span>
               </div>
 

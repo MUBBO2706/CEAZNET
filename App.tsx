@@ -736,10 +736,6 @@ const App: React.FC = () => {
       return await getExactDeviceName();
     };
 
-    const getDeviceBattery = async (): Promise<number | null> => {
-      const { getBatteryPercentage } = await import('./utils/deviceUtils');
-      return await getBatteryPercentage();
-    };
 
     const trackSession = async () => {
       try {
@@ -778,8 +774,6 @@ const App: React.FC = () => {
             coordsErr,
           );
         }
-
-        const batteryPercentage = await getDeviceBattery();
 
         let is_incognito = false;
         let browser_name = "Unknown";
@@ -820,7 +814,6 @@ const App: React.FC = () => {
             client_device_name: await getDetailedDeviceName(),
             latitude: coords?.latitude,
             longitude: coords?.longitude,
-            battery_percentage: batteryPercentage,
             is_incognito,
             browser_name,
             browser_version,
@@ -880,10 +873,9 @@ const App: React.FC = () => {
 
           const sessionKey = localStorage.getItem("ceaznet_session_key");
           if (!sessionKey) return;
-          const { getPersistentDeviceId, getExactDeviceName, getBatteryPercentage } = await import('./utils/deviceUtils');
+          const { getPersistentDeviceId, getExactDeviceName } = await import('./utils/deviceUtils');
           const deviceId = await getPersistentDeviceId();
           const deviceName = await getExactDeviceName();
-          const batteryPercentage = await getBatteryPercentage();
           
           const skipDbUpdate = !statusOverride && (Date.now() - lastSupabaseUpdate < 5 * 60 * 1000);
           if (!skipDbUpdate && !statusOverride) {
@@ -896,7 +888,6 @@ const App: React.FC = () => {
               session_key: sessionKey,
               device_id: deviceId,
               client_device_name: deviceName,
-              battery_percentage: batteryPercentage,
               status_override: statusOverride
             })], { type: 'application/json' });
             navigator.sendBeacon("/api/sessions?action=heartbeat", blob);
@@ -912,7 +903,6 @@ const App: React.FC = () => {
                 session_key: sessionKey,
                 device_id: deviceId,
                 client_device_name: deviceName,
-                battery_percentage: batteryPercentage,
                 skip_db_update: skipDbUpdate
               }),
             }).catch(() => {});

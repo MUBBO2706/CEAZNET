@@ -412,18 +412,8 @@ export async function loadDeviceCacheUnified(): Promise<Record<string, string | 
     }
   }
 
-  // Fallback to server-side local memory cache and disk file
+  // Fallback to server-side local memory cache
   lastDeviceCacheSource = 'local-server-fallback';
-  if (!deviceMemoryCache) {
-    try {
-      const localPath = path.join(process.cwd(), 'deviceCache.json');
-      if (fs.existsSync(localPath)) {
-        deviceMemoryCache = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-      }
-    } catch (err) {
-      console.warn("[Device Cache] Failed to load local disk fallback:", err);
-    }
-  }
   return deviceMemoryCache || {};
 }
 
@@ -436,13 +426,6 @@ export async function saveDeviceCacheUnified(
 ): Promise<boolean> {
   deviceMemoryCache = cacheData;
   lastDeviceFetchTime = Date.now();
-  
-  try {
-    const localPath = path.join(process.cwd(), 'deviceCache.json');
-    fs.writeFileSync(localPath, JSON.stringify(cacheData, null, 2), 'utf8');
-  } catch (err) {
-    console.warn("[Device Cache] Failed to write local disk fallback:", err);
-  }
   
   const deviceKeys = Object.keys(cacheData || {});
   const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
@@ -474,18 +457,8 @@ export async function loadImageCacheUnified(): Promise<Record<string, { dataUrl:
     }
   }
 
-  // Fallback to server-side local memory cache and disk file
+  // Fallback to server-side local memory cache
   lastImageCacheSource = 'local-server-fallback';
-  if (!imageMemoryCache) {
-    try {
-      const localPath = path.join(process.cwd(), 'imageCache.json');
-      if (fs.existsSync(localPath)) {
-        imageMemoryCache = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-      }
-    } catch (err) {
-      console.warn("[Image Cache] Failed to load local disk fallback:", err);
-    }
-  }
   return imageMemoryCache || {};
 }
 
@@ -500,13 +473,6 @@ export async function saveImageCacheUnified(
 ): Promise<boolean> {
   imageMemoryCache = cacheData;
   lastImageFetchTime = Date.now();
-  
-  try {
-    const localPath = path.join(process.cwd(), 'imageCache.json');
-    fs.writeFileSync(localPath, JSON.stringify(cacheData, null, 2), 'utf8');
-  } catch (err) {
-    console.warn("[Image Cache] Failed to write local disk fallback:", err);
-  }
   
   const oldStats = (cacheData as any)['__stats__'] || {};
   const imageKeys = Object.keys(cacheData || {}).filter(k => k !== '__stats__');

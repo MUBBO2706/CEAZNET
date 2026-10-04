@@ -174,7 +174,7 @@ The source code for all edge functions used in this application is strictly pres
 
 ### B. Problem Resolution Logging in `version.md`
 - Whenever you fix an issue, bug, or user-reported problem in the application, you **MUST** record a short, concise entry in `/version.md` with:
-  1. **Timestamp:** Current local date and time of the fix.
+  1. **Timestamp:** Current date and time in Indian Standard Time (IST) formatted strictly as `D Mon YYYY at HH:mm` (e.g., `1 Jan 2025 at 23:11` or `4 Oct 2026 at 15:53`).
   2. **User Problem Reported:** Short and concise description of what issue the user faced/reported.
   3. **Resolution Implemented:** Short and concise description of what was fixed and how it was resolved.
 

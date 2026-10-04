@@ -257,60 +257,61 @@ export default async function handler(req: any, res: any) {
       }
     } catch(e) {}
 
-    let action = (req.query?.action as string) || urlObj?.searchParams.get('action') || '';
-    let status = (req.query?.status as string) || urlObj?.searchParams.get('status') || 'all';
-    let limitStr = (req.query?.limit as string) || urlObj?.searchParams.get('limit') || '';
-    let offsetStr = (req.query?.offset as string) || urlObj?.searchParams.get('offset') || '';
-    let search = (req.query?.search as string) || urlObj?.searchParams.get('search') || '';
+    let action = ((req.query?.action as string) || (req.body?.action as string) || urlObj?.searchParams.get('action') || '').trim();
+    let status = ((req.query?.status as string) || (req.body?.status as string) || urlObj?.searchParams.get('status') || 'all').trim();
+    let limitStr = (req.query?.limit as string) || (req.body?.limit as string) || urlObj?.searchParams.get('limit') || '';
+    let offsetStr = (req.query?.offset as string) || (req.body?.offset as string) || urlObj?.searchParams.get('offset') || '';
+    let search = ((req.query?.search as string) || (req.body?.search as string) || urlObj?.searchParams.get('search') || '').trim();
 
-    if (req.method === 'GET') {
-      // 1. Optimized stats action: calculates counts with a lightweight query without fetching heavy metadata
-      if (action === 'stats' || action === 'counts') {
-        try {
-          const { data, error } = await userClient
-            .from('user_sessions')
-            .select('id, session_key, last_active_at, created_at')
-            .eq('user_id', user.id);
-          if (error) throw error;
+    // 1. Optimized stats action: calculates counts with a lightweight query without fetching heavy metadata
+    if (action === 'stats' || action === 'counts') {
+      try {
+        const { data, error } = await userClient
+          .from('user_sessions')
+          .select('id, session_key, last_active_at, created_at')
+          .eq('user_id', user.id);
+        if (error) throw error;
 
-          const now = Date.now();
-          const EXPIRE_MS = 35 * 60 * 1000;
-          let total = 0;
-          let active = 0;
-          let logged_out = 0;
-          let terminated = 0;
-          let expired = 0;
+        const now = Date.now();
+        const EXPIRE_MS = 35 * 60 * 1000;
+        let total = 0;
+        let active = 0;
+        let logged_out = 0;
+        let terminated = 0;
+        let expired = 0;
 
-          for (const s of (data || [])) {
-            total++;
-            const key = s.session_key || '';
-            if (key.startsWith('LOGGED_OUT_')) {
-              logged_out++;
-            } else if (key.startsWith('TERMINATED_')) {
-              terminated++;
+        for (const s of (data || [])) {
+          total++;
+          const key = s.session_key || '';
+          if (key.startsWith('LOGGED_OUT_')) {
+            logged_out++;
+          } else if (key.startsWith('TERMINATED_')) {
+            terminated++;
+          } else {
+            const lastActive = new Date(s.last_active_at || s.created_at).getTime();
+            if (now - lastActive > EXPIRE_MS) {
+              expired++;
             } else {
-              const lastActive = new Date(s.last_active_at || s.created_at).getTime();
-              if (now - lastActive > EXPIRE_MS) {
-                expired++;
-              } else {
-                active++;
-              }
+              active++;
             }
           }
-
-          return res.json({
-            success: true,
-            stats: { total, active, logged_out, terminated, expired }
-          });
-        } catch (err: any) {
-          return res.json({
-            success: true,
-            stats: { total: 1, active: 1, logged_out: 0, terminated: 0, expired: 0 }
-          });
         }
-      }
 
-      // 2. On-demand sessions listing (optionally filtered by status, search, and paginated)
+        return res.json({
+          success: true,
+          stats: { total, active, logged_out, terminated, expired }
+        });
+      } catch (err: any) {
+        return res.json({
+          success: true,
+          stats: { total: 1, active: 1, logged_out: 0, terminated: 0, expired: 0 }
+        });
+      }
+    }
+
+    // 2. On-demand sessions listing (handled for GET or POST when requesting session list)
+    const isListingRequest = req.method === 'GET' || !action || action === 'list' || action === 'sessions' || action === 'fetch' || action === 'get';
+    if (isListingRequest) {
       try {
         // Fast computation of exact stats across all statuses
         const { data: allStatsRows } = await userClient
@@ -367,13 +368,17 @@ export default async function handler(req: any, res: any) {
             .lt('last_active_at', new Date(now - EXPIRE_MS).toISOString());
         }
 
-        if (search && search.trim()) {
-          const q = search.trim();
-          query = query.or(`device_name.ilike.%${q}%,location.ilike.%${q}%,browser_name.ilike.%${q}%,ip_address.ilike.%${q}%`);
+        if (search) {
+          const q = search.replace(/[,%()]/g, ' ').replace(/\s+/g, ' ').trim();
+          if (q) {
+            query = query.or(`device_name.ilike.%${q}%,location.ilike.%${q}%,browser_name.ilike.%${q}%,ip_address.ilike.%${q}%`);
+          }
         }
 
-        const limit = limitStr ? parseInt(limitStr, 10) : 0;
-        const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+        const parsedLimit = limitStr ? parseInt(limitStr, 10) : 0;
+        const parsedOffset = offsetStr ? parseInt(offsetStr, 10) : 0;
+        const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 0;
+        const offset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
 
         if (limit > 0) {
           query = query.range(offset, offset + limit - 1);
@@ -408,7 +413,7 @@ export default async function handler(req: any, res: any) {
 
     if (req.method === 'POST') {
       if (action === 'track') {
-        const { session_key, device_id, client_device_name, latitude, longitude, battery_percentage, is_incognito, browser_name, browser_version, os_name, os_version } = req.body || {};
+        const { session_key, device_id, client_device_name, latitude, longitude, is_incognito, browser_name, browser_version, os_name, os_version } = req.body || {};
         if (!session_key) return res.status(400).json({ error: "Missing session_key parameter" });
         const ip = getClientIp(req);
         const deviceName = client_device_name || parseUserAgentAdv(req);
@@ -454,7 +459,6 @@ export default async function handler(req: any, res: any) {
             device_name: deviceName,
             ip_address: ip,
             location,
-            battery_percentage: typeof battery_percentage === 'number' ? battery_percentage : undefined,
             browser_name: browser_name || 'Unknown',
             browser_version: browser_version || '',
             is_incognito: Boolean(is_incognito),
@@ -481,8 +485,7 @@ export default async function handler(req: any, res: any) {
 
       if (action === 'heartbeat') {
         const { session_key } = req.body || {};
-        if (!session_key) return res.status(400).json({ error: "Missing session_key" });
-        return res.json({ success: true });
+        return res.json({ success: true, session_key: session_key || 'anonymous' });
       }
 
       if (action === 'terminate') {
