@@ -71,7 +71,9 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
     const nextStartTimeRef = useRef(0);
     const outputSourcesRef = useRef(new Set<AudioBufferSourceNode>());
     const statusRef = useRef(status);
-    const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const SILENCE_TIMEOUT_MS = 15000;
+    const lastActivityTimestampRef = useRef<number>(Date.now());
+    const lastProactivePromptTimestampRef = useRef<number>(0);
     
     // For saving transcript
     const transcriptionHistoryRef = useRef<TranscriptMessage[]>([]);
@@ -123,28 +125,60 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
     }, []);
     
     const resetSilenceTimer = useCallback(() => {
-        if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-        }
-        if (!isProactiveModeEnabledRef.current) {
-            return;
-        }
-        silenceTimerRef.current = setTimeout(() => {
-            // Check refs to get latest state inside timeout
-            if (statusRef.current !== 'listening' || !sessionPromiseRef.current) return;
-    
-            const proactivePrompt = "[SYSTEM_TRIGGER] The user has been silent for 15 seconds. Proactively and dynamically re-engage them in a friendly, natural, and brief way. Your response must be varied and not sound robotic. Keep it short and conversational.";
-        
-            sessionPromiseRef.current.then(session => {
-                session.sendRealtimeInput({ text: proactivePrompt });
-            });
-        }, 15000); // 15 seconds
+        lastActivityTimestampRef.current = Date.now();
     }, []);
 
     const resetSilenceTimerRef = useRef(resetSilenceTimer);
     useEffect(() => {
         resetSilenceTimerRef.current = resetSilenceTimer;
     }, [resetSilenceTimer]);
+
+    // Robust Watchdog Effect for Proactive Engagement
+    useEffect(() => {
+        if (!isProactiveModeEnabled || status !== 'listening') {
+            return;
+        }
+
+        const interval = setInterval(() => {
+            // Only trigger if session is listening and user mic isn't muted
+            if (statusRef.current !== 'listening' || !sessionPromiseRef.current || isMicMutedRef.current) {
+                return;
+            }
+
+            const now = Date.now();
+            const silentDuration = now - lastActivityTimestampRef.current;
+            const timeSinceLastPrompt = now - lastProactivePromptTimestampRef.current;
+
+            if (silentDuration >= SILENCE_TIMEOUT_MS && timeSinceLastPrompt >= SILENCE_TIMEOUT_MS) {
+                console.log(`[LiveConversation] Proactive engagement triggered after ${Math.round(silentDuration / 1000)}s of silence.`);
+                lastProactivePromptTimestampRef.current = now;
+                lastActivityTimestampRef.current = now;
+
+                const proactivePrompts = [
+                    "[System Note: The user has been silent for 15 seconds. Say something brief, natural, warm, and conversational to re-engage them or ask if they're still there. Keep it short and speak in the language you were conversing in (e.g., Urdu/Hindi or English). Do not mention this system note, just speak directly to the user.]",
+                    "[System Note: The user has been quiet for 15 seconds. Check in with them in one brief, friendly sentence. Keep it warm, natural, and casual. Do not mention this system note.]",
+                    "[System Note: The user has been silent for 15 seconds. Ask a short, engaging follow-up or ask what's on their mind in a natural voice. Do not mention this system note.]"
+                ];
+                const prompt = proactivePrompts[Math.floor(Math.random() * proactivePrompts.length)];
+
+                sessionPromiseRef.current.then(session => {
+                    session.sendClientContent({
+                        turns: [
+                            {
+                                role: 'user',
+                                parts: [{ text: prompt }]
+                            }
+                        ],
+                        turnComplete: true,
+                    });
+                }).catch(err => {
+                    console.error("[LiveConversation] Error sending proactive engagement:", err);
+                });
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [status, isProactiveModeEnabled]);
 
     useEffect(() => {
         const loop = () => {
@@ -214,10 +248,8 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
         currentInputTranscriptionRef.current = '';
         currentOutputTranscriptionRef.current = '';
 
-        if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = null;
-        }
+        lastActivityTimestampRef.current = Date.now();
+        lastProactivePromptTimestampRef.current = 0;
         if (!isError && statusRef.current !== 'disconnected') {
             playDisconnectSound();
             triggerHapticFeedback();
@@ -295,6 +327,8 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
         currentOutputTranscriptionRef.current = '';
         currentTurnStartTimeRef.current = null;
         lastSpeechDetectedTimestampRef.current = null;
+        lastActivityTimestampRef.current = Date.now();
+        lastProactivePromptTimestampRef.current = 0;
 
         try {
             const audioConstraints: MediaTrackConstraints = {
@@ -535,8 +569,11 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                                 processedData[i] = sample * currentSmoothedGain;
                             }
 
-                            if (blockHasVoice) {
+                            if (smoothedEnvelope > 0.035 && !isMicMutedRef.current) {
                                 resetSilenceTimerRef.current();
+                            }
+
+                            if (blockHasVoice) {
                                 if (!lastSpeechDetectedTimestampRef.current) {
                                     lastSpeechDetectedTimestampRef.current = Date.now();
                                 }
@@ -631,6 +668,7 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                                 
                                 currentTurnStartTimeRef.current = Math.max(0, (speechStart - sessionStartTimeRef.current) / 1000);
                             }
+                            resetSilenceTimerRef.current();
                             currentInputTranscriptionRef.current += message.serverContent.inputTranscription.text;
                         }
 
@@ -664,6 +702,7 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
                                 outputSourcesRef.current.delete(source);
                                 if (outputSourcesRef.current.size === 0) {
                                     setStatus('listening');
+                                    resetSilenceTimerRef.current();
                                 }
                             });
                             source.start(nextStartTimeRef.current);
@@ -783,7 +822,16 @@ export const useLiveConversation = ({ voice, instruction, gender, isProactiveMod
     
         try {
             const session = await sessionPromiseRef.current;
-            session.sendRealtimeInput({ text });
+            session.sendClientContent({
+                turns: [
+                    {
+                        role: 'user',
+                        parts: [{ text }]
+                    }
+                ],
+                turnComplete: true,
+            });
+            resetSilenceTimer();
             // The onmessage callback will handle the transition to 'speaking'.
         } catch (e) {
             console.error("Failed to send text input to live session:", e);
